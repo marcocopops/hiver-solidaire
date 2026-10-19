@@ -1,0 +1,26 @@
+# Build
+target/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# Système
+.DS_Store
+Thumbs.db
+
+# Secrets et configuration locale : seul .env.example est versionné
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+*.p12
+
+# Claude Code : réglages personnels
+.claude/settings.local.json
