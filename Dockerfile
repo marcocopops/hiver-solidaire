@@ -10,7 +10,7 @@ COPY src/ src/
 
 # Les tests tournent dans la CI (./mvnw verify) : l'image ne les rejoue pas.
 RUN --mount=type=cache,target=/root/.m2 ./mvnw -B -DskipTests package \
-    && java -Djarmode=tools -jar target/hiver-solidaire-*.jar extract --destination /workspace/extracted
+    && java -Djarmode=tools -jar target/app.jar extract --destination /workspace/extracted
 
 # --- Exécution : JRE 21, utilisateur non-root, système de fichiers en lecture seule ---------------
 FROM eclipse-temurin:21-jre-alpine@sha256:51ab5e3302e7141ce665ca3ea85e8b5cd648eafbc3c0c90dd79d6537684e4555
@@ -26,4 +26,4 @@ ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -Djava.io.tmpdir=/tmp"
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
     CMD wget -q -O /dev/null http://127.0.0.1:8081/actuator/health || exit 1
 
-ENTRYPOINT ["java", "-jar", "/app/hiver-solidaire-0.0.1-SNAPSHOT.jar"]
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]
