@@ -1,0 +1,15 @@
+.git
+.github
+.idea
+.vscode
+.claude
+target
+docs
+deploy
+.env
+.env.*
+!.env.example
+secrets
+*.pem
+*.key
+*.p12

@@ -1,8 +1,10 @@
 package com.marcantoinemeunier.hiversolidaire.config;
 
+import org.springframework.boot.security.autoconfigure.actuate.web.servlet.EndpointRequest;
 import org.springframework.boot.security.autoconfigure.web.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -20,13 +22,33 @@ public class SecurityConfig {
     private static final String PERMISSIONS_POLICY = "camera=(), microphone=(), geolocation=(), payment=(), "
             + "usb=(), accelerometer=(), gyroscope=(), magnetometer=(), interest-cohort=()";
 
+    /**
+     * Port de management (8081) : seul {@code health} est servi, pour le healthcheck Docker.
+     * Ce port n'est jamais routé par le tunnel.
+     */
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    @Order(1)
+    SecurityFilterChain managementSecurityFilterChain(HttpSecurity http) throws Exception {
         http
+                .securityMatcher(EndpointRequest.toAnyEndpoint())
                 .authorizeHttpRequests(requests -> requests
-                        .requestMatchers("/", "/error").permitAll()
-                        .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
-                        .anyRequest().denyAll())
+                        .requestMatchers(EndpointRequest.to("health")).permitAll()
+                        .anyRequest().denyAll());
+        return baseline(http).build();
+    }
+
+    @Bean
+    @Order(2)
+    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http.authorizeHttpRequests(requests -> requests
+                .requestMatchers("/", "/error").permitAll()
+                .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
+                .anyRequest().denyAll());
+        return baseline(http).build();
+    }
+
+    private HttpSecurity baseline(HttpSecurity http) throws Exception {
+        return http
                 .csrf(Customizer.withDefaults())
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
@@ -40,6 +62,5 @@ public class SecurityConfig {
                         .permissionsPolicyHeader(permissions -> permissions.policy(PERMISSIONS_POLICY))
                         // HSTS est posé par Cloudflare (cahier des charges, §8).
                         .httpStrictTransportSecurity(hsts -> hsts.disable()));
-        return http.build();
     }
 }

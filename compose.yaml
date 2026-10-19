@@ -1,0 +1,20 @@
+# PostgreSQL de développement uniquement. La production est dans deploy/compose.prod.yaml.
+services:
+  db:
+    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-hiver}
+      POSTGRES_USER: ${POSTGRES_USER:-hiver}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?copier .env.example vers .env}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db-data:
