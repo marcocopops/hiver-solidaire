@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: hiver-solidaire
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/hiver}
+    username: ${DB_USER:hiver}
+    password: ${DB_PASSWORD:}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+  thymeleaf:
+    cache: true
+
+server:
+  port: 8080
+  # Derrière cloudflared : prend en compte X-Forwarded-*. Seul cloudflared peut joindre l'appli
+  # (réseau Docker dédié, aucun port publié sur l'hôte).
+  forward-headers-strategy: native
+  error:
+    include-message: never
+    include-stacktrace: never
+    include-binding-errors: never
+
+management:
+  server:
+    port: 8081
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+logging:
+  level:
+    root: INFO

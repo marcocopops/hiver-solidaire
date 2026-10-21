@@ -34,4 +34,16 @@ Sécurité et données personnelles : §7 et §8 du [cahier des charges](docs/ca
 
 ## Démarrer en local
 
-Disponible à la fin de la semaine 1 (squelette).
+Prérequis : Java 21 et Docker (pour PostgreSQL et les tests).
+
+```bash
+cp .env.example .env             # valeurs factices, à adapter ; .env n'est jamais versionné
+docker compose up -d             # PostgreSQL de développement sur 127.0.0.1:5432
+set -a; . ./.env; set +a         # charge DB_URL, DB_USER, DB_PASSWORD dans le shell
+./mvnw spring-boot:run           # http://localhost:8080
+```
+
+- Tests (JUnit + Testcontainers, sur un vrai PostgreSQL) : `./mvnw verify`.
+- Santé : `http://localhost:8081/actuator/health` (port de management, jamais exposé en production).
+- Image Docker : `docker build -t hiver-solidaire .`
+- Déploiement sur le homelab : [deploy/README.md](deploy/README.md).

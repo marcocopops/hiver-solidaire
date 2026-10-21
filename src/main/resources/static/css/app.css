@@ -1,0 +1,43 @@
+:root {
+    --fond: #f6f3ee;
+    --texte: #1f2933;
+    --accent: #0b5c8c;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--fond);
+    color: var(--texte);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.5;
+}
+
+.page {
+    max-width: 40rem;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+h1 {
+    margin: 0 0 1rem;
+    color: var(--accent);
+    font-size: 1.75rem;
+}
+
+.lead {
+    font-size: 1.25rem;
+}
+
+@media (min-width: 48rem) {
+    .page {
+        padding-top: 4rem;
+    }
+
+    h1 {
+        font-size: 2.25rem;
+    }
+}
