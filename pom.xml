@@ -19,6 +19,9 @@
     <properties>
         <java.version>21</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- Surcharge du BOM Spring Boot 4.1.1 (Tomcat 11.0.24) : corrige 3 failles critiques (GHSA-9xv2-5v5q-p794,
+             GHSA-gcx9-497g-6cp6, GHSA-h3x4-894j-xpx5). À retirer quand Boot embarque Tomcat >= 11.0.25. -->
+        <tomcat.version>11.0.25</tomcat.version>
     </properties>
 
     <dependencies>
