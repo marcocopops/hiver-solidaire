@@ -22,6 +22,10 @@
         <!-- Surcharge du BOM Spring Boot 4.1.1 (Tomcat 11.0.24) : corrige 3 failles critiques (GHSA-9xv2-5v5q-p794,
              GHSA-gcx9-497g-6cp6, GHSA-h3x4-894j-xpx5). À retirer quand Boot embarque Tomcat >= 11.0.25. -->
         <tomcat.version>11.0.25</tomcat.version>
+        <!-- Surcharge du BOM Spring Boot 4.1.1 (Jackson 3.1.5) : corrige les failles High de jackson-core et
+             jackson-databind (GHSA-p6pp-m3f8-5c89, GHSA-7hhh-6rmp-j9qf, GHSA-q4xh-88c3-wmh7, GHSA-cxp5-3px4-pw24,
+             GHSA-wv8q-qhhj-9h54) et Medium (GHSA-gx83-3vf8-gh7j, GHSA-wjgm-6hv5-3cvf). À retirer quand Boot embarque Jackson >= 3.1.7. -->
+        <jackson-bom.version>3.1.7</jackson-bom.version>
     </properties>
 
     <dependencies>
