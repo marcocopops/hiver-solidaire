@@ -4,11 +4,26 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+    # Délai avant de proposer une nouvelle version : 3 jours pour les correctifs, 7 pour le reste.
+    # Les mises à jour de sécurité ne sont pas retardées par le cooldown.
+    cooldown:
+      default-days: 7
+      semver-patch-days: 3
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
+      semver-patch-days: 3
   - package-ecosystem: docker
     directory: "/"
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
+      semver-patch-days: 3
+    ignore:
+      # Le runtime reste en Java 21 (LTS) : un changement de version majeure se décide à la main.
+      - dependency-name: "eclipse-temurin"
+        update-types: ["version-update:semver-major"]
