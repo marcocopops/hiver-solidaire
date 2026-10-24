@@ -9,3 +9,4 @@ Chaque décision structurante est consignée ici, au format du [modèle](templat
 | [0003](0003-lien-magique-plutot-que-mot-de-passe.md) | Lien magique plutôt que mot de passe | Accepté |
 | [0004](0004-homelab-et-cloudflare-tunnel-plutot-que-vps.md) | Homelab + Cloudflare Tunnel plutôt que VPS | Accepté |
 | [0005](0005-postgresql-plutot-que-sqlite.md) | PostgreSQL plutôt que SQLite | Accepté |
+| [0006](0006-soirees-stockees-plutot-que-calculees.md) | Soirées stockées plutôt que calculées | Accepté |

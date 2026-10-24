@@ -49,14 +49,16 @@ La bêta de la semaine 7 laisse une semaine de marge avant le gel. Les dates de 
 
 ## 4. Utilisateurs et rôles
 
-- **Visiteur** : voit le planning et les places restantes, sans aucune donnée personnelle.
+- **Visiteur** : voit le planning des soirées à venir, leur statut et les postes qui manquent (« Manque : nuit, petit-déjeuner »), sans aucune donnée personnelle. Pas de nombre de places ni d'inscrits : dans une communauté d'une vingtaine de personnes, un nombre suffirait à deviner qui est inscrit.
 - **Bénévole** : se connecte par lien magique, s'inscrit, se désinscrit, consulte et supprime ses données.
 - **Coordinateur (2 à 3)** : a un accès complet au planning, aux bénévoles et au paramétrage.
 - **Personnes accueillies** : aucune donnée les concernant n'est saisie.
 
 ## 5. Modèle métier
 
-L'unité du planning est la soirée : du soir J (dîner) au matin J+1 (petit-déjeuner). Elle s'affiche ainsi : « Lun. 5 → mar. 6 janv. ». La saison 2025-2026 en comptait 76.
+L'unité du planning est la soirée : du soir J (dîner) au matin J+1 (petit-déjeuner). Elle s'affiche ainsi : « Lun. 5 → mar. 6 janv. » (« Sam. 31 janv. → dim. 1er févr. » quand le mois change). La saison 2025-2026 en comptait 76.
+
+Une saison est définie par sa première et sa dernière soirée (dates du soir J) et par la date d'ouverture des inscriptions. Ses soirées sont stockées en base, une ligne par soirée, générées à partir de ces dates ([ADR-0006](adr/0006-soirees-stockees-plutot-que-calculees.md)).
 
 **Besoins par soirée** (paramétrables) :
 
@@ -83,10 +85,10 @@ L'unité du planning est la soirée : du soir J (dîner) au matin J+1 (petit-dé
 - **R1 Capacité** : une inscription n'est acceptée que s'il reste de la place sur chaque poste qu'elle couvre. La base le garantit par une transaction avec verrou sur la soirée : jamais deux personnes sur la dernière place.
 - **R2 Unicité** : une seule inscription par bénévole et par soirée (hypothèse), sauf décision d'un coordinateur.
 - **R3 Préparation** : qui prépare choisit plat principal ou accompagnements, un de chaque par soirée.
-- **R4 Récupération** : chaque « préparer chez soi » doit avoir un « récupérer et partager » le même soir ; sinon, les coordinateurs sont alertés et organisent la remise.
-- **R5 Statut** : une soirée est complète (tous les minimums couverts), partielle ou vide, affichée par une couleur et un texte.
+- **R4 Récupération** : chaque « préparer chez soi » doit avoir un « récupérer et partager » distinct le même soir (deux repas préparés chez soi demandent deux récupérations) ; sinon, les coordinateurs sont alertés et organisent la remise.
+- **R5 Statut** : une soirée est complète (tous les minimums couverts), partielle ou vide (aucune inscription), affichée par une couleur et un texte : « Complète » en vert, « À compléter » en orange, « Personne pour l'instant » en rouge ; une soirée fermée affiche « Fermée » en gris.
 - **R6 Désinscription** : en autonomie jusqu'à la veille de l'activité à 23 h 59, heure de Paris. Ensuite, l'appli affiche le téléphone des coordinateurs.
-- **R7 Fenêtre** : inscriptions possibles de l'ouverture à la fin de saison, jamais sur une soirée passée. Un coordinateur peut fermer une soirée.
+- **R7 Fenêtre** : inscriptions possibles de l'ouverture à la fin de saison, jamais sur une soirée passée. Une soirée est passée à partir de minuit le lendemain, heure de Paris : on peut encore s'inscrire le jour même. Un coordinateur peut fermer une soirée. La page publique n'affiche pas les soirées passées.
 
 ## 6. Parcours
 
@@ -183,11 +185,11 @@ Rappels par SMS (payants), export iCal, messagerie relayée entre bénévoles d'
 ## 11. Questions ouvertes
 
 1. Une seule inscription par bénévole et par soirée ?
-2. Dates de la saison 2026-2027, adresse et consignes du lieu.
+2. Dates de la saison 2026-2027, adresse et consignes du lieu. En attendant, une saison d'exemple aux dates fictives (4 janv. → 21 mars 2027 au matin) est en place, signalée comme telle sur la page publique ; elle sera remplacée depuis le back-office (S4).
 3. Nom exact de l'association, pour la notice et l'expéditeur des e-mails.
 4. Durées de conservation proposées dans la section RGPD.
 5. Durée de connexion des bénévoles (30 jours) et heure du rappel (18 h).
-6. L'adresse du lieu reste-t-elle absente de la page publique ?
+6. L'adresse du lieu reste-t-elle absente de la page publique ? Par défaut, oui : la page publique (S2) ne l'affiche pas, et le modèle de données ne la stocke pas encore.
 
 ## 12. Méthode de travail avec Claude
 
