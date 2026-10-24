@@ -6,11 +6,11 @@ import org.springframework.context.annotation.Bean;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @TestConfiguration(proxyBeanMethods = false)
-class TestcontainersConfiguration {
+public class TestcontainersConfiguration {
 
     @Bean
     @ServiceConnection
-    PostgreSQLContainer postgres() {
+    public PostgreSQLContainer postgres() {
         return new PostgreSQLContainer("postgres:17-alpine");
     }
 }
