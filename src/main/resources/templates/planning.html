@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{planning.title} + ' · ' + #{app.name}">Planning de la saison · Hiver Solidaire</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<main class="page">
+    <p><a th:href="@{/}" th:text="#{planning.back}">Retour à l’accueil</a></p>
+    <h1 th:text="#{planning.title}">Planning de la saison</h1>
+    <p class="saison" th:if="${planning.seasonLabel != null}" th:text="${planning.seasonLabel}">Saison</p>
+    <p class="bandeau" th:if="${planning.sample}" th:text="#{planning.sample}">Dates d’exemple</p>
+
+    <p th:if="${planning.evenings.isEmpty()}" th:text="#{planning.none}">Aucune soirée à venir pour le moment.</p>
+
+    <ul class="soirees" th:unless="${planning.evenings.isEmpty()}">
+        <li th:each="evening : ${planning.evenings}" th:class="'soiree soiree--' + ${evening.statusKey}">
+            <span class="soiree__date" th:text="${evening.label}">Lun. 4 → mar. 5 janv.</span>
+            <span class="statut" th:text="#{${'planning.status.' + evening.statusKey}}">Complète</span>
+            <p class="soiree__manque" th:unless="${evening.missingPostKeys.isEmpty()}"
+               th:text="#{planning.missing(${#strings.listJoin(#messages.listMsg(evening.missingPostKeys), ', ')})}">
+                Manque : nuit, petit-déjeuner</p>
+        </li>
+    </ul>
+</main>
+</body>
+</html>
