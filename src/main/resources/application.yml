@@ -2,7 +2,7 @@ spring:
   application:
     name: hiver-solidaire
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/hiver}
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/hiver}
     username: ${DB_USER:hiver}
     password: ${DB_PASSWORD:}
   jpa:
