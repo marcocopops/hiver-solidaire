@@ -1,6 +1,6 @@
 # ADR-0002 — Rendu serveur (Thymeleaf + htmx) plutôt qu'une SPA
 
-- **Statut** : proposé
+- **Statut** : accepté
 - **Date** : 2026-10-24
 
 ## Contexte

@@ -1,6 +1,6 @@
 # ADR-0005 — PostgreSQL plutôt que SQLite
 
-- **Statut** : proposé
+- **Statut** : accepté
 - **Date** : 2026-10-24
 
 ## Contexte

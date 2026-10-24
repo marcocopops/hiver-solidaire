@@ -1,6 +1,6 @@
 # ADR-0004 — Homelab et Cloudflare Tunnel plutôt qu'un VPS ou un PaaS
 
-- **Statut** : proposé
+- **Statut** : accepté
 - **Date** : 2026-10-24
 
 ## Contexte
@@ -23,7 +23,7 @@ Le choix est fait pour le coût, l'apprentissage et l'absence de port entrant, e
 
 D'après la [documentation de Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) (consultée le 24 octobre 2026), `cloudflared` « crée des connexions sortantes uniquement » vers le réseau de Cloudflare, ce qui justifie l'absence de port entrant.
 
-**Non vérifié** : la gratuité du tunnel et de Cloudflare Access (et le nombre d'utilisateurs inclus), car les pages de tarifs sont rendues côté client et n'ont pas pu être lues depuis la session. À confirmer sur la [page des offres Zero Trust](https://www.cloudflare.com/plans/zero-trust-services/) avant l'acceptation de cet ADR.
+Cloudflare Tunnel et Cloudflare Access sont gratuits : vérifié par l'auteur sur la [page des offres Zero Trust](https://www.cloudflare.com/plans/zero-trust-services/) le 24 octobre 2026. Ces offres peuvent changer : à revérifier avant l'ouverture des inscriptions.
 
 ## Conséquences
 

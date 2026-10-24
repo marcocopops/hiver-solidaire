@@ -1,6 +1,6 @@
 # ADR-0003 — Connexion par lien magique plutôt que par mot de passe
 
-- **Statut** : proposé
+- **Statut** : accepté
 - **Date** : 2026-10-24
 
 ## Contexte
@@ -30,6 +30,7 @@ Le mécanisme est fourni par Spring Security (One-Time Token Login), ce qui évi
 ## Conséquences
 
 - Pas de mot de passe dans la base ni dans les logs.
+- L'envoi passe par Brevo, dont l'offre gratuite est limitée à 300 e-mails par jour (« Monthly email sends 300/day », [tarifs Brevo](https://www.brevo.com/pricing/), vérifié par l'auteur le 24 octobre 2026) : large pour une vingtaine de bénévoles, mais à surveiller le jour de l'ouverture, car chaque connexion consomme un e-mail.
 - Si Brevo tombe, personne ne peut se connecter : à couvrir par le plan B ([modèle de menaces](../securite/modele-de-menaces.md)).
 - Une boîte mail compromise donne l'accès au compte : risque accepté pour des bénévoles, atténué par l'expiration du jeton et la durée limitée des sessions.
 - La session de 30 jours demande un mécanisme distinct du jeton (type « se souvenir de moi »), à préciser en S3 ; elle ne s'applique pas aux coordinateurs, dont les sessions durent 8 h.
