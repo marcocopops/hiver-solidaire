@@ -20,7 +20,12 @@ Les coordinateurs voient toutes les coordonnées. Ils ont en plus Cloudflare Acc
 
 Option 1. Le lien reçu ouvre une page de confirmation ; la connexion se fait par un POST protégé par CSRF, car un GET qui consomme le jeton serait déclenché par les filtres des messageries. Le jeton est à usage unique et valable 15 minutes. La réponse à la demande est identique que l'adresse soit connue ou non, et les demandes sont limitées par adresse et par IP, en plus de Turnstile.
 
-Le mécanisme est fourni par Spring Security (One-Time Token Login, [documentation](https://docs.spring.io/spring-security/reference/servlet/authentication/onetimetoken.html)), ce qui évite d'écrire du code d'authentification maison. Je n'ai pas pu relire cette page depuis la session (accès réseau bloqué) : les points de détail (durée par défaut, stockage du jeton) sont à confirmer à l'implémentation.
+Le mécanisme est fourni par Spring Security (One-Time Token Login), ce qui évite d'écrire du code d'authentification maison. D'après la [documentation](https://docs.spring.io/spring-security/reference/servlet/authentication/onetimetoken.html) (version 7.1.2, consultée le 24 octobre 2026) :
+
+- la demande de jeton est un `POST /ott/generate` ; la livraison du lien est à écrire (un `OneTimeTokenGenerationSuccessHandler`), Spring ne choisit pas le canal ;
+- le lien de l'exemple pointe vers `/login/ott?token=…`, qui affiche une page de saisie préremplie ; le jeton n'est utilisé qu'à l'envoi de cette page, ce qui correspond à notre exigence de confirmation avant consommation (le fait que cet envoi soit bien un POST protégé par CSRF reste à vérifier par un test) ;
+- la durée par défaut est de **5 minutes**, modifiable (`GenerateOneTimeTokenRequestResolver`) : il faudra la porter à 15 minutes pour suivre le cahier des charges ;
+- le stockage par défaut est en mémoire (`InMemoryOneTimeTokenService`) ; la documentation recommande `JdbcOneTimeTokenService` en production.
 
 ## Conséquences
 
@@ -28,4 +33,4 @@ Le mécanisme est fourni par Spring Security (One-Time Token Login, [documentati
 - Si Brevo tombe, personne ne peut se connecter : à couvrir par le plan B ([modèle de menaces](../securite/modele-de-menaces.md)).
 - Une boîte mail compromise donne l'accès au compte : risque accepté pour des bénévoles, atténué par l'expiration du jeton et la durée limitée des sessions.
 - La session de 30 jours demande un mécanisme distinct du jeton (type « se souvenir de moi »), à préciser en S3 ; elle ne s'applique pas aux coordinateurs, dont les sessions durent 8 h.
-- Le jeton doit être stocké haché ou à usage unique, et purgé après usage ou expiration.
+- Le stockage en mémoire par défaut perd les jetons à chaque redémarrage de l'appli (un lien envoyé juste avant un déploiement cesse de fonctionner) : choisir le stockage JDBC, avec purge des jetons expirés, à trancher en S3.

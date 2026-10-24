@@ -21,7 +21,9 @@ Option 1. L'appli tourne sur le homelab, sur son propre réseau Docker, et n'est
 
 Le choix est fait pour le coût, l'apprentissage et l'absence de port entrant, en acceptant une disponibilité moindre qu'un hébergeur. Les risques sont traités par la supervision, des sauvegardes testées et un plan B (récap quotidien, export PDF, ancien Google Form) plutôt que par de la redondance.
 
-Les conditions de gratuité du tunnel et de Cloudflare Access ne sont pas sourcées dans le cahier des charges ; je n'ai pas pu les vérifier depuis la session (accès réseau bloqué). À confirmer sur la documentation de Cloudflare avant l'acceptation de cet ADR.
+D'après la [documentation de Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) (consultée le 24 octobre 2026), `cloudflared` « crée des connexions sortantes uniquement » vers le réseau de Cloudflare, ce qui justifie l'absence de port entrant.
+
+**Non vérifié** : la gratuité du tunnel et de Cloudflare Access (et le nombre d'utilisateurs inclus), car les pages de tarifs sont rendues côté client et n'ont pas pu être lues depuis la session. À confirmer sur la [page des offres Zero Trust](https://www.cloudflare.com/plans/zero-trust-services/) avant l'acceptation de cet ADR.
 
 ## Conséquences
 

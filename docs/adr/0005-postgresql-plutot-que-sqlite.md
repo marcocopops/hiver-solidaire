@@ -11,15 +11,15 @@ Le cahier des charges demande des tests d'intégration sur une vraie base (Testc
 
 ## Options envisagées
 
-1. **PostgreSQL** (conteneur dédié) : verrous de ligne (`SELECT … FOR UPDATE`) et isolation transactionnelle bien établis, outillage Spring, Flyway et Testcontainers courant, base identique en test, en développement et en production. En contrepartie, un service de plus à mettre à jour, superviser et sauvegarder, et une capacité largement surdimensionnée pour ce volume.
-2. **SQLite** (fichier) : aucun service à exploiter, sauvegarde par copie de fichier, parfaitement adapté à ce volume. En contrepartie, un seul écrivain à la fois (les écritures concurrentes sont sérialisées au niveau de la base, pas de verrou de ligne), un dialecte et un support Hibernate moins courants, et un fichier à protéger sur le disque de l'appli ; le conteneur d'application est en lecture seule, ce qui impose un volume dédié.
+1. **PostgreSQL** (conteneur dédié) : verrous de ligne (`SELECT … FOR UPDATE` : les autres transactions qui tentent de modifier ou verrouiller ces lignes attendent la fin de la transaction en cours, d'après la [documentation](https://www.postgresql.org/docs/current/explicit-locking.html)) et isolation transactionnelle bien établis, outillage Spring, Flyway et Testcontainers courant, base identique en test, en développement et en production. En contrepartie, un service de plus à mettre à jour, superviser et sauvegarder, et une capacité largement surdimensionnée pour ce volume.
+2. **SQLite** (fichier) : aucun service à exploiter, sauvegarde par copie de fichier, parfaitement adapté à ce volume. En contrepartie, un seul écrivain à tout instant (lecteurs illimités) : les écritures font la queue, ce qui ne pose pas de problème dans beaucoup de situations selon la [documentation](https://www.sqlite.org/whentouse.html) et suffirait pour ~20 bénévoles, mais le verrou porte sur la base entière, pas sur une ligne. S'y ajoutent un dialecte et un support Hibernate moins courants, et un fichier à protéger ; le conteneur d'application étant en lecture seule, il faudrait un volume dédié.
 3. **H2** (embarqué) : pratique en test, mais une autre base que celle de la production, donc des différences de comportement non détectées par les tests.
 
 ## Décision
 
 Option 1 : PostgreSQL, avec Flyway. Le verrou de ligne sur la soirée traduit directement R1, et les tests d'intégration tournent sur le même moteur que la production.
 
-SQLite aurait suffi pour le volume et simplifierait l'exploitation ; le choix de PostgreSQL privilégie la fidélité de test et un modèle de verrouillage explicite, au prix d'un conteneur supplémentaire. Je n'ai pas pu relire la documentation officielle de PostgreSQL et de SQLite depuis la session (accès réseau bloqué) : les affirmations sur les verrous et la concurrence sont à recouper avec leurs sources avant l'acceptation.
+SQLite aurait suffi pour le volume et simplifierait l'exploitation ; le choix de PostgreSQL privilégie la fidélité de test et un modèle de verrouillage explicite par ligne, au prix d'un conteneur supplémentaire.
 
 ## Conséquences
 
