@@ -1,4 +1,8 @@
 # PostgreSQL de développement uniquement. La production est dans deploy/compose.prod.yaml.
+# Nom de projet distinct de la production (« hiver-solidaire ») : sans lui, lancer ce fichier
+# sur le serveur remplacerait le conteneur db de production et réutiliserait son volume.
+name: hiver-solidaire-dev
+
 services:
   db:
     image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
@@ -7,7 +11,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-hiver}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?copier .env.example vers .env}
     ports:
-      - "127.0.0.1:5432:5432"
+      # 5433 par défaut : 5432 est souvent déjà pris par un autre PostgreSQL sur la machine.
+      - "127.0.0.1:${DEV_DB_PORT:-5433}:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:

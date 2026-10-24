@@ -17,7 +17,7 @@ La référence est `docs/cahier-des-charges.md` : règles métier R1 à R7 (§5)
 Mets cette section à jour si elles changent.
 
 - `./mvnw verify` : compilation, tests unitaires et d'intégration (Testcontainers : Docker doit tourner). Doit être vert avant chaque push.
-- `docker compose up -d` : PostgreSQL de développement (copier `.env.example` vers `.env`)
+- `docker compose up -d` : PostgreSQL de développement sur 127.0.0.1:5433, projet `hiver-solidaire-dev` distinct de la production (copier `.env.example` vers `.env`)
 - `./mvnw spring-boot:run` : application sur http://localhost:8080 ; santé sur http://localhost:8081/actuator/health
 - `docker build -t hiver-solidaire .` : image d'exécution (JRE 21, non-root)
 - Déploiement : `deploy/README.md`
