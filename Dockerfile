@@ -13,7 +13,7 @@ RUN --mount=type=cache,target=/root/.m2 ./mvnw -B -DskipTests package \
     && java -Djarmode=tools -jar target/app.jar extract --destination /workspace/extracted
 
 # --- Exécution : JRE 21, utilisateur non-root, système de fichiers en lecture seule ---------------
-FROM eclipse-temurin:21-jre-alpine@sha256:51ab5e3302e7141ce665ca3ea85e8b5cd648eafbc3c0c90dd79d6537684e4555
+FROM eclipse-temurin:21-jre-alpine@sha256:b48e02e0ea88d7bfb305335df94923bdef394905f4147dccd52e873cf17b1088
 RUN addgroup -S -g 10001 app && adduser -S -u 10001 -G app -H -s /sbin/nologin app
 WORKDIR /app
 COPY --from=build --chown=root:root /workspace/extracted/ /app/
