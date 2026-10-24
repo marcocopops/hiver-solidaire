@@ -14,6 +14,9 @@ RUN --mount=type=cache,target=/root/.m2 ./mvnw -B -DskipTests package \
 
 # --- Exécution : JRE 21, utilisateur non-root, système de fichiers en lecture seule ---------------
 FROM eclipse-temurin:21-jre-alpine@sha256:b48e02e0ea88d7bfb305335df94923bdef394905f4147dccd52e873cf17b1088
+# CVE-2026-111497 (brotli-libs, CRITICAL) : corrigée dans Alpine (1.2.1-r0) mais pas encore dans
+# l'image de base épinglée. Retirer cette ligne quand Dependabot proposera une image qui l'inclut.
+RUN apk upgrade --no-cache brotli-libs
 RUN addgroup -S -g 10001 app && adduser -S -u 10001 -G app -H -s /sbin/nologin app
 WORKDIR /app
 COPY --from=build --chown=root:root /workspace/extracted/ /app/
