@@ -8,16 +8,27 @@
     <link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
 <body>
-<!-- Navigation : retour au planning ; pour un bénévole connecté, ses inscriptions et la déconnexion (POST). -->
+<!-- Navigation : retour au planning ; pour un bénévole connecté, ses inscriptions, son compte et la déconnexion (POST). -->
 <nav class="nav" th:fragment="nav">
     <a th:href="@{/planning}" th:text="#{common.back.planning}">Retour au planning</a>
     <th:block th:if="${signedIn}">
         <a th:href="@{/mes-inscriptions}" th:text="#{common.myRegistrations}">Mes inscriptions</a>
+        <a th:href="@{/mon-compte}" th:text="#{common.myAccount}">Mon compte</a>
         <form class="nav__deconnexion" th:action="@{/deconnexion}" method="post">
             <button class="lien" type="submit" th:text="#{common.logout}">Me déconnecter</button>
         </form>
     </th:block>
 </nav>
+
+<!-- R6 : après la limite, le téléphone des coordinateurs (APP_COORDINATORS_PHONE), ou un message générique. -->
+<p class="aide" th:fragment="coordinators(intro)">
+    <th:block th:text="${intro}">Pour vous désinscrire maintenant,</th:block>
+    <th:block th:if="${coordinatorsPhone != null}">
+        <th:block th:text="#{coordinators.call}">appelez un coordinateur :</th:block>
+        <a th:href="${coordinatorsPhone.telUri}" th:text="${coordinatorsPhone.display}">01 99 00 12 34</a>
+    </th:block>
+    <th:block th:if="${coordinatorsPhone == null}" th:text="#{coordinators.contact}">contactez un coordinateur.</th:block>
+</p>
 
 <!-- Champs cachés qui portent le choix fait sur le planning (soirée, type, plat) d'une page à l'autre. -->
 <th:block th:fragment="choice(choice)">

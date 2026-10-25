@@ -14,8 +14,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 /**
  * Formulaire de première connexion (cahier des charges §6, étape 4). Une fois rempli, il n'est plus modifiable
- * ici : la modification du téléphone arrive avec « Mon compte » (S4). Le bénévole ne lit et n'écrit que ses
- * propres données : son identifiant vient de la session, jamais de la requête.
+ * ici : téléphone et pseudo se modifient dans « Mon compte » ({@link AccountController}). Le bénévole ne lit et
+ * n'écrit que ses propres données : son identifiant vient de la session, jamais de la requête.
  */
 @Controller
 class ProfileController {

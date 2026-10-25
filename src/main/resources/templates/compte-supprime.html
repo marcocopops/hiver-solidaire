@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head(#{account.deleted.title})}"></head>
+<body>
+<main class="page">
+    <nav th:replace="~{fragments :: nav}"></nav>
+    <h1 th:text="#{account.deleted.title}">Compte supprimé</h1>
+    <p th:text="#{account.deleted.text}">Votre compte a été supprimé.</p>
+</main>
+</body>
+</html>

@@ -332,6 +332,11 @@ a:focus-visible {
     margin: 0.25rem 0 0;
 }
 
+/* Action définitive (suppression du compte). */
+.bouton--danger {
+    background: var(--erreur);
+}
+
 .bouton--petit {
     padding: 0.625rem 1rem;
 }

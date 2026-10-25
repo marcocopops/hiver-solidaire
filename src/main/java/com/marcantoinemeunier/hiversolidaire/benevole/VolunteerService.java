@@ -58,6 +58,46 @@ public class VolunteerService {
         var volunteer = volunteers.findById(id).orElseThrow();
         volunteer.completeProfile(form.normalizedLastName(), form.normalizedFirstName(), pseudo,
                 form.normalizedPhone(), form.isRecontactNextSeason(), clock.instant());
+        saveCheckingPseudo(volunteer);
+    }
+
+    /** Données du bénévole pour « Mon compte ». */
+    @Transactional(readOnly = true)
+    public Account account(UUID id) {
+        return volunteers.findById(id).orElseThrow().toAccount();
+    }
+
+    /** Nouveau téléphone, déjà validé ({@link PhoneFields}). */
+    @Transactional
+    public void changePhone(UUID id, PhoneFields form) {
+        volunteers.findById(id).orElseThrow().changePhone(form.normalizedPhone(), clock.instant());
+    }
+
+    /**
+     * Nouveau pseudo : mêmes règles et même unicité qu'au premier profil. Le bénévole peut garder le sien ou en
+     * changer la casse.
+     *
+     * @param pseudo pseudo déjà normalisé par {@link Pseudo#normalize(String)}
+     * @throws PseudoTakenException si un autre bénévole a déjà ce pseudo
+     */
+    @Transactional
+    public void changePseudo(UUID id, String pseudo) {
+        if (volunteers.pseudoTakenByOther(pseudo, id)) {
+            throw new PseudoTakenException();
+        }
+        var volunteer = volunteers.findById(id).orElseThrow();
+        volunteer.changePseudo(pseudo, clock.instant());
+        saveCheckingPseudo(volunteer);
+    }
+
+    /** « Me recontacter la saison prochaine » : accord donné ou retiré (§7, consentement retirable). */
+    @Transactional
+    public void changeRecontact(UUID id, boolean recontactNextSeason) {
+        volunteers.findById(id).orElseThrow().changeRecontact(recontactNextSeason, clock.instant());
+    }
+
+    /** L'index unique {@code lower(pseudo)} tranche si deux bénévoles valident le même pseudo au même instant. */
+    private void saveCheckingPseudo(VolunteerEntity volunteer) {
         try {
             volunteers.saveAndFlush(volunteer);
         } catch (DataIntegrityViolationException e) {

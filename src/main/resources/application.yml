@@ -39,6 +39,9 @@ app:
   base-url: ${APP_BASE_URL:http://localhost:8080}
   mail:
     from: ${MAIL_FROM:hiver-solidaire@example.org}
+  # Téléphone des coordinateurs, affiché après la limite de désinscription (R6). Vide : message générique.
+  coordinators:
+    phone: ${APP_COORDINATORS_PHONE:}
 
 server:
   port: 8080

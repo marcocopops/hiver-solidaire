@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head(#{account.title})}"></head>
+<body>
+<main class="page">
+    <nav th:replace="~{fragments :: nav}"></nav>
+    <h1 th:text="#{account.title}">Mon compte</h1>
+    <p class="bandeau" role="status" th:if="${saved}" th:text="#{account.saved}">Modification enregistrée.</p>
+
+    <h2 th:text="#{account.data}">Vos données</h2>
+    <dl class="recap">
+        <dt th:text="#{account.email}">E-mail</dt>
+        <dd th:text="${account.email}">anne@example.org</dd>
+        <dt th:text="#{profile.lastName}">Nom</dt>
+        <dd th:text="${account.lastName}">Martin</dd>
+        <dt th:text="#{profile.firstName}">Prénom</dt>
+        <dd th:text="${account.firstName}">Anne</dd>
+        <dt th:text="#{profile.pseudo}">Pseudo</dt>
+        <dd th:text="${account.pseudo}">AnneM</dd>
+        <dt th:text="#{profile.phone}">Téléphone</dt>
+        <dd th:text="${account.phone}">+33600000001</dd>
+        <dt th:text="#{profile.recontact}">Me recontacter la saison prochaine</dt>
+        <dd th:text="${account.recontactNextSeason} ? #{account.yes} : #{account.no}">Non</dd>
+    </dl>
+    <p class="aide" th:text="#{account.email.readOnly}">L’adresse e-mail ne peut pas être modifiée.</p>
+
+    <h2 th:text="#{account.pseudo.title}">Changer de pseudo</h2>
+    <form class="formulaire" th:action="@{/mon-compte/pseudo}" th:object="${pseudoForm}" method="post" novalidate>
+        <label for="pseudo" th:text="#{account.pseudo.new}">Nouveau pseudo</label>
+        <input id="pseudo" type="text" autocomplete="nickname" required minlength="3" maxlength="20"
+               spellcheck="false" autocapitalize="off" th:field="*{pseudo}" aria-describedby="pseudo-hint"
+               th:attr="aria-invalid=${#fields.hasErrors('pseudo') or pseudoTaken != null} ? 'true' : 'false'">
+        <p class="aide" id="pseudo-hint" th:text="#{profile.pseudo.hint}">Votre pseudo est public.</p>
+        <p class="erreur" th:if="${#fields.hasErrors('pseudo')}" th:text="#{profile.error.pseudo}">Pseudo.</p>
+        <p class="erreur" th:if="${pseudoTaken != null}" th:text="#{profile.error.pseudoTaken(${pseudoTaken})}">
+            Pris.</p>
+        <button class="bouton" type="submit" th:text="#{account.pseudo.submit}">Changer de pseudo</button>
+    </form>
+
+    <h2 th:text="#{account.phone.title}">Changer de téléphone</h2>
+    <form class="formulaire" th:action="@{/mon-compte/telephone}" th:object="${phoneForm}" method="post" novalidate>
+        <fieldset class="telephone" aria-describedby="phone-hint">
+            <legend th:text="#{account.phone.new}">Nouveau numéro</legend>
+            <div class="telephone__champs">
+                <div class="telephone__indicatif">
+                    <label for="phoneCountryCode" th:text="#{profile.phoneCountryCode}">Indicatif</label>
+                    <input id="phoneCountryCode" type="text" autocomplete="tel-country-code" inputmode="tel"
+                           required maxlength="6" th:field="*{phoneCountryCode}"
+                           th:attr="aria-invalid=${#fields.hasErrors('phoneCountryCode')} ? 'true' : 'false'">
+                </div>
+                <div class="telephone__numero">
+                    <label for="phone" th:text="#{profile.phoneNumber}">Numéro</label>
+                    <input id="phone" type="tel" autocomplete="tel-national" inputmode="tel" required maxlength="30"
+                           th:field="*{phone}"
+                           th:attr="aria-invalid=${#fields.hasErrors('phone') or #fields.hasErrors('phoneValid')} ? 'true' : 'false'">
+                </div>
+            </div>
+        </fieldset>
+        <p class="aide" id="phone-hint" th:text="#{profile.phone.hint}">Indicatif +33 pour la France.</p>
+        <p class="erreur" th:if="${#fields.hasErrors('phoneCountryCode')}" th:text="#{profile.error.phoneCountryCode}">
+            Indicatif.</p>
+        <p class="erreur" th:if="${#fields.hasErrors('phone') or #fields.hasErrors('phoneValid')}"
+           th:text="#{profile.error.phone}">Téléphone.</p>
+        <button class="bouton" type="submit" th:text="#{account.phone.submit}">Changer de téléphone</button>
+    </form>
+
+    <h2 th:text="#{account.recontact.title}">Conservation de vos données</h2>
+    <form class="formulaire" th:action="@{/mon-compte/recontact}" method="post">
+        <div class="case">
+            <input id="recontactNextSeason" type="checkbox" name="recontactNextSeason" value="true"
+                   th:checked="${account.recontactNextSeason}" aria-describedby="recontact-hint">
+            <label for="recontactNextSeason" th:text="#{profile.recontact}">Me recontacter</label>
+        </div>
+        <p class="aide" id="recontact-hint" th:text="#{profile.recontact.hint}">Sans cette case…</p>
+        <button class="bouton" type="submit" th:text="#{account.recontact.submit}">Enregistrer</button>
+    </form>
+
+    <h2 th:text="#{account.delete.title}">Supprimer mon compte</h2>
+    <p th:text="#{account.delete.intro}">Vos données seront effacées.</p>
+    <p><a class="bouton" th:href="@{/mon-compte/supprimer}" th:text="#{account.delete.link}">Supprimer mon compte</a></p>
+    <p><a th:href="@{/notice}" th:text="#{profile.notice}">Notice</a></p>
+</main>
+</body>
+</html>

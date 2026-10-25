@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head(#{cancellation.confirm.title})}"></head>
+<body>
+<main class="page">
+    <nav th:replace="~{fragments :: nav}"></nav>
+    <h1 th:text="#{cancellation.confirm.title}">Me désinscrire</h1>
+    <dl class="recap">
+        <dt th:text="#{registration.recap.evening}">Soirée</dt>
+        <dd th:text="${label}">Lun. 4 → mar. 5 janv.</dd>
+        <dt th:text="#{registration.recap.option}">Ce que vous proposez</dt>
+        <dd th:text="#{${'registration.option.' + option}}">Type</dd>
+    </dl>
+    <th:block th:if="${cancellable}">
+        <p th:text="#{cancellation.confirm.text}">Votre place sera libérée.</p>
+        <form class="formulaire" th:action="@{/mes-inscriptions/annuler}" method="post">
+            <input type="hidden" name="soiree" th:value="${date}">
+            <button class="bouton" type="submit" th:text="#{cancellation.confirm.submit}">Confirmer</button>
+        </form>
+    </th:block>
+    <th:block th:unless="${cancellable}">
+        <p class="bandeau" th:text="#{cancellation.tooLate}">Trop tard.</p>
+        <p th:replace="~{fragments :: coordinators(#{myRegistrations.tooLate})}">Appelez.</p>
+    </th:block>
+    <p><a th:href="@{/mes-inscriptions}" th:text="#{cancellation.confirm.back}">Garder mon inscription</a></p>
+</main>
+</body>
+</html>

@@ -1,7 +1,11 @@
 package com.marcantoinemeunier.hiversolidaire.inscription;
 
+import com.marcantoinemeunier.hiversolidaire.notification.CoordinatorAlerts;
+import com.marcantoinemeunier.hiversolidaire.planning.domain.Cancellation;
+import com.marcantoinemeunier.hiversolidaire.planning.domain.CancellationDecision;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.DishChoice;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.Evening;
+import com.marcantoinemeunier.hiversolidaire.planning.domain.IncompleteEveningAlert;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.ParisTime;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.Registration;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.RegistrationDecision;
@@ -42,13 +46,15 @@ public class RegistrationService {
     private final SeasonRepository seasons;
     private final EveningRepository evenings;
     private final RegistrationRepository registrations;
+    private final CoordinatorAlerts alerts;
     private final Clock clock;
 
     RegistrationService(SeasonRepository seasons, EveningRepository evenings, RegistrationRepository registrations,
-            Clock clock) {
+            CoordinatorAlerts alerts, Clock clock) {
         this.seasons = seasons;
         this.evenings = evenings;
         this.registrations = registrations;
+        this.alerts = alerts;
         this.clock = clock;
     }
 
@@ -91,6 +97,53 @@ public class RegistrationService {
         return decision;
     }
 
+    /**
+     * Désinscription (R6) sous le même verrou que l'inscription (R1) : une annulation et une inscription simultanées
+     * sur la même soirée s'exécutent l'une après l'autre. Le bénévole est celui de la session : il n'annule que sa
+     * propre inscription.
+     */
+    @Transactional
+    public CancellationDecision cancel(UUID volunteerId, LocalDate eveningDate) {
+        var season = currentSeason().orElseThrow(UnknownEveningException::new);
+        var eveningId = evenings.findIdBySeasonAndDate(season.id(), eveningDate)
+                .orElseThrow(UnknownEveningException::new);
+        return cancelUnderLock(volunteerId, eveningId, true);
+    }
+
+    /**
+     * Suppression du compte : annule toutes les inscriptions actives dont la soirée n'est pas passée, y compris
+     * après la limite de R6. Les soirées sont verrouillées dans l'ordre des dates : pas d'interblocage avec une
+     * inscription concurrente, qui n'en verrouille qu'une.
+     */
+    @Transactional
+    public void cancelAllUpcoming(UUID volunteerId) {
+        for (var eveningId : registrations.findActiveEveningIds(volunteerId, ParisTime.today(clock.instant()))) {
+            cancelUnderLock(volunteerId, eveningId, false);
+        }
+    }
+
+    private CancellationDecision cancelUnderLock(UUID volunteerId, UUID eveningId, boolean enforceDeadline) {
+        var evening = evenings.lockById(eveningId).orElseThrow(UnknownEveningException::new);
+        var season = seasons.findById(evening.seasonId()).orElseThrow(UnknownEveningException::new);
+        var now = clock.instant();
+        var before = toDomain(season, evening);
+        var decision = before.decideCancellation(volunteerId, now);
+        if (decision == CancellationDecision.NOT_REGISTERED
+                || (decision == CancellationDecision.TOO_LATE && enforceDeadline)) {
+            return decision;
+        }
+        registrations.findActive(eveningId, volunteerId).orElseThrow().cancel(now);
+        if (IncompleteEveningAlert.triggeredBy(before, before.without(volunteerId), ParisTime.today(now))) {
+            alerts.eveningIncomplete(eveningId);
+        }
+        return CancellationDecision.ACCEPTED;
+    }
+
+    /** R6 : le bénévole peut encore se désinscrire seul de cette soirée. */
+    public boolean cancellable(LocalDate eveningDate) {
+        return Cancellation.allowed(eveningDate, clock.instant());
+    }
+
     @Transactional(readOnly = true)
     public Optional<EveningChoice> choice(LocalDate date, Optional<UUID> volunteerId) {
         return currentSeason().flatMap(season -> evenings.findBySeasonAndDate(season.id(), date)
@@ -124,12 +177,19 @@ public class RegistrationService {
         return registrations.findUpcoming(volunteerId, ParisTime.today(clock.instant()));
     }
 
+    /** Inscription active à venir du bénévole sur cette soirée, et seulement la sienne. */
+    @Transactional(readOnly = true)
+    public Optional<UpcomingRegistration> upcoming(UUID volunteerId, LocalDate eveningDate) {
+        return upcoming(volunteerId).stream().filter(registration -> registration.date().equals(eveningDate))
+                .findFirst();
+    }
+
     private Optional<SeasonEntity> currentSeason() {
         return seasons.findCurrent(ParisTime.today(clock.instant()));
     }
 
     private Evening toDomain(SeasonEntity season, EveningEntity evening) {
-        var existing = registrations.findByEvening(evening.id()).stream().map(RegistrationEntity::toDomain).toList();
+        var existing = registrations.findActiveByEvening(evening.id()).stream().map(RegistrationEntity::toDomain).toList();
         return evening.toDomain(season.needs(), existing);
     }
 
