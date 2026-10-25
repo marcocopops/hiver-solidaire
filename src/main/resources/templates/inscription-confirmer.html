@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head(#{registration.confirm.title})}"></head>
+<body>
+<main class="page">
+    <nav th:replace="~{fragments :: nav}"></nav>
+    <h1 th:text="#{registration.confirm.title}">Confirmer mon inscription</h1>
+    <dl class="recap">
+        <dt th:text="#{registration.recap.evening}">Soirée</dt>
+        <dd th:text="${label}">Lun. 4 → mar. 5 janv.</dd>
+        <dt th:text="#{registration.recap.option}">Ce que vous proposez</dt>
+        <dd th:text="#{${'registration.option.' + choice.choiceParam()}}">Type</dd>
+    </dl>
+    <p class="aide" th:if="${choice.type.name() == 'PREPARE_AT_HOME'}" th:text="#{registration.hint.atHome}">
+        Remise organisée.</p>
+    <form class="formulaire" th:action="@{/inscription}" method="post">
+        <th:block th:replace="~{fragments :: choice(${choice})}"></th:block>
+        <button class="bouton" type="submit" th:text="#{registration.confirm.submit}">Confirmer</button>
+    </form>
+    <p><a th:href="@{/inscription(soiree=${choice.eveningDate})}" th:text="#{registration.confirm.change}">
+        Changer</a></p>
+</main>
+</body>
+</html>

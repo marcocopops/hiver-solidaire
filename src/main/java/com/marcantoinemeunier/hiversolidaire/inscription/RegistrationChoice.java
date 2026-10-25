@@ -2,24 +2,28 @@ package com.marcantoinemeunier.hiversolidaire.inscription;
 
 import com.marcantoinemeunier.hiversolidaire.planning.domain.DishChoice;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.RegistrationType;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 import org.springframework.web.util.UriComponentsBuilder;
 
 /**
  * Choix fait sur le planning (soirée, type, plat), porté de page en page par deux paramètres : {@code soiree}
- * (identifiant de la soirée) et {@code choix} ({@code TYPE} ou {@code TYPE.PLAT}).
+ * (date du soir J, unique dans la saison : aucun identifiant technique sur les pages publiques) et {@code choix}
+ * ({@code TYPE} ou {@code TYPE.PLAT}).
  *
  * <p>Le lien magique le transporte aussi : le choix survit à l'ouverture du lien sur un autre appareil ou un
  * autre navigateur. Il ne contient aucune donnée personnelle. Ce n'est qu'une intention : la disponibilité est
  * revérifiée à la confirmation. Toute valeur est relue ici, jamais recopiée : pas de redirection ouverte.
  */
-public record RegistrationChoice(UUID eveningId, RegistrationType type, DishChoice dishChoice) {
+public record RegistrationChoice(LocalDate eveningDate, RegistrationType type, DishChoice dishChoice) {
 
     public static final String EVENING_PARAM = "soiree";
     public static final String CHOICE_PARAM = "choix";
 
     public RegistrationChoice {
+        Objects.requireNonNull(eveningDate, "eveningDate");
         type.coveredPosts(dishChoice);
     }
 
@@ -29,15 +33,15 @@ public record RegistrationChoice(UUID eveningId, RegistrationType type, DishChoi
             return Optional.empty();
         }
         try {
-            var eveningId = UUID.fromString(evening);
+            var eveningDate = LocalDate.parse(evening);
             var parts = choice.split("\\.", -1);
             if (parts.length > 2) {
                 return Optional.empty();
             }
             var type = RegistrationType.valueOf(parts[0]);
             var dish = parts.length == 2 ? DishChoice.valueOf(parts[1]) : null;
-            return Optional.of(new RegistrationChoice(eveningId, type, dish));
-        } catch (IllegalArgumentException e) {
+            return Optional.of(new RegistrationChoice(eveningDate, type, dish));
+        } catch (IllegalArgumentException | DateTimeParseException e) {
             return Optional.empty();
         }
     }
@@ -52,7 +56,7 @@ public record RegistrationChoice(UUID eveningId, RegistrationType type, DishChoi
     }
 
     public UriComponentsBuilder appendTo(UriComponentsBuilder uri) {
-        return uri.queryParam(EVENING_PARAM, eveningId).queryParam(CHOICE_PARAM, choiceParam());
+        return uri.queryParam(EVENING_PARAM, eveningDate).queryParam(CHOICE_PARAM, choiceParam());
     }
 
     /** Chemin local suivi du choix, par exemple {@code /inscription/confirmer?soiree=…&choix=…}. */

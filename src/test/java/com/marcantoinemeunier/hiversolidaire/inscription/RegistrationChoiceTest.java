@@ -4,32 +4,33 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.marcantoinemeunier.hiversolidaire.planning.domain.DishChoice;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.RegistrationType;
-import java.util.UUID;
+import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 class RegistrationChoiceTest {
 
-    private static final String EVENING = "3f8e5a8e-8a8b-4c3e-9a55-1c7f2d1e0b11";
+    private static final String EVENING = "2027-01-04";
 
     @Test
     void parses_a_type_with_its_dish() {
         assertThat(RegistrationChoice.parse(EVENING, "PREPARE_AT_HOME.SIDES")).contains(
-                new RegistrationChoice(UUID.fromString(EVENING), RegistrationType.PREPARE_AT_HOME, DishChoice.SIDES));
+                new RegistrationChoice(LocalDate.parse(EVENING), RegistrationType.PREPARE_AT_HOME, DishChoice.SIDES));
     }
 
     @Test
     void parses_a_type_without_dish() {
         assertThat(RegistrationChoice.parse(EVENING, "BREAKFAST")).contains(
-                new RegistrationChoice(UUID.fromString(EVENING), RegistrationType.BREAKFAST, null));
+                new RegistrationChoice(LocalDate.parse(EVENING), RegistrationType.BREAKFAST, null));
     }
 
     @ParameterizedTest
     @CsvSource(nullValues = "null", value = {
         "null, BREAKFAST",
         EVENING + ", null",
-        "not-a-uuid, BREAKFAST",
+        "not-a-date, BREAKFAST",
+        "2027-02-30, BREAKFAST",
         EVENING + ", UNKNOWN",
         EVENING + ", BREAKFAST.SIDES",
         EVENING + ", PREPARE_AT_HOME",

@@ -36,6 +36,10 @@ public final class Evening {
         return date;
     }
 
+    public List<Registration> registrations() {
+        return registrations;
+    }
+
     /** Fermée par un coordinateur (R7). */
     public boolean closed() {
         return closed;
