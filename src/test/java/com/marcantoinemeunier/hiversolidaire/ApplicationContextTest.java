@@ -27,8 +27,11 @@ class ApplicationContextTest {
     }
 
     @Test
-    void flyway_applies_baseline_migration() {
-        assertThat(flyway.info().applied()).hasSize(1);
-        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("1");
+    void flyway_applies_every_migration_from_baseline() {
+        var info = flyway.info();
+        assertThat(info.applied()).isNotEmpty();
+        assertThat(info.applied()[0].getVersion().getVersion()).isEqualTo("1");
+        assertThat(info.applied()).allMatch(migration -> migration.getState().isApplied());
+        assertThat(info.pending()).isEmpty();
     }
 }

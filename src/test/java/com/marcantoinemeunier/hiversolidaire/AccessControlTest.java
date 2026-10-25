@@ -1,10 +1,13 @@
 package com.marcantoinemeunier.hiversolidaire;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -56,5 +59,31 @@ class AccessControlTest {
     @Test
     void post_without_csrf_token_is_rejected() throws Exception {
         assertThat(call(post("/")).getStatus()).isEqualTo(403);
+    }
+
+    @Test
+    void planning_is_public() throws Exception {
+        assertThat(call(get("/planning")).getStatus()).isEqualTo(200);
+    }
+
+    @Test
+    void planning_is_read_only() throws Exception {
+        assertThat(call(post("/planning")).getStatus()).isEqualTo(403);
+        assertThat(call(post("/planning").with(csrf())).getStatus()).isIn(401, 403, 405);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "/planning/00000000-0000-0000-0000-000000000000",
+        "/planning/inscrits",
+        "/planning.csv",
+        "/soirees/00000000-0000-0000-0000-000000000000",
+        "/inscriptions",
+        "/benevoles",
+        "/api/planning",
+        "/admin/soirees"
+    })
+    void no_route_exposes_registrations_or_contact_details(String url) throws Exception {
+        assertThat(call(get(url)).getStatus()).isIn(401, 403, 404);
     }
 }

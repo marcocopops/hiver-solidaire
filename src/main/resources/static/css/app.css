@@ -2,6 +2,15 @@
     --fond: #f6f3ee;
     --texte: #1f2933;
     --accent: #0b5c8c;
+    /* Statut d'une soirée (R5) : texte foncé sur fond clair, contraste supérieur à 7:1 (WCAG AA). */
+    --complete-fond: #d8f0df;
+    --complete-texte: #14532d;
+    --partielle-fond: #fde7c4;
+    --partielle-texte: #7a3e00;
+    --vide-fond: #fbd5d5;
+    --vide-texte: #7f1d1d;
+    --fermee-fond: #e5e7eb;
+    --fermee-texte: #374151;
 }
 
 * {
@@ -30,6 +39,98 @@ h1 {
 
 .lead {
     font-size: 1.25rem;
+}
+
+a {
+    color: var(--accent);
+}
+
+.bouton {
+    display: inline-block;
+    padding: 0.75rem 1.25rem;
+    border-radius: 0.5rem;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.bandeau {
+    padding: 0.75rem 1rem;
+    border-left: 0.25rem solid var(--accent);
+    background: #fff;
+}
+
+.soirees {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.soiree {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.25rem 0.75rem;
+    margin-bottom: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-left: 0.375rem solid;
+    border-radius: 0.375rem;
+    background: #fff;
+}
+
+.soiree__date {
+    font-weight: 600;
+}
+
+.statut {
+    padding: 0.125rem 0.625rem;
+    border-radius: 1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.soiree__manque {
+    flex-basis: 100%;
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+.soiree--complete {
+    border-color: var(--complete-texte);
+}
+
+.soiree--complete .statut {
+    background: var(--complete-fond);
+    color: var(--complete-texte);
+}
+
+.soiree--partial {
+    border-color: var(--partielle-texte);
+}
+
+.soiree--partial .statut {
+    background: var(--partielle-fond);
+    color: var(--partielle-texte);
+}
+
+.soiree--empty {
+    border-color: var(--vide-texte);
+}
+
+.soiree--empty .statut {
+    background: var(--vide-fond);
+    color: var(--vide-texte);
+}
+
+.soiree--closed {
+    border-color: var(--fermee-texte);
+}
+
+.soiree--closed .statut {
+    background: var(--fermee-fond);
+    color: var(--fermee-texte);
 }
 
 @media (min-width: 48rem) {
