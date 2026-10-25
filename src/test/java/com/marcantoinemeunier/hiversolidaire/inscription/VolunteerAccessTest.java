@@ -7,6 +7,7 @@ import com.marcantoinemeunier.hiversolidaire.RecordingMagicLinkSender;
 import com.marcantoinemeunier.hiversolidaire.TestClockAndMailConfiguration;
 import com.marcantoinemeunier.hiversolidaire.TestcontainersConfiguration;
 import java.time.LocalDate;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -150,5 +151,15 @@ class VolunteerAccessTest {
         assertThat(response.getContentAsString()).contains("Indiquez votre nom")
                 .contains("Indiquez un numéro de téléphone français").doesNotContain("<script>");
         assertThat(browser.get("/mes-inscriptions").getRedirectedUrl()).isEqualTo("/profil");
+    }
+
+    @Test
+    void every_profile_field_has_a_label_and_recontact_is_unchecked() throws Exception {
+        var page = signedIn(false).get("/profil").getContentAsString();
+
+        for (var id : List.of("lastName", "firstName", "phone", "recontactNextSeason")) {
+            assertThat(page).contains("for=\"" + id + "\"").contains("id=\"" + id + "\"");
+        }
+        assertThat(page).doesNotContain("checked");
     }
 }
