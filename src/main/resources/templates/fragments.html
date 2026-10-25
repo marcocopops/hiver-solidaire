@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title} + ' · ' + #{app.name}">Page · Hiver Solidaire</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<!-- Navigation : retour au planning ; pour un bénévole connecté, ses inscriptions et la déconnexion (POST). -->
+<nav class="nav" th:fragment="nav">
+    <a th:href="@{/planning}" th:text="#{common.back.planning}">Retour au planning</a>
+    <th:block th:if="${signedIn}">
+        <a th:href="@{/mes-inscriptions}" th:text="#{common.myRegistrations}">Mes inscriptions</a>
+        <form class="nav__deconnexion" th:action="@{/deconnexion}" method="post">
+            <button class="lien" type="submit" th:text="#{common.logout}">Me déconnecter</button>
+        </form>
+    </th:block>
+</nav>
+
+<!-- Champs cachés qui portent le choix fait sur le planning (soirée, type, plat) d'une page à l'autre. -->
+<th:block th:fragment="choice(choice)">
+    <th:block th:if="${choice != null}">
+        <input type="hidden" name="soiree" th:value="${choice.eveningId}">
+        <input type="hidden" name="choix" th:value="${choice.choiceParam()}">
+    </th:block>
+</th:block>
+</body>
+</html>

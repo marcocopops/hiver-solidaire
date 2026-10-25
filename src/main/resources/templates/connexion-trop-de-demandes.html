@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head(#{login.tooMany.title})}"></head>
+<body>
+<main class="page">
+    <nav th:replace="~{fragments :: nav}"></nav>
+    <h1 th:text="#{login.tooMany.title}">Trop de demandes</h1>
+    <p th:text="#{login.tooMany.text}">Réessayez dans une heure.</p>
+</main>
+</body>
+</html>

@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head(#{login.confirm.title})}"></head>
+<body>
+<main class="page">
+    <h1 th:text="#{login.confirm.title}">Me connecter</h1>
+    <p th:text="#{login.confirm.text}">Appuyez sur le bouton pour vous connecter.</p>
+    <!-- Ouvrir le lien ne consomme pas le jeton : seul ce POST, protégé par CSRF, connecte (ADR-0003). -->
+    <form class="formulaire" th:action="@{/login/ott}" method="post">
+        <input type="hidden" name="token" th:value="${token}">
+        <th:block th:replace="~{fragments :: choice(${choice})}"></th:block>
+        <button class="bouton" type="submit" th:text="#{login.confirm.submit}">Me connecter</button>
+    </form>
+</main>
+</body>
+</html>

@@ -45,18 +45,7 @@ server:
   # Derrière cloudflared : prend en compte X-Forwarded-*. Seul cloudflared peut joindre l'appli
   # (réseau Docker dédié, aucun port publié sur l'hôte).
   forward-headers-strategy: native
-  servlet:
-    session:
-      # Cookie de session (cahier des charges §8) : préfixe __Host- (Secure, Path=/, sans Domain), HttpOnly,
-      # SameSite=Lax. Secure est forcé, y compris en local : les navigateurs acceptent les cookies Secure sur
-      # http://localhost. Appliqué par Spring Session à son DefaultCookieSerializer.
-      cookie:
-        name: __Host-SESSION
-        path: /
-        secure: true
-        http-only: true
-        same-site: lax
-        max-age: 30d
+  # Cookie de session : voir auth.SessionCookieConfig (__Host-SESSION, Secure, HttpOnly, SameSite=Lax, 30 jours).
   error:
     include-message: never
     include-stacktrace: never
