@@ -12,7 +12,10 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
 
-/** Inscription d'un bénévole sur une soirée. Créée seulement par l'inscription, sous le verrou de R1. */
+/**
+ * Inscription d'un bénévole sur une soirée. Créée par l'inscription et annulée par la désinscription, toutes deux
+ * sous le verrou de R1. Une inscription annulée reste en base mais ne compte plus (R1, R2, R3, R5).
+ */
 @Entity
 @Table(name = "registration")
 public class RegistrationEntity {
@@ -37,6 +40,9 @@ public class RegistrationEntity {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(name = "cancelled_at")
+    private Instant cancelledAt;
+
     protected RegistrationEntity() {
     }
 
@@ -55,6 +61,11 @@ public class RegistrationEntity {
 
     public UUID volunteerId() {
         return volunteerId;
+    }
+
+    /** Annulation logique (R6). À n'appeler que sous le verrou de la soirée. */
+    public void cancel(Instant now) {
+        this.cancelledAt = now;
     }
 
     public Registration toDomain() {

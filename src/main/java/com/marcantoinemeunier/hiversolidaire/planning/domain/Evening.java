@@ -7,6 +7,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 
 /** Une soirée : du dîner le soir J au petit-déjeuner le matin J+1. */
 public final class Evening {
@@ -89,6 +90,36 @@ public final class Evening {
             return RegistrationDecision.FULL;
         }
         return RegistrationDecision.ACCEPTED;
+    }
+
+    /** R6 : contrôle de la désinscription d'un bénévole. Une soirée fermée n'empêche pas de libérer une place. */
+    public CancellationDecision decideCancellation(UUID volunteerId, Instant now) {
+        if (registrations.stream().noneMatch(registration -> volunteerId.equals(registration.volunteerId()))) {
+            return CancellationDecision.NOT_REGISTERED;
+        }
+        if (!Cancellation.allowed(date, now)) {
+            return CancellationDecision.TOO_LATE;
+        }
+        return CancellationDecision.ACCEPTED;
+    }
+
+    /** La même soirée sans l'inscription du bénévole : R1, R2, R3 et R5 sont recalculés sans elle. */
+    public Evening without(UUID volunteerId) {
+        return new Evening(date, closed, needs, registrations.stream()
+                .filter(registration -> !volunteerId.equals(registration.volunteerId()))
+                .toList());
+    }
+
+    /** Postes qui couvraient leur minimum ici et ne le couvrent plus dans {@code after}. */
+    public List<Post> lostMinimums(Evening after) {
+        var lost = new ArrayList<Post>();
+        for (Post post : Post.values()) {
+            var minimum = needs.of(post).minimum();
+            if (occupied(post) >= minimum && after.occupied(post) < minimum) {
+                lost.add(post);
+            }
+        }
+        return lost;
     }
 
     /** R4 : préparations chez soi qui n'ont pas de récupération le même soir (une récupération par préparation). */

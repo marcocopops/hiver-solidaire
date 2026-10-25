@@ -19,6 +19,16 @@
     </th:block>
 </nav>
 
+<!-- R6 : après la limite, le téléphone des coordinateurs (APP_COORDINATORS_PHONE), ou un message générique. -->
+<p class="aide" th:fragment="coordinators(intro)">
+    <th:block th:text="${intro}">Pour vous désinscrire maintenant,</th:block>
+    <th:block th:if="${coordinatorsPhone != null}">
+        <th:block th:text="#{coordinators.call}">appelez un coordinateur :</th:block>
+        <a th:href="${coordinatorsPhone.telUri}" th:text="${coordinatorsPhone.display}">01 99 00 12 34</a>
+    </th:block>
+    <th:block th:if="${coordinatorsPhone == null}" th:text="#{coordinators.contact}">contactez un coordinateur.</th:block>
+</p>
+
 <!-- Champs cachés qui portent le choix fait sur le planning (soirée, type, plat) d'une page à l'autre. -->
 <th:block th:fragment="choice(choice)">
     <th:block th:if="${choice != null}">

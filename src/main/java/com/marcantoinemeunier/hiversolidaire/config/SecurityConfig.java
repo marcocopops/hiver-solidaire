@@ -35,7 +35,7 @@ public class SecurityConfig {
 
     /** Pages du bénévole connecté : sans connexion, on l'envoie vers {@code /connexion}. */
     private static final String[] VOLUNTEER_PAGES = {
-        "/profil", "/inscription/confirmer", "/inscription/confirmee", "/mes-inscriptions"
+        "/profil", "/inscription/confirmer", "/inscription/confirmee", "/mes-inscriptions", "/mes-inscriptions/annuler"
     };
 
     /**
@@ -68,7 +68,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/connexion", "/login/ott").permitAll()
                 .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
                 .requestMatchers(HttpMethod.GET, VOLUNTEER_PAGES).hasRole(VolunteerPrincipal.ROLE)
-                .requestMatchers(HttpMethod.POST, "/profil", "/inscription", "/deconnexion")
+                .requestMatchers(HttpMethod.POST, "/profil", "/inscription", "/mes-inscriptions/annuler", "/deconnexion")
                         .hasRole(VolunteerPrincipal.ROLE)
                 .anyRequest().denyAll())
                 .exceptionHandling(handling -> handling.authenticationEntryPoint(entryPoint()));

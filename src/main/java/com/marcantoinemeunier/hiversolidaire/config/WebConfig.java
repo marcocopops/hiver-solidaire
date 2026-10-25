@@ -16,6 +16,7 @@ class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(profileRequired).addPathPatterns("/inscription", "/inscription/**", "/mes-inscriptions");
+        registry.addInterceptor(profileRequired).addPathPatterns("/inscription", "/inscription/**", "/mes-inscriptions",
+                "/mes-inscriptions/**");
     }
 }

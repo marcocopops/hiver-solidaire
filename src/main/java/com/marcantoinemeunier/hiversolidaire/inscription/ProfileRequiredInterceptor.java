@@ -8,7 +8,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 /**
  * Avant toute inscription, le bénévole remplit le formulaire de première connexion (§6, étape 4) : sinon il y est
- * renvoyé, avec son choix. Enregistré sur {@code /inscription/**} et {@code /mes-inscriptions} ; le choix d'un
+ * renvoyé, avec son choix. Enregistré sur {@code /inscription/**} et {@code /mes-inscriptions/**} ; le choix d'un
  * type ({@code GET /inscription}), public, n'est pas concerné.
  */
 @Component
