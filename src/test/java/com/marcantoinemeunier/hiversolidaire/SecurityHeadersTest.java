@@ -42,4 +42,13 @@ class SecurityHeadersTest {
         var response = mockMvc.perform(get("/")).andReturn().getResponse();
         assertThat(response.getHeader("Strict-Transport-Security")).isNull();
     }
+
+    @Test
+    void no_page_is_indexed_by_search_engines() throws Exception {
+        // Le planning affiche des pseudos ; aucune page de l'appli n'a besoin d'être indexée.
+        for (var url : new String[] {"/", "/planning", "/connexion", "/notice", "/css/app.css"}) {
+            var response = mockMvc.perform(get(url)).andReturn().getResponse();
+            assertThat(response.getHeader("X-Robots-Tag")).as(url).isEqualTo("noindex, nofollow");
+        }
+    }
 }

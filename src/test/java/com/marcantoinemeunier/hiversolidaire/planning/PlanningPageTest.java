@@ -57,8 +57,16 @@ class PlanningPageTest {
     }
 
     private void register(LocalDate eveningDate, String type, String dishChoice) {
+        register(eveningDate, type, dishChoice, "P" + java.util.UUID.randomUUID().toString().substring(0, 8));
+    }
+
+    /** Inscription d'un bénévole au profil complet (nom de famille factice « Dupontsecret », jamais affiché). */
+    private void register(LocalDate eveningDate, String type, String dishChoice, String pseudo) {
         var volunteerId = java.util.UUID.randomUUID();
-        jdbc.update("INSERT INTO volunteer (id, email) VALUES (?, ?)", volunteerId, volunteerId + "@example.org");
+        jdbc.update("""
+                INSERT INTO volunteer (id, email, last_name, first_name, phone, pseudo, profile_completed_at)
+                VALUES (?, ?, 'Dupontsecret', 'Anne', '+33600000001', ?, now())
+                """, volunteerId, volunteerId + "@example.org", pseudo);
         jdbc.update("""
                 INSERT INTO registration (id, evening_id, volunteer_id, type, dish_choice)
                 SELECT gen_random_uuid(), e.id, ?, ?, ? FROM evening e WHERE e.evening_date = ?
@@ -159,5 +167,80 @@ class PlanningPageTest {
         var body = mockMvc.perform(get("/")).andReturn().getResponse().getContentAsString();
 
         assertThat(body).contains("href=\"/planning\"");
+    }
+
+    /** Bloc d'une soirée sur la page, de son libellé au début de la soirée suivante. */
+    private static String eveningBlock(String body, String label) {
+        var start = body.indexOf(label);
+        assertThat(start).as(label).isPositive();
+        var end = body.indexOf("class=\"soiree ", start);
+        return body.substring(start, end < 0 ? body.length() : end);
+    }
+
+    /** Texte visible d'un fragment HTML, espaces regroupés. */
+    private static String text(String html) {
+        return html.replaceAll("<[^>]+>", " ").replaceAll("\\s+", " ").strip();
+    }
+
+    @Test
+    void shows_the_pseudos_by_post_including_on_a_complete_evening() throws Exception {
+        var complete = LocalDate.of(2027, 1, 4);
+        register(complete, "PREPARE_AND_SHARE", "MAIN_DISH", "MarieD");
+        register(complete, "PREPARE_AT_HOME", "SIDES", "Paul_B");
+        register(complete, "PICK_UP_AND_SHARE", null, "Zoé42");
+        register(complete, "NIGHT_AND_DINNER", null, "Jean-L");
+        register(complete, "BREAKFAST", null, "Léa");
+
+        var block = text(eveningBlock(page(), "Lun. 4 → mar. 5 janv."));
+
+        assertThat(block).contains("Complète")
+                .contains("Plat principal MarieD")
+                .contains("Accompagnements Paul_B")
+                .contains("Présences au dîner MarieD, Zoé42")
+                .contains("Nuit Jean-L")
+                .contains("Petit-déjeuner Léa");
+    }
+
+    @Test
+    void a_partial_evening_shows_its_pseudos_and_what_is_missing() throws Exception {
+        var partial = LocalDate.of(2027, 1, 5);
+        register(partial, "BREAKFAST", null, "Léa");
+
+        var block = text(eveningBlock(page(), "Mar. 5 → mer. 6 janv."));
+
+        assertThat(block).contains("À compléter").contains("Manque : ").contains("Petit-déjeuner Léa")
+                .doesNotContain("Nuit");
+    }
+
+    @Test
+    void a_closed_evening_shows_no_pseudo() throws Exception {
+        var date = LocalDate.of(2027, 1, 6);
+        register(date, "BREAKFAST", null, "Léa");
+        jdbc.update("UPDATE evening SET closed = true WHERE evening_date = ?", date);
+
+        var block = text(eveningBlock(page(), "Mer. 6 → jeu. 7 janv."));
+
+        assertThat(block).contains("Fermée").doesNotContain("Léa").doesNotContain("Petit-déjeuner");
+    }
+
+    @Test
+    void the_pseudos_never_come_with_other_personal_data() throws Exception {
+        register(LocalDate.of(2027, 1, 4), "BREAKFAST", null, "Léa");
+        register(LocalDate.of(2027, 1, 5), "NIGHT_AND_DINNER", null, "MarieD");
+
+        var body = page();
+
+        assertThat(body).contains("Léa").contains("MarieD").doesNotContain("Dupontsecret")
+                .doesNotContain("@").doesNotContain("+33");
+        assertThat(UUID.matcher(body).find()).as("identifiant technique").isFalse();
+        assertThat(PHONE.matcher(body).find()).as("numéro de téléphone").isFalse();
+    }
+
+    @Test
+    void the_planning_asks_search_engines_not_to_index_it() throws Exception {
+        var response = mockMvc.perform(get("/planning")).andReturn().getResponse();
+
+        assertThat(response.getHeader("X-Robots-Tag")).isEqualTo("noindex, nofollow");
+        assertThat(response.getContentAsString()).contains("<meta name=\"robots\" content=\"noindex, nofollow\">");
     }
 }

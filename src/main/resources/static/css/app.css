@@ -305,6 +305,28 @@ a:focus-visible {
     font-weight: 600;
 }
 
+/* Pseudos des inscrits, un poste par ligne : « Nuit  Jean-L, MarieD ». */
+.soiree__inscrits {
+    flex-basis: 100%;
+    margin: 0.25rem 0 0;
+    font-size: 0.95rem;
+}
+
+.soiree__poste {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 0.5rem;
+}
+
+.soiree__poste dt {
+    font-weight: 600;
+}
+
+.soiree__poste dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
 .soiree__action {
     flex-basis: 100%;
     margin: 0.25rem 0 0;
