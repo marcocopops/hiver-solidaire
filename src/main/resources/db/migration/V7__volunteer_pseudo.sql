@@ -9,7 +9,8 @@ ALTER TABLE volunteer ADD COLUMN pseudo varchar(20);
 DO $$
 DECLARE
     v          record;
-    allowed    constant text := '[^A-Za-zÀ-ÖØ-öø-ÿĀ-ſ0-9_-]';
+    -- Même liste que benevole.Pseudo : sans ı, ĸ, Ŀ, ŀ, ŉ, ſ, qui imitent une lettre ASCII.
+    allowed    constant text := '[^A-Za-zÀ-ÖØ-öø-ÿĀ-İĲ-ķĹ-ľŁ-ňŊ-ž0-9_-]';
     first_part text;
     initial    text;
     base       text;

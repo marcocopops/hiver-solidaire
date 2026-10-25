@@ -10,7 +10,8 @@ import java.util.regex.Pattern;
  * étroitement borné :
  * <ul>
  *   <li>3 à 20 caractères, après suppression des espaces autour et composition des accents (NFC) ;</li>
- *   <li>lettres latines (A-Z, accents de Latin-1, Latin étendu A : Œ, Ł…), chiffres 0-9, tiret, souligné ;</li>
+ *   <li>lettres latines (A-Z, accents de Latin-1, Latin étendu A : Œ, Ł…, sans les lettres qui imitent une
+ *       lettre ASCII), chiffres 0-9, tiret, souligné ;</li>
  *   <li>commence par une lettre ou un chiffre.</li>
  * </ul>
  * Les autres alphabets sont refusés, lettres latines « pleine chasse » comprises : un « Маrie » au М cyrillique
@@ -21,7 +22,11 @@ public final class Pseudo {
     public static final int MIN_LENGTH = 3;
     public static final int MAX_LENGTH = 20;
 
-    private static final String LETTER = "A-Za-z\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF\\u0100-\\u017F";
+    /**
+     * Latin de base, Latin-1 accentué (sans × ni ÷) et Latin étendu A, moins les lettres qui imitent une lettre
+     * ASCII : ı (U+0131), ĸ (U+0138), Ŀ ŀ (U+013F-0140), ŉ (U+0149), ſ (U+017F).
+     */
+    private static final String LETTER = "A-Za-z\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF\\u0100-\\u0130\\u0132-\\u0137\\u0139-\\u013E\\u0141-\\u0148\\u014A-\\u017E";
     private static final Pattern SHAPE =
             Pattern.compile("^[" + LETTER + "0-9][" + LETTER + "0-9_-]{" + (MIN_LENGTH - 1) + "," + (MAX_LENGTH - 1) + "}$");
     private static final Pattern NOT_ALLOWED = Pattern.compile("[^" + LETTER + "0-9_-]");

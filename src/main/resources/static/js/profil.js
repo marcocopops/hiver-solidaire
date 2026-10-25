@@ -6,7 +6,8 @@
 
     var MIN_LENGTH = 3;
     var MAX_LENGTH = 20;
-    var NOT_ALLOWED = /[^A-Za-zÀ-ÖØ-öø-ÿĀ-ſ0-9_-]/g;
+    // Même liste que benevole.Pseudo : sans ı, ĸ, Ŀ, ŀ, ŉ, ſ, qui imitent une lettre ASCII.
+    var NOT_ALLOWED = /[^A-Za-zÀ-ÖØ-öø-ÿĀ-İĲ-ķĹ-ľŁ-ňŊ-ž0-9_-]/g;
     var FALLBACK = 'Benevole';
 
     var firstName = document.getElementById('firstName');

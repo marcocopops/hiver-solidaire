@@ -20,7 +20,9 @@ class PseudoTest {
     @ParameterizedTest
     @ValueSource(strings = {"", "ab", "a23456789012345678901", "<script>", "Marie D", "Marie.D", "O'Neil", "Marie@D",
         "-Marie", "_Marie", "Marie😀", "Маrie", "Ａnne", "Ｍarie", "ΜarieD", "Marie\u0000", "Ma\nrie", "Marie&amp;",
-        "Zoe\u0301\u0301", "١٢٣abc"})
+        "Zoe\u0301\u0301", "١٢٣abc",
+        // Lettres latines qui imitent une lettre ASCII : ı (i sans point), ĸ, Ŀ/ŀ, ŉ, ſ (s long).
+        "Mar\u0131e", "\u0138arim", "Pau\u0140", "\u013Fea", "\u0149ina", "Ro\u017Fe"})
     void rejects_everything_else(String pseudo) {
         assertThat(Pseudo.normalize(pseudo)).isEmpty();
     }
@@ -57,6 +59,7 @@ class PseudoTest {
         "Maximilienne-Alexandrine, Dupont, Maximilienne-AlexanD",
         "Νίκος,          Papadopoulos,     BenevoleP",
         "Anne,           '',               Anne",
+        "I\u015F\u0131l,           Kaya,             I\u015FlK",
     })
     void suggests_first_name_and_initial_of_last_name(String firstName, String lastName, String expected) {
         var suggestion = Pseudo.suggest(firstName, lastName);
