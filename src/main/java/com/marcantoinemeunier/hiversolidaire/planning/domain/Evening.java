@@ -1,5 +1,6 @@
 package com.marcantoinemeunier.hiversolidaire.planning.domain;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -52,6 +53,38 @@ public final class Evening {
     /** R1 : un type n'est disponible que s'il reste de la place sur chaque poste qu'il couvre. */
     public boolean isAvailable(RegistrationType type, DishChoice dishChoice) {
         return type.coveredPosts(dishChoice).stream().allMatch(post -> remaining(post) > 0);
+    }
+
+    /**
+     * Contrôle d'une nouvelle inscription (R7, puis R2, R3 et R1). R4 n'empêche jamais une inscription : une
+     * préparation chez soi sans récupération est acceptée, et {@link #needsPickupAlert()} le signale.
+     */
+    public RegistrationDecision decide(Season season, Registration candidate, Instant now) {
+        if (candidate.volunteerId() == null) {
+            throw new IllegalArgumentException("A new registration needs a volunteer");
+        }
+        if (now.isBefore(season.registrationsOpenAt())) {
+            return RegistrationDecision.NOT_OPEN_YET;
+        }
+        if (!season.contains(date)) {
+            return RegistrationDecision.OUT_OF_SEASON;
+        }
+        if (closed) {
+            return RegistrationDecision.CLOSED;
+        }
+        if (isPast(ParisTime.today(now))) {
+            return RegistrationDecision.PAST;
+        }
+        if (registrations.stream().anyMatch(existing -> candidate.volunteerId().equals(existing.volunteerId()))) {
+            return RegistrationDecision.ALREADY_REGISTERED;
+        }
+        if (candidate.dishChoice() != null && remaining(candidate.dishChoice().post()) == 0) {
+            return RegistrationDecision.DISH_TAKEN;
+        }
+        if (!isAvailable(candidate.type(), candidate.dishChoice())) {
+            return RegistrationDecision.FULL;
+        }
+        return RegistrationDecision.ACCEPTED;
     }
 
     /** R4 : préparations chez soi qui n'ont pas de récupération le même soir (une récupération par préparation). */

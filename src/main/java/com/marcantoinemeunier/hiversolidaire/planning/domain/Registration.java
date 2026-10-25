@@ -2,12 +2,13 @@ package com.marcantoinemeunier.hiversolidaire.planning.domain;
 
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 
 /**
- * Inscription telle que le planning en a besoin pour calculer capacité et statut : ni bénévole, ni donnée
- * personnelle. Le lien avec le bénévole arrive avec l'inscription elle-même (S3).
+ * Inscription telle que les règles en ont besoin : type, plat éventuel et identifiant technique du bénévole
+ * (R2). Aucune donnée personnelle. {@code volunteerId} est nul quand seul le calcul de capacité compte.
  */
-public record Registration(RegistrationType type, DishChoice dishChoice) {
+public record Registration(RegistrationType type, DishChoice dishChoice, UUID volunteerId) {
 
     public Registration {
         Objects.requireNonNull(type, "type");
@@ -15,11 +16,15 @@ public record Registration(RegistrationType type, DishChoice dishChoice) {
     }
 
     public static Registration of(RegistrationType type) {
-        return new Registration(type, null);
+        return new Registration(type, null, null);
     }
 
     public static Registration of(RegistrationType type, DishChoice dishChoice) {
-        return new Registration(type, dishChoice);
+        return new Registration(type, dishChoice, null);
+    }
+
+    public static Registration by(UUID volunteerId, RegistrationType type, DishChoice dishChoice) {
+        return new Registration(type, dishChoice, Objects.requireNonNull(volunteerId, "volunteerId"));
     }
 
     public Set<Post> coveredPosts() {

@@ -42,6 +42,6 @@ public class RegistrationEntity {
     }
 
     public Registration toDomain() {
-        return new Registration(type, dishChoice);
+        return Registration.of(type, dishChoice);
     }
 }
