@@ -7,5 +7,6 @@ Chaque fichier décrit une session de travail confiée à Claude Code : objectif
 | [s1-squelette.md](s1-squelette.md) | S1 | Squelette déployable : Spring Boot, CI, image Docker, compose de production |
 | [s1-adr.md](s1-adr.md) | S1 | ADR 0002 à 0005 et modèle de menaces, en parallèle |
 | [s2-modele-et-planning-public.md](s2-modele-et-planning-public.md) | S2 | Modèle de données (règles R1-R7) et planning public en lecture seule |
+| [s3-connexion-et-inscription.md](s3-connexion-et-inscription.md) | S3 | Connexion par lien magique, inscription avec règles de capacité, Mailpit en développement |
 
 Pour lancer une session : ouvrir claude.ai/code sur ce dépôt, choisir le mode plan, puis envoyer le message de lancement indiqué en tête du fichier.
