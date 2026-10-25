@@ -14,7 +14,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Contraintes des migrations V2 et V4, et contenu de la saison d'exemple V3. */
+/** Contraintes des migrations V2, V4 et V7, et contenu de la saison d'exemple V3. */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 @Transactional
@@ -141,5 +141,58 @@ class PlanningSchemaTest {
 
         assertThat(jdbc.queryForObject("SELECT recontact_next_season FROM volunteer WHERE id = ?", Boolean.class,
                 alice)).isFalse();
+    }
+
+    private void pseudo(UUID volunteerId, String pseudo) {
+        jdbc.update("UPDATE volunteer SET pseudo = ? WHERE id = ?", pseudo, volunteerId);
+    }
+
+    @Test
+    void pseudo_is_unique_ignoring_case() {
+        pseudo(volunteer("alice@example.org"), "MarieD");
+
+        assertThatThrownBy(() -> pseudo(volunteer("bob@example.org"), "maried"))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void pseudo_uniqueness_ignores_the_case_of_accented_letters() {
+        // Dépend de la locale de la base : vérifié sur l'image PostgreSQL utilisée en production.
+        pseudo(volunteer("alice@example.org"), "Élodie");
+
+        assertThatThrownBy(() -> pseudo(volunteer("bob@example.org"), "élodie"))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void pseudos_differing_by_an_accent_are_distinct() {
+        pseudo(volunteer("alice@example.org"), "Elodie");
+        pseudo(volunteer("bob@example.org"), "Élodie");
+
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM volunteer WHERE pseudo IS NOT NULL", Integer.class))
+                .isEqualTo(2);
+    }
+
+    @Test
+    void a_completed_profile_requires_a_pseudo() {
+        var alice = volunteer("alice@example.org");
+
+        assertThatThrownBy(() -> jdbc.update("""
+                UPDATE volunteer SET profile_completed_at = now(), last_name = 'Martin', first_name = 'Anne',
+                    phone = '+33600000001'
+                WHERE id = ?
+                """, alice)).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void pseudo_markup_characters_are_refused_by_the_database_too() {
+        assertThatThrownBy(() -> pseudo(volunteer("alice@example.org"), "<script>"))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void pseudo_length_is_bounded_by_the_database_too() {
+        assertThatThrownBy(() -> pseudo(volunteer("alice@example.org"), "ab"))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 }

@@ -51,11 +51,31 @@ class ProfileController {
         if (volunteers.profileCompleted(id)) {
             return "redirect:" + next(choice);
         }
-        if (binding.hasErrors()) {
-            model.addAttribute("choice", choice);
+        model.addAttribute("choice", choice);
+        if (form.getPseudo() == null || form.getPseudo().isBlank()) {
+            // Sans JavaScript, le pseudo arrive vide : on propose « prénom + initiale », libre, à confirmer. Une
+            // donnée publique n'est jamais publiée sans que le bénévole l'ait vue.
+            if (!binding.hasFieldErrors("lastName") && !binding.hasFieldErrors("firstName")) {
+                form.setPseudo(volunteers.freePseudo(Pseudo.suggest(form.getFirstName(), form.getLastName())));
+                model.addAttribute("pseudoSuggested", true);
+            }
             return "profil";
         }
-        volunteers.completeProfile(id, form);
+        var pseudo = Pseudo.normalize(form.getPseudo());
+        if (pseudo.isEmpty()) {
+            binding.rejectValue("pseudo", "profile.error.pseudo");
+        }
+        if (binding.hasErrors()) {
+            return "profil";
+        }
+        try {
+            volunteers.completeProfile(id, form, pseudo.get());
+        } catch (VolunteerService.PseudoTakenException e) {
+            var variant = volunteers.freePseudo(pseudo.get());
+            form.setPseudo(variant);
+            model.addAttribute("pseudoTaken", variant);
+            return "profil";
+        }
         return "redirect:" + next(choice);
     }
 

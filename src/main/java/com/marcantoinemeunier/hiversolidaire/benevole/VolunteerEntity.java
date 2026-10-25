@@ -27,6 +27,10 @@ public class VolunteerEntity {
     @Column(name = "phone")
     private String phone;
 
+    /** Pseudo public, affiché sur le planning ; unique sans tenir compte de la casse. */
+    @Column(name = "pseudo")
+    private String pseudo;
+
     @Column(name = "recontact_next_season", nullable = false)
     private boolean recontactNextSeason;
 
@@ -55,10 +59,11 @@ public class VolunteerEntity {
         return profileCompletedAt != null;
     }
 
-    void completeProfile(String lastName, String firstName, String phone, boolean recontactNextSeason,
-            Instant now) {
+    void completeProfile(String lastName, String firstName, String pseudo, String phone,
+            boolean recontactNextSeason, Instant now) {
         this.lastName = lastName;
         this.firstName = firstName;
+        this.pseudo = pseudo;
         this.phone = phone;
         this.recontactNextSeason = recontactNextSeason;
         this.profileCompletedAt = now;
