@@ -10,7 +10,6 @@ import java.time.Duration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.ott.GenerateOneTimeTokenRequest;
-import org.springframework.security.authentication.ott.OneTimeTokenService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,12 +30,12 @@ class LoginController {
     /** Durée de validité du lien (§6, §8). */
     static final Duration LINK_VALIDITY = Duration.ofMinutes(15);
 
-    private final OneTimeTokenService tokens;
+    private final HashedJdbcOneTimeTokenService tokens;
     private final MagicLinkSender sender;
     private final MagicLinkRateLimits limits;
     private final String baseUrl;
 
-    LoginController(OneTimeTokenService tokens, MagicLinkSender sender, MagicLinkRateLimits limits,
+    LoginController(HashedJdbcOneTimeTokenService tokens, MagicLinkSender sender, MagicLinkRateLimits limits,
             @Value("${app.base-url}") String baseUrl) {
         this.tokens = tokens;
         this.sender = sender;
@@ -90,6 +89,8 @@ class LoginController {
     /**
      * Page « Me connecter » ouverte par le lien. Elle ne consomme pas le jeton : les filtres des messageries qui
      * ouvrent les liens ne connectent personne (menace M2). Seul le POST de cette page, protégé par CSRF, connecte.
+     * L'adresse du lien est affichée masquée : un bénévole qui ouvre le lien d'un tiers voit que ce n'est pas la
+     * sienne, et ne se connecte pas au compte de ce tiers. Un lien expiré ou déjà utilisé le dit tout de suite.
      */
     @GetMapping("/login/ott")
     String confirmLogin(@RequestParam(name = "token", required = false) String token,
@@ -98,7 +99,12 @@ class LoginController {
         if (token == null || token.isBlank()) {
             return "redirect:/connexion";
         }
+        var email = tokens.peekUsername(token);
+        if (email.isEmpty()) {
+            return "redirect:/connexion?lien-invalide";
+        }
         model.addAttribute("token", token);
+        model.addAttribute("maskedEmail", EmailAddress.mask(email.get()));
         model.addAttribute("choice", RegistrationChoice.parse(evening, choice).orElse(null));
         return "connexion-confirmer";
     }

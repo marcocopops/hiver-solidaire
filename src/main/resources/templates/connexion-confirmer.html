@@ -4,7 +4,9 @@
 <body>
 <main class="page">
     <h1 th:text="#{login.confirm.title}">Me connecter</h1>
+    <p class="lead" th:text="#{login.confirm.address(${maskedEmail})}">Adresse : a•••@example.org</p>
     <p th:text="#{login.confirm.text}">Appuyez sur le bouton pour vous connecter.</p>
+    <p class="aide" th:text="#{login.confirm.notMine}">Si ce n’est pas votre adresse…</p>
     <!-- Ouvrir le lien ne consomme pas le jeton : seul ce POST, protégé par CSRF, connecte (ADR-0003). -->
     <form class="formulaire" th:action="@{/login/ott}" method="post">
         <input type="hidden" name="token" th:value="${token}">

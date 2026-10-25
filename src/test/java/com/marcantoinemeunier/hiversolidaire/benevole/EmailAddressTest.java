@@ -36,4 +36,10 @@ class EmailAddressTest {
         assertThat(tooLong).hasSize(255);
         assertThat(EmailAddress.normalize(tooLong)).isEmpty();
     }
+
+    @Test
+    void masked_address_keeps_the_first_letter_and_the_domain() {
+        assertThat(EmailAddress.mask("anne.martin@example.org")).isEqualTo("a•••@example.org");
+        assertThat(EmailAddress.mask("a@example.org")).isEqualTo("a•••@example.org");
+    }
 }

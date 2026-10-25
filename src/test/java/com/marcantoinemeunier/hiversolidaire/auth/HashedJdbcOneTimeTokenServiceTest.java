@@ -62,6 +62,26 @@ class HashedJdbcOneTimeTokenServiceTest {
     }
 
     @Test
+    void peeking_reads_the_address_without_consuming_the_token() {
+        var token = generate();
+
+        assertThat(tokens.peekUsername(token.getTokenValue())).contains(EMAIL);
+        assertThat(tokens.peekUsername(token.getTokenValue())).contains(EMAIL);
+        assertThat(consume(token.getTokenValue())).isNotNull();
+        assertThat(tokens.peekUsername(token.getTokenValue())).isEmpty();
+    }
+
+    @Test
+    void peeking_an_expired_or_unknown_token_finds_nothing() {
+        var token = generate();
+        clock.advance(Duration.ofMinutes(15));
+
+        assertThat(tokens.peekUsername(token.getTokenValue())).isEmpty();
+        assertThat(tokens.peekUsername("not-a-token")).isEmpty();
+        assertThat(tokens.peekUsername(null)).isEmpty();
+    }
+
+    @Test
     void tokens_are_unpredictable() {
         assertThat(generate().getTokenValue()).isNotEqualTo(generate().getTokenValue());
     }

@@ -84,6 +84,31 @@ class MagicLinkLoginTest {
     }
 
     @Test
+    void the_confirmation_page_shows_the_masked_address_of_the_link() throws Exception {
+        // Parade à la connexion au compte d'un autre : un lien reçu d'un tiers affiche une adresse inconnue.
+        var browser = new Browser(mockMvc);
+        var email = Browser.uniqueEmail();
+        var token = requestLink(browser, email);
+
+        var page = browser.get("/login/ott?token=" + token).getContentAsString();
+
+        assertThat(page).contains("b•••@example.org").doesNotContain(email)
+                .contains("Si ce n’est pas votre adresse");
+    }
+
+    @Test
+    void an_invalid_link_says_so_at_once_without_a_login_button() throws Exception {
+        var browser = new Browser(mockMvc);
+        var token = requestLink(browser, Browser.uniqueEmail());
+        clock.advance(Duration.ofMinutes(16));
+
+        assertThat(browser.get("/login/ott?token=" + token).getRedirectedUrl())
+                .isEqualTo("/connexion?lien-invalide");
+        assertThat(new Browser(mockMvc).get("/login/ott?token=inconnu").getRedirectedUrl())
+                .isEqualTo("/connexion?lien-invalide");
+    }
+
+    @Test
     void posting_the_confirmation_page_logs_in_a_new_volunteer_and_asks_for_the_profile() throws Exception {
         var browser = new Browser(mockMvc);
         var token = requestLink(browser, Browser.uniqueEmail());
@@ -127,7 +152,9 @@ class MagicLinkLoginTest {
         browser.post("/login/ott", "token", token);
 
         var thief = new Browser(mockMvc);
-        thief.get("/login/ott?token=" + token);
+        assertThat(thief.get("/login/ott?token=" + token).getRedirectedUrl()).isEqualTo("/connexion?lien-invalide");
+        // Même en postant directement le jeton, avec un jeton CSRF valide, la connexion est refusée.
+        thief.get("/connexion");
         var response = thief.post("/login/ott", "token", token);
 
         assertThat(response.getRedirectedUrl()).isEqualTo("/connexion?lien-invalide");
@@ -254,7 +281,9 @@ class MagicLinkLoginTest {
 
     @Test
     void the_default_spring_submit_page_is_not_served() throws Exception {
-        var body = new Browser(mockMvc).get("/login/ott?token=abc").getContentAsString();
+        var browser = new Browser(mockMvc);
+        var token = requestLink(browser, Browser.uniqueEmail());
+        var body = browser.get("/login/ott?token=" + token).getContentAsString();
 
         assertThat(body).doesNotContain("Please sign in");
     }

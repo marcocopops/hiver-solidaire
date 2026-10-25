@@ -34,4 +34,10 @@ public final class EmailAddress {
         }
         return Optional.of(normalized);
     }
+
+    /** Adresse masquée pour l'affichage : première lettre, puis le domaine ({@code a•••@example.org}). */
+    public static String mask(String normalizedEmail) {
+        var at = normalizedEmail.indexOf('@');
+        return normalizedEmail.charAt(0) + "•••" + normalizedEmail.substring(at);
+    }
 }
