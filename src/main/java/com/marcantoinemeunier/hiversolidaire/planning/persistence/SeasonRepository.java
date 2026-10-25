@@ -16,6 +16,8 @@ public interface SeasonRepository extends Repository<SeasonEntity, UUID> {
 
     Optional<SeasonEntity> findFirstByOrderByFirstEveningDesc();
 
+    Optional<SeasonEntity> findById(UUID id);
+
     /** Saison courante : la première qui n'est pas terminée, sinon la plus récente. */
     default Optional<SeasonEntity> findCurrent(LocalDate today) {
         return findNotEndedBefore(today).stream().findFirst().or(this::findFirstByOrderByFirstEveningDesc);

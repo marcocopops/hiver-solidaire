@@ -34,6 +34,10 @@ public class EveningEntity {
         return id;
     }
 
+    public UUID seasonId() {
+        return seasonId;
+    }
+
     public LocalDate date() {
         return date;
     }
