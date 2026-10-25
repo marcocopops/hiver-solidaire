@@ -15,7 +15,11 @@ class EmailAddressTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"", " ", "anne", "anne@", "@example.org", "anne@example", "an ne@example.org",
-        "anne@@example.org", "anne@example..org"})
+        "anne@@example.org", "anne@example..org",
+        // L'adresse enregistrée doit être exactement celle qui reçoit le lien : pas de forme « Nom <adresse> »,
+        // pas de liste de destinataires.
+        "x<autre@example.net>@example.org", "anne@example.org,autre@example.net", "anne@example.org;b@example.net",
+        "\"anne\"@example.org", "anne@exa_mple.org", "anne@-example.org"})
     void malformed_addresses_are_rejected(String input) {
         assertThat(EmailAddress.normalize(input)).isEmpty();
     }

@@ -13,8 +13,11 @@ public final class EmailAddress {
     /** Longueur maximale d'une adresse (RFC 5321) et de la colonne {@code volunteer.email}. */
     public static final int MAX_LENGTH = 254;
 
-    // Volontairement simple : une partie locale, un @, un domaine avec au moins un point, sans espace.
-    private static final Pattern SHAPE = Pattern.compile("^[^@\\s]{1,64}@[^@\\s.]+(\\.[^@\\s.]+)+$");
+    // Partie locale en « dot-atom » (RFC 5322, sans guillemets ni commentaires) et nom de domaine classique :
+    // l'adresse enregistrée est exactement celle qui reçoit le lien, jamais une forme « Nom <adresse> » ni une liste.
+    private static final Pattern SHAPE = Pattern.compile(
+            "^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*"
+            + "@[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$");
 
     private EmailAddress() {
     }
@@ -25,7 +28,8 @@ public final class EmailAddress {
             return Optional.empty();
         }
         var normalized = input.strip().toLowerCase(Locale.ROOT);
-        if (normalized.length() > MAX_LENGTH || !SHAPE.matcher(normalized).matches()) {
+        var at = normalized.indexOf('@');
+        if (normalized.length() > MAX_LENGTH || at > 64 || !SHAPE.matcher(normalized).matches()) {
             return Optional.empty();
         }
         return Optional.of(normalized);
