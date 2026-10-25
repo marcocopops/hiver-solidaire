@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head(#{login.sent.title})}"></head>
+<body>
+<main class="page">
+    <nav th:replace="~{fragments :: nav}"></nav>
+    <h1 th:text="#{login.sent.title}">Vérifiez votre messagerie</h1>
+    <p class="lead" th:text="#{login.sent.text}">Si cette adresse est valide, vous allez recevoir un lien.</p>
+    <p th:text="#{login.sent.otherDevice}">Vous pouvez ouvrir le lien sur un autre appareil.</p>
+    <p th:text="#{login.sent.nothing}">Rien reçu ?</p>
+    <p><a th:href="@{/connexion}" th:text="#{login.sent.again}">Demander un nouveau lien</a></p>
+</main>
+</body>
+</html>

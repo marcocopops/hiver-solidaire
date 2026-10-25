@@ -1,17 +1,17 @@
 <!DOCTYPE html>
 <html lang="fr" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{planning.title} + ' · ' + #{app.name}">Planning de la saison · Hiver Solidaire</title>
-    <link rel="stylesheet" th:href="@{/css/app.css}">
-</head>
+<head th:replace="~{fragments :: head(#{planning.title})}"></head>
 <body>
 <main class="page">
     <p><a th:href="@{/}" th:text="#{planning.back}">Retour à l’accueil</a></p>
+    <p class="nav" th:if="${signedIn}">
+        <a th:href="@{/mes-inscriptions}" th:text="#{common.myRegistrations}">Mes inscriptions</a>
+    </p>
     <h1 th:text="#{planning.title}">Planning de la saison</h1>
     <p class="saison" th:if="${planning.seasonLabel != null}" th:text="${planning.seasonLabel}">Saison</p>
     <p class="bandeau" th:if="${planning.sample}" th:text="#{planning.sample}">Dates d’exemple</p>
+    <p class="bandeau" th:if="${planning.opensOn != null}" th:text="#{planning.opensOn(${planning.opensOn})}">
+        Les inscriptions ouvrent le lundi 14 décembre 2026.</p>
 
     <p th:if="${planning.evenings.isEmpty()}" th:text="#{planning.none}">Aucune soirée à venir pour le moment.</p>
 
@@ -22,6 +22,13 @@
             <p class="soiree__manque" th:unless="${evening.missingPostKeys.isEmpty()}"
                th:text="#{planning.missing(${#strings.listJoin(#messages.listMsg(evening.missingPostKeys), ', ')})}">
                 Manque : nuit, petit-déjeuner</p>
+            <p class="soiree__action" th:if="${evening.mine}">
+                <span class="inscrit" th:text="#{planning.mine}">Vous êtes inscrit</span>
+            </p>
+            <p class="soiree__action" th:if="${evening.registrable}">
+                <a class="bouton bouton--petit" th:href="@{/inscription(soiree=${evening.date})}"
+                   th:text="#{planning.register}">S’inscrire</a>
+            </p>
         </li>
     </ul>
 </main>

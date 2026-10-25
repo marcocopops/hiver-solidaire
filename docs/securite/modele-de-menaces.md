@@ -87,15 +87,15 @@ Catégories : **S** usurpation, **T** altération, **R** répudiation, **I** div
 
 | Id | Menace | STRIDE | Actifs | Prob. | Impact | Mesure prévue | Statut |
 |---|---|---|---|---|---|---|---|
-| M1 | Lien magique intercepté (boîte mail compromise, e-mail transféré, historique) et rejoué | S | A1 | Faible | Moyen | Jeton à usage unique, 15 minutes ; session avec nouvel identifiant à la connexion ; cookie `__Host-` HttpOnly, Secure (§8 « Lien magique », « Cookie ») | Prévu |
-| M2 | Lien consommé par le filtre d'une messagerie avant le bénévole (connexion impossible, ou connexion de la mauvaise session) | S, D | A1 | Élevée | Faible | Le lien ouvre une page de confirmation ; connexion en POST seulement, jamais de GET qui modifie (§6, §8) | Prévu |
-| M3 | Énumération d'adresses e-mail : réponse ou délai différent selon que l'adresse existe | I | A1 | Moyenne | Moyen | Même message et même durée de traitement dans les deux cas (envoi asynchrone) ; limitation par e-mail et par IP ; Turnstile (§8) | Prévu |
+| M1 | Lien magique intercepté (boîte mail compromise, e-mail transféré, historique) et rejoué | S | A1 | Faible | Moyen | Jeton à usage unique, 15 minutes, stocké haché et consommé atomiquement ; session avec nouvel identifiant à la connexion ; cookie `__Host-` HttpOnly, Secure (§8 « Lien magique », « Cookie ») | Fait (S3) |
+| M2 | Lien consommé par le filtre d'une messagerie avant le bénévole (connexion impossible, ou connexion de la mauvaise session) | S, D | A1 | Élevée | Faible | Le lien ouvre une page de confirmation ; connexion en POST seulement, jamais de GET qui modifie (§6, §8) | Fait (S3) |
+| M3 | Énumération d'adresses e-mail : réponse ou délai différent selon que l'adresse existe | I | A1 | Moyenne | Moyen | Même message et même durée de traitement dans les deux cas (envoi asynchrone, aucune recherche du compte à la demande) ; limitation par e-mail et par IP ; Turnstile (§8, S5) | Fait (S3), sauf Turnstile |
 | M4 | Inscriptions malveillantes avec accès libre : robots qui saturent les places, créent des comptes, remplissent la base | D, T | A3, A4 | Moyenne | Moyen | Turnstile, limitation de débit Cloudflare et appli, alerte aux coordinateurs à la première inscription d'un nouveau bénévole, annulation par les coordinateurs (§2, §8) | Prévu |
 | M5 | Abus de l'envoi d'e-mails : le formulaire sert à inonder une boîte tierce, ou épuise le quota de Brevo | D, R | A3, A4 | Moyenne | Moyen | Limitation par e-mail et par IP ; Turnstile ; alerte si quota proche (**à décider** : seuil et supervision du quota) | À décider |
 | M6 | Compte coordinateur compromis (hameçonnage, session volée) : lecture de toutes les données, annulations | S, E, I | A1, A2 | Faible | Élevé | Cloudflare Access sur `/admin/*`, sessions de 8 h, rôle vérifié côté serveur, journal d'audit des actions (§8) | Prévu |
 | M7 | Contournement de Cloudflare Access en joignant l'appli sans passer par Cloudflare (tunnel mal configuré, autre route) | E | A1, A2 | Faible | Élevé | Aucun port entrant ; seul `cloudflared` joint l'appli ; le rôle coordinateur reste vérifié par l'appli, indépendamment d'Access (défense en profondeur) | Prévu |
 | M8 | Un coordinateur nie une action (annulation, suppression de bénévole) | R | A1 | Faible | Faible | Journal d'audit horodaté par identifiant technique ; pas de compte partagé | Prévu |
-| M9 | Accès croisé : un bénévole lit ou modifie les données d'un autre (IDOR) | I, E | A1 | Moyenne | Élevé | Autorisation côté serveur sur chaque endpoint ; tests d'accès croisé ; identifiants non devinables (§8) | Prévu |
+| M9 | Accès croisé : un bénévole lit ou modifie les données d'un autre (IDOR) | I, E | A1 | Moyenne | Élevé | Autorisation côté serveur sur chaque endpoint ; le bénévole est celui de la session, jamais un paramètre ; tests d'accès croisé ; identifiants non devinables (§8) | Fait (S3) pour les bénévoles |
 | M10 | CSRF : action déclenchée à l'insu d'un bénévole ou d'un coordinateur connecté | T | A1, A2 | Faible | Moyen | Protection CSRF active, POST pour toute action qui modifie l'état ; le sous-domaine est *same-site* du portfolio, donc le jeton reste obligatoire ([ADR-0001](../adr/0001-sous-domaine-plutot-que-sous-chemin.md)) | Prévu |
 | M11 | XSS (contenu saisi affiché, nom de bénévole dans le back-office) | T, I | A2, A1 | Faible | Élevé | `th:text` uniquement, CSP stricte sans script inline, `frame-ancestors 'none'` (§8) ; cookie de session sur sa propre origine (ADR-0001) | Prévu |
 | M12 | Injection SQL | T, I | A1 | Faible | Élevé | JPA et requêtes paramétrées seulement | Prévu |
@@ -122,7 +122,7 @@ Catégories : **S** usurpation, **T** altération, **R** répudiation, **I** div
 
 | Quand | Action | Menaces |
 |---|---|---|
-| S3 | Tests d'accès croisé et de non-énumération ; comportement du lien magique avec un filtre de messagerie | M2, M3, M9 |
+| S3 | Tests d'accès croisé et de non-énumération ; comportement du lien magique avec un filtre de messagerie (fait : le GET du lien ne consomme pas le jeton) | M2, M3, M9 |
 | S4 | Cloudflare Access et vérification du rôle côté appli ; journal d'audit | M6, M7, M8 |
 | S5 | Turnstile, limitation par e-mail et IP, suivi du quota Brevo | M4, M5 |
 | S6 | Sauvegarde chiffrée, restauration testée, sonde externe, runbook ; épinglage des actions et signature de l'image | M14, M15, M17 |

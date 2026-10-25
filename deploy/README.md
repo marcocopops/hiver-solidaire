@@ -87,6 +87,14 @@ APP_TAG=sha-<commit-précédent>
 
 puis `docker compose -f compose.prod.yaml up -d`. Tant que `APP_TAG` n'est pas `main`, `update.sh` ne change pas de version : retirer la ligne pour reprendre les mises à jour automatiques. Les migrations Flyway ne se défont pas : un retour arrière de l'image ne revient pas sur le schéma (on corrige en avant, par une nouvelle migration).
 
+## Connexion des bénévoles (depuis S3)
+
+- **Origine des liens** : `APP_BASE_URL` (par défaut `https://hiver-solidaire.marcantoine-meunier.com` dans `compose.prod.yaml`). Le lien envoyé par e-mail est construit sur cette valeur, jamais sur l'en-tête `Host` de la requête.
+- **E-mails** : aucun `MAIL_HOST` avant S5 (Brevo). L'appli démarre et la page de connexion affiche « momentanément indisponible » ; le planning public reste servi. Ne jamais pointer la production vers Mailpit.
+- **Sessions** : stockées en base (table `spring_session`, ADR-0007), elles survivent aux mises à jour. Pour déconnecter un bénévole de tous ses appareils : `DELETE FROM spring_session WHERE principal_name = '<identifiant du bénévole>';`.
+- **Limitation des demandes de lien** : 3 par adresse toutes les 15 minutes, 10 par IP par heure, **en mémoire**. Valable pour une instance unique : les compteurs repartent de zéro à chaque redémarrage et ne seraient pas partagés entre deux instances. L'IP vient de l'en-tête transmis par cloudflared (`forward-headers-strategy: native`) : l'appli ne doit être joignable que par cloudflared. La limitation de débit de Cloudflare reste la première barrière.
+- **`APP_CLOCK_OFFSET`** : réservé au développement, ne jamais le définir en production (un avertissement apparaît au démarrage s'il l'est).
+
 ## Contrôles utiles
 
 ```bash

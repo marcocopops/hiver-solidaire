@@ -13,6 +13,9 @@ services:
       DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:?POSTGRES_DB manquant dans .env}
       DB_USER: ${POSTGRES_USER:?POSTGRES_USER manquant dans .env}
       DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manquant dans .env}
+      # Origine des liens de connexion envoyés par e-mail.
+      APP_BASE_URL: ${APP_BASE_URL:-https://hiver-solidaire.marcantoine-meunier.com}
+      # Pas de MAIL_HOST avant S5 (Brevo) : l'appli démarre, la connexion affiche « momentanément indisponible ».
     read_only: true
     tmpfs:
       - /tmp

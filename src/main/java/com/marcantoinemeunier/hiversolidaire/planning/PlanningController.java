@@ -1,5 +1,8 @@
 package com.marcantoinemeunier.hiversolidaire.planning;
 
+import java.security.Principal;
+import java.util.Optional;
+import java.util.UUID;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,9 +17,11 @@ class PlanningController {
         this.planning = planning;
     }
 
+    /** Le nom du principal, s'il y en a un, est l'identifiant technique du bénévole connecté. */
     @GetMapping("/planning")
-    String planning(Model model) {
-        model.addAttribute("planning", planning.load());
+    String planning(Principal principal, Model model) {
+        var volunteerId = Optional.ofNullable(principal).map(p -> UUID.fromString(p.getName()));
+        model.addAttribute("planning", planning.load(volunteerId));
         return "planning";
     }
 }

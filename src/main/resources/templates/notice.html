@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head(#{notice.title})}"></head>
+<body>
+<main class="page">
+    <nav th:replace="~{fragments :: nav}"></nav>
+    <h1 th:text="#{notice.title}">Notice d’information</h1>
+    <!-- Page provisoire : la notice d'information arrive en S5 (cahier des charges §7). -->
+    <p class="bandeau" th:text="#{notice.provisional}">Notice en cours de rédaction.</p>
+</main>
+</body>
+</html>

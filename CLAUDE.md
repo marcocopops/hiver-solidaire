@@ -17,14 +17,15 @@ La référence est `docs/cahier-des-charges.md` : règles métier R1 à R7 (§5)
 Mets cette section à jour si elles changent.
 
 - `./mvnw verify` : compilation, tests unitaires et d'intégration (Testcontainers : Docker doit tourner). Doit être vert avant chaque push.
-- `docker compose up -d` : PostgreSQL de développement sur 127.0.0.1:5433, projet `hiver-solidaire-dev` distinct de la production (copier `.env.example` vers `.env`)
-- `./mvnw spring-boot:run` : application sur http://localhost:8080 ; santé sur http://localhost:8081/actuator/health
+- `docker compose up -d` : PostgreSQL de développement sur 127.0.0.1:5433 et Mailpit (SMTP 127.0.0.1:1025, boîte de réception sur http://127.0.0.1:8025), projet `hiver-solidaire-dev` distinct de la production (copier `.env.example` vers `.env`)
+- `./mvnw spring-boot:run` : application sur http://localhost:8080 (utiliser `localhost`, pas `127.0.0.1` : cookie `__Host-` Secure) ; santé sur http://localhost:8081/actuator/health. Le lien de connexion arrive dans Mailpit. `APP_CLOCK_OFFSET=P72D` décale l'horloge pour s'inscrire avant l'ouverture (dev seulement).
 - `docker build -t hiver-solidaire .` : image d'exécution (JRE 21, non-root)
 - Déploiement : `deploy/README.md`
 
 ## Architecture
 
 - Découpage par fonctionnalité : `planning`, `inscription`, `benevole`, `auth`, `admin`, `notification`, `config`.
+- Tests d'intégration web : `@Import({TestcontainersConfiguration.class, TestClockAndMailConfiguration.class})` donne une horloge réglable (`MutableClock`) et un double de l'envoi (`RecordingMagicLinkSender`) ; `Browser` simule un navigateur (cookie de session, jeton CSRF, IP propre).
 - Le domaine (règles R1 à R7) est en Java pur, sans dépendance Spring, et testé unitairement.
 - Rendu serveur avec Thymeleaf ; htmx seulement pour des échanges partiels. Pas de SPA, pas de framework JavaScript.
 - Toute décision structurante fait l'objet d'un ADR dans `docs/adr/` (modèle : `docs/adr/template.md`).

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head(#{registration.choose.title})}"></head>
+<body>
+<main class="page">
+    <nav th:replace="~{fragments :: nav}"></nav>
+    <h1 th:text="#{registration.choose.title}">S’inscrire</h1>
+    <p class="lead" th:text="${label}">Lun. 4 → mar. 5 janv.</p>
+
+    <p class="alerte" role="alert" th:if="${refusal != null}"
+       th:text="#{${'registration.refusal.' + refusal}}">Refus.</p>
+    <p class="bandeau" th:if="${blocking != null}" th:text="#{${'registration.refusal.' + blocking}}">Fermée.</p>
+
+    <!-- Formulaire en GET : il ne modifie rien, il mène à la demande de lien ou à la page de confirmation. -->
+    <form class="formulaire" th:if="${blocking == null}" th:action="@{${next}}" method="get">
+        <input type="hidden" name="soiree" th:value="${date}">
+        <fieldset>
+            <legend th:text="#{registration.choose.legend}">Ce que vous proposez</legend>
+            <div class="choix" th:each="option, status : ${options}">
+                <input type="radio" name="choix" required th:id="'choix-' + ${status.index}" th:value="${option}"
+                       th:checked="${status.first}">
+                <label th:for="'choix-' + ${status.index}" th:text="#{${'registration.option.' + option}}">Type</label>
+            </div>
+        </fieldset>
+        <button class="bouton" type="submit" th:text="#{registration.choose.submit}">Continuer</button>
+    </form>
+</main>
+</body>
+</html>

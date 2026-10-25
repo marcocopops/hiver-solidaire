@@ -11,6 +11,8 @@
     --vide-texte: #7f1d1d;
     --fermee-fond: #e5e7eb;
     --fermee-texte: #374151;
+    --erreur: #9b1c1c;
+    --bordure: #9aa5b1;
 }
 
 * {
@@ -131,6 +133,190 @@ a {
 .soiree--closed .statut {
     background: var(--fermee-fond);
     color: var(--fermee-texte);
+}
+
+/* Navigation : retour au planning, mes inscriptions, déconnexion. */
+.nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1.25rem;
+    margin: 0 0 1.5rem;
+}
+
+.nav a,
+.lien {
+    display: inline-block;
+    min-height: 2.75rem;
+    padding: 0.625rem 0;
+}
+
+.nav__deconnexion {
+    margin: 0;
+}
+
+.lien {
+    border: 0;
+    background: none;
+    color: var(--accent);
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+/* Formulaires : un champ par ligne, grandes zones tactiles (§8 « Ergonomie »). */
+.formulaire {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 1rem 0;
+}
+
+.formulaire label {
+    font-weight: 600;
+}
+
+.formulaire input[type="email"],
+.formulaire input[type="text"],
+.formulaire input[type="tel"] {
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--bordure);
+    border-radius: 0.375rem;
+    background: #fff;
+    color: var(--texte);
+    font: inherit;
+}
+
+.formulaire input[aria-invalid="true"] {
+    border: 2px solid var(--erreur);
+}
+
+.formulaire input:focus-visible,
+.bouton:focus-visible,
+.lien:focus-visible,
+a:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.formulaire .bouton {
+    align-self: flex-start;
+    margin-top: 0.75rem;
+    border: 0;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.formulaire fieldset {
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.formulaire legend {
+    margin-bottom: 0.5rem;
+    padding: 0;
+    font-weight: 600;
+}
+
+/* Téléphone : indicatif étroit, numéro sur le reste de la ligne. */
+.telephone__champs {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.telephone__indicatif {
+    flex: 0 0 5.5rem;
+}
+
+.telephone__numero {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.telephone__champs label {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-weight: 400;
+}
+
+/* Une option de choix : toute la ligne est cliquable. */
+.choix,
+.case {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.375rem;
+    background: #fff;
+}
+
+.choix input,
+.case input {
+    flex: none;
+    width: 1.5rem;
+    height: 1.5rem;
+    margin: 0;
+}
+
+.choix label,
+.case label {
+    font-weight: 400;
+    cursor: pointer;
+}
+
+.aide {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+.erreur {
+    margin: 0;
+    color: var(--erreur);
+    font-weight: 600;
+}
+
+.alerte {
+    padding: 0.75rem 1rem;
+    border-left: 0.25rem solid var(--erreur);
+    background: #fff;
+    color: var(--erreur);
+    font-weight: 600;
+}
+
+/* Récapitulatif d'une inscription. */
+.recap {
+    margin: 1rem 0;
+    padding: 0.75rem 1rem;
+    border-radius: 0.375rem;
+    background: #fff;
+}
+
+.recap dt {
+    font-size: 0.9rem;
+}
+
+.recap dd {
+    margin: 0 0 0.5rem;
+    font-weight: 600;
+}
+
+.soiree__action {
+    flex-basis: 100%;
+    margin: 0.25rem 0 0;
+}
+
+.bouton--petit {
+    padding: 0.625rem 1rem;
+}
+
+.inscrit {
+    font-weight: 600;
+    color: var(--complete-texte);
 }
 
 @media (min-width: 48rem) {

@@ -1,4 +1,4 @@
-# PostgreSQL de développement uniquement. La production est dans deploy/compose.prod.yaml.
+# PostgreSQL et Mailpit de développement uniquement. La production est dans deploy/compose.prod.yaml.
 # Nom de projet distinct de la production (« hiver-solidaire ») : sans lui, lancer ce fichier
 # sur le serveur remplacerait le conteneur db de production et réutiliserait son volume.
 name: hiver-solidaire-dev
@@ -20,6 +20,17 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # Boîte de réception de développement : l'appli y envoie le lien de connexion (MAIL_HOST=localhost,
+  # MAIL_PORT=1025), lisible sur http://127.0.0.1:8025. Jamais en production (deploy/compose.prod.yaml).
+  # Les ports n'écoutent que sur 127.0.0.1 : rien n'est joignable depuis le réseau local.
+  mailpit:
+    image: axllent/mailpit:v1.31.6@sha256:23fe39e81bde596a918000b3135c0f85dc8bb4c9ea6be274b051143f3e300387
+    environment:
+      MP_MAX_MESSAGES: 200
+    ports:
+      - "127.0.0.1:${DEV_SMTP_PORT:-1025}:1025"
+      - "127.0.0.1:${DEV_MAILPIT_UI_PORT:-8025}:8025"
 
 volumes:
   db-data:

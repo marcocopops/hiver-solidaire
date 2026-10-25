@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head(#{common.myRegistrations})}"></head>
+<body>
+<main class="page">
+    <nav th:replace="~{fragments :: nav}"></nav>
+    <h1 th:text="#{common.myRegistrations}">Mes inscriptions</h1>
+    <p th:if="${registrations.isEmpty()}" th:text="#{myRegistrations.none}">Aucune inscription à venir.</p>
+    <ul class="soirees" th:unless="${registrations.isEmpty()}">
+        <li class="soiree" th:each="registration : ${registrations}">
+            <span class="soiree__date" th:text="${registration.label}">Lun. 4 → mar. 5 janv.</span>
+            <p class="soiree__manque" th:text="#{${'registration.option.' + registration.option}}">Type</p>
+        </li>
+    </ul>
+    <p class="aide" th:text="#{myRegistrations.cancel}">Désinscription bientôt.</p>
+</main>
+</body>
+</html>

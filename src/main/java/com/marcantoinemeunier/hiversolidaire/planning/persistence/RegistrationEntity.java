@@ -12,7 +12,7 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
 
-/** Lecture seule en S2 : aucune route ne crée d'inscription avant S3. */
+/** Inscription d'un bénévole sur une soirée. Créée seulement par l'inscription, sous le verrou de R1. */
 @Entity
 @Table(name = "registration")
 public class RegistrationEntity {
@@ -22,6 +22,9 @@ public class RegistrationEntity {
 
     @Column(name = "evening_id", nullable = false)
     private UUID eveningId;
+
+    @Column(name = "volunteer_id", nullable = false)
+    private UUID volunteerId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false)
@@ -37,11 +40,24 @@ public class RegistrationEntity {
     protected RegistrationEntity() {
     }
 
+    public RegistrationEntity(UUID eveningId, Registration registration, Instant createdAt) {
+        this.id = UUID.randomUUID();
+        this.eveningId = eveningId;
+        this.volunteerId = registration.volunteerId();
+        this.type = registration.type();
+        this.dishChoice = registration.dishChoice();
+        this.createdAt = createdAt;
+    }
+
     public UUID eveningId() {
         return eveningId;
     }
 
+    public UUID volunteerId() {
+        return volunteerId;
+    }
+
     public Registration toDomain() {
-        return new Registration(type, dishChoice);
+        return new Registration(type, dishChoice, volunteerId);
     }
 }

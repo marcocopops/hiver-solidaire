@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head(#{login.title})}"></head>
+<body>
+<main class="page">
+    <nav th:replace="~{fragments :: nav}"></nav>
+    <h1 th:text="#{login.title}">Me connecter</h1>
+
+    <p class="alerte" role="alert" th:if="${invalidLink}" th:text="#{login.invalidLink}">Lien plus valable.</p>
+    <p class="alerte" role="alert" th:if="${unavailable}" th:text="#{login.unavailable}">Indisponible.</p>
+
+    <th:block th:unless="${unavailable}">
+        <p th:text="${choice != null} ? #{login.intro.choice} : #{login.intro}">Saisissez votre adresse e-mail.</p>
+        <form class="formulaire" th:action="@{/connexion}" method="post" novalidate>
+            <th:block th:replace="~{fragments :: choice(${choice})}"></th:block>
+            <label for="email" th:text="#{login.email}">Adresse e-mail</label>
+            <input id="email" name="email" type="email" autocomplete="email" inputmode="email" required
+                   maxlength="254" th:value="${email}"
+                   th:attr="aria-invalid=${invalidEmail != null} ? 'true' : 'false'">
+            <p class="erreur" th:if="${invalidEmail}" th:text="#{login.error.email}">Adresse invalide.</p>
+            <button class="bouton" type="submit" th:text="#{login.submit}">Recevoir le lien</button>
+        </form>
+    </th:block>
+</main>
+</body>
+</html>

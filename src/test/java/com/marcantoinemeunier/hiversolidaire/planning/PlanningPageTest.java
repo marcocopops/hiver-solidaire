@@ -57,10 +57,12 @@ class PlanningPageTest {
     }
 
     private void register(LocalDate eveningDate, String type, String dishChoice) {
+        var volunteerId = java.util.UUID.randomUUID();
+        jdbc.update("INSERT INTO volunteer (id, email) VALUES (?, ?)", volunteerId, volunteerId + "@example.org");
         jdbc.update("""
-                INSERT INTO registration (id, evening_id, type, dish_choice)
-                SELECT gen_random_uuid(), e.id, ?, ? FROM evening e WHERE e.evening_date = ?
-                """, type, dishChoice, eveningDate);
+                INSERT INTO registration (id, evening_id, volunteer_id, type, dish_choice)
+                SELECT gen_random_uuid(), e.id, ?, ?, ? FROM evening e WHERE e.evening_date = ?
+                """, volunteerId, type, dishChoice, eveningDate);
     }
 
     private static int count(String body, String text) {
