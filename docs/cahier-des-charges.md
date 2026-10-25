@@ -1,6 +1,6 @@
 # Hiver Solidaire — Cahier des charges du MVP
 
-*Version 0.2 · 18 octobre 2026 · Marc-Antoine Meunier · statut : à valider*
+*Version 0.3 · 25 octobre 2026 · Marc-Antoine Meunier · statut : à valider*
 
 Ce document est la référence du projet. Toute évolution passe par une PR qui le met à jour.
 
@@ -50,7 +50,7 @@ La bêta de la semaine 7 laisse une semaine de marge avant le gel. Les dates de 
 ## 4. Utilisateurs et rôles
 
 - **Visiteur** : voit le planning des soirées à venir, leur statut et les postes qui manquent (« Manque : nuit, petit-déjeuner »), sans aucune donnée personnelle. Pas de nombre de places ni d'inscrits : dans une communauté d'une vingtaine de personnes, un nombre suffirait à deviner qui est inscrit.
-- **Bénévole** : se connecte par lien magique, s'inscrit, se désinscrit, consulte et supprime ses données.
+- **Bénévole** : se connecte par lien magique, s'inscrit, se désinscrit, consulte et supprime ses données. Connecté, il voit en plus sur le planning les soirées où il participe lui-même, rien sur les autres.
 - **Coordinateur (2 à 3)** : a un accès complet au planning, aux bénévoles et au paramétrage.
 - **Personnes accueillies** : aucune donnée les concernant n'est saisie.
 
@@ -96,10 +96,10 @@ Une saison est définie par sa première et sa dernière soirée (dates du soir 
 
 1. Le bénévole choisit une soirée et un type d'inscription encore disponible.
 2. Il saisit son e-mail dans un formulaire protégé par Turnstile. Le message affiché est le même, que l'adresse soit connue ou non.
-3. Il ouvre le lien reçu (usage unique, valable 15 minutes) et appuie sur « Me connecter ». La connexion se fait en POST, car les filtres des messageries ouvrent les liens et consommeraient le jeton.
+3. Il ouvre le lien reçu (usage unique, valable 15 minutes) et appuie sur « Me connecter ». La connexion se fait en POST, car les filtres des messageries ouvrent les liens et consommeraient le jeton. Le lien porte aussi le choix de l'étape 1 (soirée, type, plat, sans donnée personnelle) : il fonctionne sur un autre appareil que celui de la demande.
 4. La première fois, il donne son nom, son prénom et son téléphone (obligatoire). Une case « Me recontacter la saison prochaine », décochée par défaut, et un lien vers la notice d'information complètent le formulaire.
 5. Il confirme ; un e-mail récapitule la date, les horaires, l'adresse, les consignes et le numéro des coordinateurs.
-6. Il reste connecté 30 jours sur cet appareil (hypothèse).
+6. Il reste connecté 30 jours sur cet appareil (hypothèse) : session stockée en base, 30 jours au plus après la connexion, même utilisée chaque jour ([ADR-0007](adr/0007-session-jdbc-plutot-que-se-souvenir-de-moi.md)).
 
 L'adresse du lieu n'apparaît pas sur la page publique, seulement dans l'e-mail et l'espace bénévole (hypothèse, pour la sécurité des personnes accueillies).
 
@@ -133,6 +133,7 @@ L'offre gratuite de Brevo permet 300 e-mails par jour. Avec une vingtaine de bé
 
 - **Responsable** : l'association (nom à préciser).
 - **Données** : nom, prénom, e-mail, téléphone, inscriptions, accord de conservation, horodatages. Aucun champ libre, pour éviter la saisie de données sensibles. Tous les bénévoles sont majeurs. Rien sur les personnes accueillies.
+- **Création du compte** : à la première connexion par lien magique, avec l'e-mail seul (le contrôle de l'adresse est prouvé) ; nom, prénom et téléphone suivent au formulaire de première connexion. Un compte resté sans profil sera supprimé par la purge (S5). Sessions stockées en base pendant 30 jours au plus.
 - **Visibilité** : le public ne voit rien ; le bénévole voit ses propres données ; les coordinateurs voient tout.
 - **Base légale** : intérêt légitime de l'association pour organiser l'accueil (à confirmer). La conservation entre saisons repose sur le consentement, retirable à tout moment.
 - **Durées proposées** : sans accord, suppression un mois après la fin de saison ; avec accord, jusqu'au retrait et au plus 3 ans sans participation ; journaux techniques, 6 mois.
@@ -144,7 +145,7 @@ L'offre gratuite de Brevo permet 300 e-mails par jour. Avec une vingtaine de bé
 **Sécurité** :
 
 - Cloudflare Tunnel sortant, aucun port entrant ; WAF, limitation de débit, HSTS
-- Lien magique via Spring Security (jeton à usage unique de 15 minutes, validé en POST). La réponse est la même que le compte existe ou non ; les demandes sont limitées par e-mail et par IP, en plus de Turnstile.
+- Lien magique via Spring Security (jeton à usage unique de 15 minutes, validé en POST). Seule l'empreinte SHA-256 du jeton est stockée, et sa consommation est atomique. La réponse est la même que le compte existe ou non ; les demandes sont limitées par e-mail (3 par 15 minutes) et par IP (10 par heure), en mémoire pour une instance unique, en plus de Turnstile.
 - Cookie `__Host-`, HttpOnly, Secure, SameSite=Lax ; nouvel identifiant de session à la connexion ; protection CSRF active
 - Autorisation vérifiée côté serveur sur chaque action, avec des tests d'accès croisé
 - Back-office protégé par le rôle coordinateur et par Cloudflare Access sur `/admin/*`, avec des sessions de 8 h
@@ -184,11 +185,11 @@ Rappels par SMS (payants), export iCal, messagerie relayée entre bénévoles d'
 
 ## 11. Questions ouvertes
 
-1. Une seule inscription par bénévole et par soirée ?
+1. Une seule inscription par bénévole et par soirée ? Appliqué en S3, garanti par une contrainte en base ; une exception décidée par un coordinateur (S4) demandera une nouvelle migration.
 2. Dates de la saison 2026-2027, adresse et consignes du lieu. En attendant, une saison d'exemple aux dates fictives (4 janv. → 21 mars 2027 au matin) est en place, signalée comme telle sur la page publique ; elle sera remplacée depuis le back-office (S4).
 3. Nom exact de l'association, pour la notice et l'expéditeur des e-mails.
 4. Durées de conservation proposées dans la section RGPD.
-5. Durée de connexion des bénévoles (30 jours) et heure du rappel (18 h).
+5. Durée de connexion des bénévoles (30 jours, appliquée en S3 et modifiable) et heure du rappel (18 h).
 6. L'adresse du lieu reste-t-elle absente de la page publique ? Par défaut, oui : la page publique (S2) ne l'affiche pas, et le modèle de données ne la stocke pas encore.
 
 ## 12. Méthode de travail avec Claude
