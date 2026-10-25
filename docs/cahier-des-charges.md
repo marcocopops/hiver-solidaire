@@ -1,6 +1,6 @@
 # Hiver Solidaire — Cahier des charges du MVP
 
-*Version 0.3 · 25 octobre 2026 · Marc-Antoine Meunier · statut : à valider*
+*Version 0.4 · 25 octobre 2026 · Marc-Antoine Meunier · statut : à valider*
 
 Ce document est la référence du projet. Toute évolution passe par une PR qui le met à jour.
 
@@ -27,6 +27,7 @@ Indicateurs en fin de saison : part des soirées complètes la veille ; aucun in
 - **Coordinateurs** : 2 à 3 personnes.
 - **Désinscription** : en autonomie jusqu'à la veille ; ensuite, par téléphone auprès d'un coordinateur.
 - **Coordonnées** : aucune n'est partagée entre bénévoles ; seuls les coordinateurs les voient.
+- **Pseudo public** (décision du 25 octobre 2026) : chaque bénévole choisit un pseudo, affiché sur le planning pour que chacun voie qui vient et s'inscrive avec les gens qu'il connaît. C'est la seule donnée partagée ; nom, e-mail et téléphone restent réservés aux coordinateurs. Le pseudo est public, et non réservé aux bénévoles connectés : l'accès au site est libre, une telle restriction ne protégerait rien.
 - **Remise des repas préparés chez soi** : organisée par un coordinateur ; une messagerie relayée viendra en V2.
 - **Bénévole de nuit** : ne compte pas dans les 2 présences au dîner.
 - **Conservation** : d'une saison à l'autre, uniquement avec l'accord du bénévole (case à cocher).
@@ -49,7 +50,7 @@ La bêta de la semaine 7 laisse une semaine de marge avant le gel. Les dates de 
 
 ## 4. Utilisateurs et rôles
 
-- **Visiteur** : voit le planning des soirées à venir, leur statut et les postes qui manquent (« Manque : nuit, petit-déjeuner »), sans aucune donnée personnelle. Pas de nombre de places ni d'inscrits : dans une communauté d'une vingtaine de personnes, un nombre suffirait à deviner qui est inscrit.
+- **Visiteur** : voit le planning des soirées à venir, leur statut, les postes qui manquent (« Manque : nuit, petit-déjeuner ») et, par poste, les pseudos des inscrits (sauf sur une soirée fermée). Aucune autre donnée personnelle : ni nom, ni e-mail, ni téléphone. Les pages demandent aux moteurs de recherche de ne pas les indexer (`noindex`).
 - **Bénévole** : se connecte par lien magique, s'inscrit, se désinscrit, consulte et supprime ses données. Connecté, il voit en plus sur le planning les soirées où il participe lui-même, rien sur les autres.
 - **Coordinateur (2 à 3)** : a un accès complet au planning, aux bénévoles et au paramétrage.
 - **Personnes accueillies** : aucune donnée les concernant n'est saisie.
@@ -97,7 +98,7 @@ Une saison est définie par sa première et sa dernière soirée (dates du soir 
 1. Le bénévole choisit une soirée et un type d'inscription encore disponible.
 2. Il saisit son e-mail dans un formulaire protégé par Turnstile. Le message affiché est le même, que l'adresse soit connue ou non.
 3. Il ouvre le lien reçu (usage unique, valable 15 minutes) et appuie sur « Me connecter ». La connexion se fait en POST, car les filtres des messageries ouvrent les liens et consommeraient le jeton. Le lien porte aussi le choix de l'étape 1 (soirée, type, plat, sans donnée personnelle) : il fonctionne sur un autre appareil que celui de la demande.
-4. La première fois, il donne son nom, son prénom et son téléphone (obligatoire ; indicatif +33 par défaut, numéros étrangers acceptés, enregistré au format international). Une case « Me recontacter la saison prochaine », décochée par défaut, et un lien vers la notice d'information complètent le formulaire.
+4. La première fois, il donne son nom, son prénom, un **pseudo public** et son téléphone (obligatoire ; indicatif +33 par défaut, numéros étrangers acceptés, enregistré au format international). Le pseudo est proposé sous la forme prénom + initiale du nom (« MarieD ») et modifiable ; l'aide du champ dit qu'il est visible par tous sur le planning et qu'on peut choisir autre chose que son prénom. Il est unique sans tenir compte de la casse : en cas de doublon, une variante est proposée (« MarieD2 »). Une case « Me recontacter la saison prochaine », décochée par défaut, et un lien vers la notice d'information complètent le formulaire.
 5. Il confirme ; un e-mail récapitule la date, les horaires, l'adresse, les consignes et le numéro des coordinateurs.
 6. Il reste connecté 30 jours sur cet appareil (hypothèse) : session stockée en base, 30 jours au plus après la connexion, même utilisée chaque jour ([ADR-0007](adr/0007-session-jdbc-plutot-que-se-souvenir-de-moi.md)).
 
@@ -132,9 +133,9 @@ L'offre gratuite de Brevo permet 300 e-mails par jour. Avec une vingtaine de bé
 ## 7. Données personnelles (RGPD)
 
 - **Responsable** : l'association (nom à préciser).
-- **Données** : nom, prénom, e-mail, téléphone, inscriptions, accord de conservation, horodatages. Aucun champ libre, pour éviter la saisie de données sensibles. Tous les bénévoles sont majeurs. Rien sur les personnes accueillies.
+- **Données** : nom, prénom, pseudo, e-mail, téléphone, inscriptions, accord de conservation, horodatages. Aucun champ libre, pour éviter la saisie de données sensibles, sauf le pseudo, étroitement borné : 3 à 20 caractères, lettres latines (accents compris), chiffres, tiret et souligné. Tous les bénévoles sont majeurs. Rien sur les personnes accueillies.
 - **Création du compte** : à la première connexion par lien magique, avec l'e-mail seul (le contrôle de l'adresse est prouvé) ; nom, prénom et téléphone suivent au formulaire de première connexion. Un compte resté sans profil sera supprimé par la purge (S5). Sessions stockées en base pendant 30 jours au plus.
-- **Visibilité** : le public ne voit rien ; le bénévole voit ses propres données ; les coordinateurs voient tout.
+- **Visibilité** : le public voit les pseudos et les soirées où ils sont inscrits, rien d'autre ; le bénévole voit ses propres données ; les coordinateurs voient tout. Le bénévole est informé du caractère public de son pseudo par l'aide du champ, puis par la notice (S5).
 - **Base légale** : intérêt légitime de l'association pour organiser l'accueil (à confirmer). La conservation entre saisons repose sur le consentement, retirable à tout moment.
 - **Durées proposées** : sans accord, suppression un mois après la fin de saison ; avec accord, jusqu'au retrait et au plus 3 ans sans participation ; journaux techniques, 6 mois.
 - **Sous-traitants à citer dans la notice** : Cloudflare (réseau, tunnel, Access, Turnstile) et Brevo (e-mails). Hébergement sur un serveur personnel situé en France.
@@ -191,6 +192,8 @@ Rappels par SMS (payants), export iCal, messagerie relayée entre bénévoles d'
 4. Durées de conservation proposées dans la section RGPD.
 5. Durée de connexion des bénévoles (30 jours, appliquée en S3 et modifiable) et heure du rappel (18 h).
 6. L'adresse du lieu reste-t-elle absente de la page publique ? Par défaut, oui : la page publique (S2) ne l'affiche pas, et le modèle de données ne la stocke pas encore.
+7. La notice d'information (S5) doit mentionner le pseudo public : son affichage sur le planning, visible par tous, sa finalité et la façon d'en changer.
+8. Modification du pseudo : elle viendra avec « Mon compte » (S4), qui permettra aussi aux coordinateurs de régler un pseudo usurpé.
 
 ## 12. Méthode de travail avec Claude
 

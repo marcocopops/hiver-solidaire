@@ -22,6 +22,12 @@
             <p class="soiree__manque" th:unless="${evening.missingPostKeys.isEmpty()}"
                th:text="#{planning.missing(${#strings.listJoin(#messages.listMsg(evening.missingPostKeys), ', ')})}">
                 Manque : nuit, petit-déjeuner</p>
+            <dl class="soiree__inscrits" th:unless="${evening.registrants.isEmpty()}">
+                <div class="soiree__poste" th:each="post : ${evening.registrants}">
+                    <dt th:text="#{${post.titleKey}}">Nuit</dt>
+                    <dd th:text="${#strings.listJoin(post.pseudos, ', ')}">MarieD</dd>
+                </div>
+            </dl>
             <p class="soiree__action" th:if="${evening.mine}">
                 <span class="inscrit" th:text="#{planning.mine}">Vous êtes inscrit</span>
             </p>

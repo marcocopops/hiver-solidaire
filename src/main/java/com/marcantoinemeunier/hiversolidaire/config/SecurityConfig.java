@@ -19,6 +19,7 @@ import org.springframework.security.web.authentication.DelegatingAuthenticationE
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
+import org.springframework.security.web.header.writers.StaticHeadersWriter;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
@@ -97,6 +98,9 @@ public class SecurityConfig {
                         .referrerPolicy(referrer -> referrer.policy(ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
                         .permissionsPolicyHeader(permissions -> permissions.policy(PERMISSIONS_POLICY))
                         // HSTS est posé par Cloudflare (cahier des charges, §8).
-                        .httpStrictTransportSecurity(hsts -> hsts.disable()));
+                        .httpStrictTransportSecurity(hsts -> hsts.disable())
+                        // Le planning affiche les pseudos des bénévoles : aucune page n'a à figurer dans les moteurs
+                        // de recherche (cahier des charges §4, modèle de menaces).
+                        .addHeaderWriter(new StaticHeadersWriter("X-Robots-Tag", "noindex, nofollow")));
     }
 }

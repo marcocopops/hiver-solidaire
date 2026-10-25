@@ -2,6 +2,7 @@ package com.marcantoinemeunier.hiversolidaire.inscription;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.marcantoinemeunier.hiversolidaire.Browser;
 import com.marcantoinemeunier.hiversolidaire.TestClockAndMailConfiguration;
 import com.marcantoinemeunier.hiversolidaire.TestcontainersConfiguration;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.DishChoice;
@@ -44,9 +45,9 @@ class RegistrationConcurrencyTest {
     private UUID volunteer() {
         var id = UUID.randomUUID();
         jdbc.update("""
-                INSERT INTO volunteer (id, email, last_name, first_name, phone, profile_completed_at)
-                VALUES (?, ?, 'Martin', 'Anne', '0600000001', now())
-                """, id, id + "@example.org");
+                INSERT INTO volunteer (id, email, last_name, first_name, phone, pseudo, profile_completed_at)
+                VALUES (?, ?, 'Martin', 'Anne', '+33600000001', ?, now())
+                """, id, id + "@example.org", Browser.uniquePseudo());
         return id;
     }
 

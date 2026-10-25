@@ -40,6 +40,9 @@ public class ProfileForm {
     @Pattern(regexp = NAME_PATTERN, message = "{profile.error.firstName}")
     private String firstName;
 
+    /** Pseudo public ; validé par {@link Pseudo#normalize(String)}. Vide : le serveur propose une suggestion. */
+    private String pseudo;
+
     @NotBlank(message = "{profile.error.phoneCountryCode}")
     @Size(max = 6, message = "{profile.error.phoneCountryCode}")
     @Pattern(regexp = COUNTRY_CODE_PATTERN, message = "{profile.error.phoneCountryCode}")
@@ -67,6 +70,14 @@ public class ProfileForm {
 
     public void setFirstName(String firstName) {
         this.firstName = firstName;
+    }
+
+    public String getPseudo() {
+        return pseudo;
+    }
+
+    public void setPseudo(String pseudo) {
+        this.pseudo = pseudo;
     }
 
     public String getPhone() {

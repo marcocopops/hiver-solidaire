@@ -35,6 +35,11 @@ public final class Browser {
         return "benevole-" + UUID.randomUUID() + "@example.org";
     }
 
+    /** Pseudo factice et unique (lettres et chiffres), pour ne pas se heurter à l'unicité entre tests. */
+    public static String uniquePseudo() {
+        return "Test" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+    }
+
     public MockHttpServletResponse get(String url) throws Exception {
         return perform(MockMvcRequestBuilders.get(url));
     }

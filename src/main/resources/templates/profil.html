@@ -21,6 +21,16 @@
                th:attr="aria-invalid=${#fields.hasErrors('firstName')} ? 'true' : 'false'">
         <p class="erreur" th:if="${#fields.hasErrors('firstName')}" th:text="#{profile.error.firstName}">Prénom.</p>
 
+        <label for="pseudo" th:text="#{profile.pseudo}">Pseudo</label>
+        <p class="bandeau" th:if="${pseudoSuggested}" th:text="#{profile.pseudo.suggested}">Pseudo proposé.</p>
+        <input id="pseudo" type="text" autocomplete="nickname" required minlength="3" maxlength="20"
+               spellcheck="false" autocapitalize="off" th:field="*{pseudo}" aria-describedby="pseudo-hint"
+               th:attr="aria-invalid=${#fields.hasErrors('pseudo') or pseudoTaken != null} ? 'true' : 'false'">
+        <p class="aide" id="pseudo-hint" th:text="#{profile.pseudo.hint}">Votre pseudo est public.</p>
+        <p class="erreur" th:if="${#fields.hasErrors('pseudo')}" th:text="#{profile.error.pseudo}">Pseudo.</p>
+        <p class="erreur" th:if="${pseudoTaken != null}" th:text="#{profile.error.pseudoTaken(${pseudoTaken})}">
+            Pris.</p>
+
         <fieldset class="telephone" aria-describedby="phone-hint">
             <legend th:text="#{profile.phone}">Téléphone</legend>
             <div class="telephone__champs">
@@ -56,5 +66,7 @@
         <button class="bouton" type="submit" th:text="#{profile.submit}">Continuer</button>
     </form>
 </main>
+<!-- Suggestion du pseudo pendant la saisie ; sans JavaScript, le serveur propose la même valeur. -->
+<script th:src="@{/js/profil.js}" defer></script>
 </body>
 </html>

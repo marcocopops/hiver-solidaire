@@ -53,7 +53,7 @@ class VolunteerAccessTest {
         browser.post("/login/ott", "token", token);
         if (withProfile) {
             browser.get("/profil");
-            browser.post("/profil", "lastName", "Martin", "firstName", "Anne", "phone", "0600000001");
+            browser.post("/profil", "pseudo", Browser.uniquePseudo(), "lastName", "Martin", "firstName", "Anne", "phone", "0600000001");
         }
         return browser;
     }
@@ -168,7 +168,7 @@ class VolunteerAccessTest {
         var browser = signedIn(false);
         browser.get("/profil");
 
-        var response = browser.post("/profil", "lastName", "Peeters", "firstName", "Lien",
+        var response = browser.post("/profil", "pseudo", Browser.uniquePseudo(), "lastName", "Peeters", "firstName", "Lien",
                 "phoneCountryCode", "+32", "phone", "0470 00 00 01");
 
         assertThat(response.getRedirectedUrl()).isEqualTo("/mes-inscriptions");

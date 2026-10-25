@@ -92,7 +92,7 @@ class RegistrationJourneyTest {
 
         // 5. Premier profil.
         phone.get(afterLogin.getRedirectedUrl());
-        var afterProfile = phone.post("/profil", "lastName", "Martin", "firstName", "Anne",
+        var afterProfile = phone.post("/profil", "pseudo", Browser.uniquePseudo(), "lastName", "Martin", "firstName", "Anne",
                 "phone", "06 00 00 00 01", "soiree", EVENING.toString(), "choix", "NIGHT_AND_DINNER");
         assertThat(afterProfile.getRedirectedUrl())
                 .isEqualTo("/inscription/confirmer?soiree=" + EVENING + "&choix=NIGHT_AND_DINNER");
@@ -130,7 +130,7 @@ class RegistrationJourneyTest {
         first.get("/login/ott?token=" + firstToken);
         first.post("/login/ott", "token", firstToken);
         first.get("/profil");
-        first.post("/profil", "lastName", "Martin", "firstName", "Anne", "phone", "0600000001");
+        first.post("/profil", "pseudo", Browser.uniquePseudo(), "lastName", "Martin", "firstName", "Anne", "phone", "0600000001");
 
         var browser = new Browser(mockMvc);
         browser.get("/connexion?soiree=" + EVENING + "&choix=BREAKFAST");
@@ -216,7 +216,7 @@ class RegistrationJourneyTest {
         browser.get("/login/ott?token=" + token);
         browser.post("/login/ott", "token", token);
         browser.get("/profil");
-        browser.post("/profil", "lastName", "Martin", "firstName", "Anne", "phone", "0600000001");
+        browser.post("/profil", "pseudo", Browser.uniquePseudo(), "lastName", "Martin", "firstName", "Anne", "phone", "0600000001");
         return browser;
     }
 }

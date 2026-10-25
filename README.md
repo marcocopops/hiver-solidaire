@@ -8,7 +8,7 @@ Application web de planning pour l'accueil hivernal de personnes sans abri. Une 
 
 ## Ce que fait l'application
 
-- Planning public des soirées, avec les postes qui manquent et sans aucune donnée personnelle
+- Planning public des soirées : postes qui manquent et pseudos des inscrits, sans autre donnée personnelle
 - Inscription et désinscription en autonomie, connexion par lien magique (pas de mot de passe)
 - Back-office des coordinateurs : soirées à compléter, inscriptions par téléphone, exports
 - E-mails de confirmation, rappel la veille, alertes et récap quotidien aux coordinateurs

@@ -18,6 +18,19 @@ public interface RegistrationRepository extends Repository<RegistrationEntity, U
             """)
     List<RegistrationEntity> findFromDate(@Param("seasonId") UUID seasonId, @Param("from") LocalDate from);
 
+    /**
+     * Pseudos publics des inscrits aux soirées d'une saison à partir d'une date : seulement le pseudo, jamais le
+     * nom, l'e-mail, le téléphone ni l'identifiant du bénévole.
+     */
+    @Query("""
+            select new com.marcantoinemeunier.hiversolidaire.planning.persistence.RegistrantPseudo(
+                r.eveningId, r.type, r.dishChoice, v.pseudo)
+            from RegistrationEntity r, VolunteerEntity v
+            where v.id = r.volunteerId and v.pseudo is not null and r.eveningId in (
+                select e.id from EveningEntity e where e.seasonId = :seasonId and e.date >= :from)
+            """)
+    List<RegistrantPseudo> findPseudosFromDate(@Param("seasonId") UUID seasonId, @Param("from") LocalDate from);
+
     @Query("select r from RegistrationEntity r where r.eveningId = :eveningId")
     List<RegistrationEntity> findByEvening(@Param("eveningId") UUID eveningId);
 
