@@ -107,6 +107,8 @@ class RegistrationJourneyTest {
 
         // 7. « Mes inscriptions » et le planning reflètent l'inscription.
         assertThat(phone.get("/mes-inscriptions").getContentAsString()).contains(LABEL).contains("Passer la nuit");
+        assertThat(jdbc.queryForObject("SELECT phone FROM volunteer WHERE email = ?", String.class, email))
+                .isEqualTo("+33600000001");
         var updated = phone.get("/planning").getContentAsString();
         assertThat(statusOnPlanning(updated)).isEqualTo("partial");
         assertThat(updated).contains("Vous participez");
@@ -115,7 +117,7 @@ class RegistrationJourneyTest {
 
         // 8. Aucune donnée personnelle ni jeton dans les logs (CLAUDE.md, menace M13).
         assertThat(output.getAll()).doesNotContain(email).doesNotContain("@example.org")
-                .doesNotContain(link.token()).doesNotContain("Martin").doesNotContain("0600000001");
+                .doesNotContain(link.token()).doesNotContain("Martin").doesNotContain("600000001");
     }
 
     @Test

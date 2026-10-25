@@ -218,7 +218,29 @@ a:focus-visible {
 
 .formulaire legend {
     margin-bottom: 0.5rem;
+    padding: 0;
     font-weight: 600;
+}
+
+/* Téléphone : indicatif étroit, numéro sur le reste de la ligne. */
+.telephone__champs {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.telephone__indicatif {
+    flex: 0 0 5.5rem;
+}
+
+.telephone__numero {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.telephone__champs label {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-weight: 400;
 }
 
 /* Une option de choix : toute la ligne est cliquable. */

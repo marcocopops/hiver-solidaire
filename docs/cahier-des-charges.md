@@ -97,7 +97,7 @@ Une saison est définie par sa première et sa dernière soirée (dates du soir 
 1. Le bénévole choisit une soirée et un type d'inscription encore disponible.
 2. Il saisit son e-mail dans un formulaire protégé par Turnstile. Le message affiché est le même, que l'adresse soit connue ou non.
 3. Il ouvre le lien reçu (usage unique, valable 15 minutes) et appuie sur « Me connecter ». La connexion se fait en POST, car les filtres des messageries ouvrent les liens et consommeraient le jeton. Le lien porte aussi le choix de l'étape 1 (soirée, type, plat, sans donnée personnelle) : il fonctionne sur un autre appareil que celui de la demande.
-4. La première fois, il donne son nom, son prénom et son téléphone (obligatoire). Une case « Me recontacter la saison prochaine », décochée par défaut, et un lien vers la notice d'information complètent le formulaire.
+4. La première fois, il donne son nom, son prénom et son téléphone (obligatoire ; indicatif +33 par défaut, numéros étrangers acceptés, enregistré au format international). Une case « Me recontacter la saison prochaine », décochée par défaut, et un lien vers la notice d'information complètent le formulaire.
 5. Il confirme ; un e-mail récapitule la date, les horaires, l'adresse, les consignes et le numéro des coordinateurs.
 6. Il reste connecté 30 jours sur cet appareil (hypothèse) : session stockée en base, 30 jours au plus après la connexion, même utilisée chaque jour ([ADR-0007](adr/0007-session-jdbc-plutot-que-se-souvenir-de-moi.md)).
 
@@ -185,7 +185,7 @@ Rappels par SMS (payants), export iCal, messagerie relayée entre bénévoles d'
 
 ## 11. Questions ouvertes
 
-1. Une seule inscription par bénévole et par soirée ? Appliqué en S3, garanti par une contrainte en base ; une exception décidée par un coordinateur (S4) demandera une nouvelle migration.
+1. Une seule inscription par bénévole et par soirée ? Appliqué en S3, garanti par une contrainte en base. Décidé le 25 octobre 2026 : l'exception décidée par un coordinateur fera l'objet d'une migration en S4.
 2. Dates de la saison 2026-2027, adresse et consignes du lieu. En attendant, une saison d'exemple aux dates fictives (4 janv. → 21 mars 2027 au matin) est en place, signalée comme telle sur la page publique ; elle sera remplacée depuis le back-office (S4).
 3. Nom exact de l'association, pour la notice et l'expéditeur des e-mails.
 4. Durées de conservation proposées dans la section RGPD.

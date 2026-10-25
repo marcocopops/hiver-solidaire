@@ -21,12 +21,28 @@
                th:attr="aria-invalid=${#fields.hasErrors('firstName')} ? 'true' : 'false'">
         <p class="erreur" th:if="${#fields.hasErrors('firstName')}" th:text="#{profile.error.firstName}">Prénom.</p>
 
-        <label for="phone" th:text="#{profile.phone}">Téléphone</label>
-        <input id="phone" type="tel" autocomplete="tel" inputmode="tel" required maxlength="30" th:field="*{phone}"
-               aria-describedby="phone-hint"
-               th:attr="aria-invalid=${#fields.hasErrors('phone')} ? 'true' : 'false'">
-        <p class="aide" id="phone-hint" th:text="#{profile.phone.hint}">Numéro français.</p>
-        <p class="erreur" th:if="${#fields.hasErrors('phone')}" th:text="#{profile.error.phone}">Téléphone.</p>
+        <fieldset class="telephone" aria-describedby="phone-hint">
+            <legend th:text="#{profile.phone}">Téléphone</legend>
+            <div class="telephone__champs">
+                <div class="telephone__indicatif">
+                    <label for="phoneCountryCode" th:text="#{profile.phoneCountryCode}">Indicatif</label>
+                    <input id="phoneCountryCode" type="text" autocomplete="tel-country-code" inputmode="tel"
+                           required maxlength="6" th:field="*{phoneCountryCode}"
+                           th:attr="aria-invalid=${#fields.hasErrors('phoneCountryCode')} ? 'true' : 'false'">
+                </div>
+                <div class="telephone__numero">
+                    <label for="phone" th:text="#{profile.phoneNumber}">Numéro</label>
+                    <input id="phone" type="tel" autocomplete="tel-national" inputmode="tel" required maxlength="30"
+                           th:field="*{phone}"
+                           th:attr="aria-invalid=${#fields.hasErrors('phone') or #fields.hasErrors('phoneValid')} ? 'true' : 'false'">
+                </div>
+            </div>
+        </fieldset>
+        <p class="aide" id="phone-hint" th:text="#{profile.phone.hint}">Indicatif +33 pour la France.</p>
+        <p class="erreur" th:if="${#fields.hasErrors('phoneCountryCode')}" th:text="#{profile.error.phoneCountryCode}">
+            Indicatif.</p>
+        <p class="erreur" th:if="${#fields.hasErrors('phone') or #fields.hasErrors('phoneValid')}"
+           th:text="#{profile.error.phone}">Téléphone.</p>
 
         <div class="case">
             <input id="recontactNextSeason" type="checkbox" th:field="*{recontactNextSeason}"

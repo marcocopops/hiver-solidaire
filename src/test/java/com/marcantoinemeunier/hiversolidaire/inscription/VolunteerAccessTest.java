@@ -149,7 +149,7 @@ class VolunteerAccessTest {
 
         assertThat(response.getStatus()).isEqualTo(200);
         assertThat(response.getContentAsString()).contains("Indiquez votre nom")
-                .contains("Indiquez un numéro de téléphone français").doesNotContain("<script>");
+                .contains("Indiquez un numéro de téléphone valide").doesNotContain("<script>");
         assertThat(browser.get("/mes-inscriptions").getRedirectedUrl()).isEqualTo("/profil");
     }
 
@@ -157,9 +157,34 @@ class VolunteerAccessTest {
     void every_profile_field_has_a_label_and_recontact_is_unchecked() throws Exception {
         var page = signedIn(false).get("/profil").getContentAsString();
 
-        for (var id : List.of("lastName", "firstName", "phone", "recontactNextSeason")) {
+        for (var id : List.of("lastName", "firstName", "phoneCountryCode", "phone", "recontactNextSeason")) {
             assertThat(page).contains("for=\"" + id + "\"").contains("id=\"" + id + "\"");
         }
-        assertThat(page).doesNotContain("checked");
+        assertThat(page).doesNotContain("checked").contains("name=\"phoneCountryCode\" value=\"+33\"");
+    }
+
+    @Test
+    void a_foreign_phone_number_is_stored_in_international_format() throws Exception {
+        var browser = signedIn(false);
+        browser.get("/profil");
+
+        var response = browser.post("/profil", "lastName", "Peeters", "firstName", "Lien",
+                "phoneCountryCode", "+32", "phone", "0470 00 00 01");
+
+        assertThat(response.getRedirectedUrl()).isEqualTo("/mes-inscriptions");
+        assertThat(jdbc.queryForList("SELECT phone FROM volunteer WHERE last_name = 'Peeters'", String.class))
+                .contains("+32470000001");
+    }
+
+    @Test
+    void an_invalid_country_code_is_rejected_server_side() throws Exception {
+        var browser = signedIn(false);
+        browser.get("/profil");
+
+        var response = browser.post("/profil", "lastName", "Martin", "firstName", "Anne",
+                "phoneCountryCode", "+0", "phone", "0600000001");
+
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(response.getContentAsString()).contains("Indiquez un indicatif de pays");
     }
 }

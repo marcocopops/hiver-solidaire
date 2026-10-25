@@ -6,6 +6,7 @@ import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /** Formulaire de première connexion : validation et normalisation, données factices. */
@@ -13,12 +14,17 @@ class ProfileFormTest {
 
     private static final Validator VALIDATOR = Validation.buildDefaultValidatorFactory().getValidator();
 
-    private static ProfileForm form(String lastName, String firstName, String phone) {
+    private static ProfileForm form(String lastName, String firstName, String countryCode, String phone) {
         var form = new ProfileForm();
         form.setLastName(lastName);
         form.setFirstName(firstName);
+        form.setPhoneCountryCode(countryCode);
         form.setPhone(phone);
         return form;
+    }
+
+    private static ProfileForm form(String lastName, String firstName, String phone) {
+        return form(lastName, firstName, "+33", phone);
     }
 
     @Test
@@ -29,19 +35,58 @@ class ProfileFormTest {
         assertThat(form.isRecontactNextSeason()).isFalse();
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"0600000001", "06 00 00 00 01", "06.00.00.00.01", "+33 6 00 00 00 01", "0033600000001"})
-    void french_phone_numbers_are_accepted_and_normalized(String phone) {
-        var form = form("Martin", "Anne", phone);
-
-        assertThat(VALIDATOR.validate(form)).isEmpty();
-        assertThat(form.normalizedPhone()).isEqualTo("0600000001");
+    @Test
+    void the_country_code_defaults_to_france() {
+        assertThat(new ProfileForm().getPhoneCountryCode()).isEqualTo("+33");
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"", "06 00 00 00", "12345", "06 00 00 00 01 02", "0000000000", "appelez-moi"})
-    void invalid_phone_numbers_are_rejected(String phone) {
+    @ValueSource(strings = {"0600000001", "06 00 00 00 01", "06.00.00.00.01", "06-00-00-00-01", "6 00 00 00 01"})
+    void french_numbers_are_accepted_with_or_without_the_leading_zero(String phone) {
+        var form = form("Martin", "Anne", phone);
+
+        assertThat(VALIDATOR.validate(form)).isEmpty();
+        assertThat(form.normalizedPhone()).isEqualTo("+33600000001");
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        // Indicatif saisi, numéro national saisi, numéro international enregistré (numéros fictifs).
+        "+32,  0470 00 00 01,  +32470000001",
+        "+41,  079 000 00 01,  +41790000001",
+        "+44,  07700 900001,   +447700900001",
+        "+1,   555 010 0001,   +15550100001",
+        "+39,  06 0000 0001,   +390600000001",
+        "0032, 470 00 00 01,   +32470000001",
+        "32,   470 00 00 01,   +32470000001",
+        "+ 33, 06 00 00 00 01, +33600000001",
+    })
+    void foreign_numbers_are_accepted_and_stored_in_international_format(String countryCode, String phone,
+            String expected) {
+        var form = form("Martin", "Anne", countryCode, phone);
+
+        assertThat(VALIDATOR.validate(form)).isEmpty();
+        assertThat(form.normalizedPhone()).isEqualTo(expected);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "06 00 00 00", "12345", "06 00 00 00 01 02", "0000000000", "appelez-moi",
+        "+33 6 00 00 00 01", "06 00 00 00 0x"})
+    void invalid_french_numbers_are_rejected(String phone) {
         assertThat(VALIDATOR.validate(form("Martin", "Anne", phone))).isNotEmpty();
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "'',     0470000001",
+        "+0,     0470000001",
+        "+1234,  0470000001",
+        "abc,    0470000001",
+        "+32,    123",
+        "+32,    1234567890123456",
+    })
+    void invalid_country_codes_or_foreign_numbers_are_rejected(String countryCode, String phone) {
+        assertThat(VALIDATOR.validate(form("Martin", "Anne", countryCode, phone))).isNotEmpty();
     }
 
     @ParameterizedTest
