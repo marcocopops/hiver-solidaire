@@ -1,6 +1,6 @@
 # Hiver Solidaire — Cahier des charges du MVP
 
-*Version 0.4 · 25 octobre 2026 · Marc-Antoine Meunier · statut : à valider*
+*Version 0.5 · 25 octobre 2026 · Marc-Antoine Meunier · statut : à valider*
 
 Ce document est la référence du projet. Toute évolution passe par une PR qui le met à jour.
 
@@ -88,7 +88,7 @@ Une saison est définie par sa première et sa dernière soirée (dates du soir 
 - **R3 Préparation** : qui prépare choisit plat principal ou accompagnements, un de chaque par soirée.
 - **R4 Récupération** : chaque « préparer chez soi » doit avoir un « récupérer et partager » distinct le même soir (deux repas préparés chez soi demandent deux récupérations) ; sinon, les coordinateurs sont alertés et organisent la remise.
 - **R5 Statut** : une soirée est complète (tous les minimums couverts), partielle ou vide (aucune inscription), affichée par une couleur et un texte : « Complète » en vert, « À compléter » en orange, « Personne pour l'instant » en rouge ; une soirée fermée affiche « Fermée » en gris.
-- **R6 Désinscription** : en autonomie jusqu'à la veille de l'activité à 23 h 59, heure de Paris. Ensuite, l'appli affiche le téléphone des coordinateurs.
+- **R6 Désinscription** : en autonomie jusqu'à la veille de l'activité à 23 h 59, heure de Paris. L'activité est le soir J pour tous les types, petit-déjeuner du matin J+1 compris : la soirée est l'unité du planning, et un désistement à minuit pour un petit-déjeuner à 7 h ne laisserait pas le temps de trouver quelqu'un. Une soirée fermée n'empêche pas de se désinscrire. Ensuite, l'appli affiche le téléphone des coordinateurs (configuration du serveur, puis réglages de la saison en S4b). Une désinscription n'efface pas l'inscription : elle la marque annulée, et une inscription annulée ne compte plus dans R1, R2, R3 ni R5 ([ADR-0008](adr/0008-annulation-logique-et-anonymisation.md)).
 - **R7 Fenêtre** : inscriptions possibles de l'ouverture à la fin de saison, jamais sur une soirée passée. Une soirée est passée à partir de minuit le lendemain, heure de Paris : on peut encore s'inscrire le jour même. Un coordinateur peut fermer une soirée. La page publique n'affiche pas les soirées passées.
 
 ## 6. Parcours
@@ -104,9 +104,9 @@ Une saison est définie par sa première et sa dernière soirée (dates du soir 
 
 L'adresse du lieu n'apparaît pas sur la page publique, seulement dans l'e-mail et l'espace bénévole (hypothèse, pour la sécurité des personnes accueillies).
 
-**Se désinscrire** : depuis « Mes inscriptions » ou le lien de l'e-mail, jusqu'à la veille. Le lien ouvre une page de confirmation, et l'action se fait en POST. Si une soirée des 7 prochains jours devient incomplète, les coordinateurs sont alertés.
+**Se désinscrire** : depuis « Mes inscriptions » ou le lien de l'e-mail (S5), jusqu'à la veille à 23 h 59 (R6). Le lien ouvre une page de confirmation, et l'action se fait en POST. La place libérée est immédiatement reprenable. Après la limite, le bouton disparaît et l'appli affiche le téléphone des coordinateurs. Si une soirée des 7 prochains jours (aujourd'hui compris) perd un minimum, les coordinateurs sont alertés : l'alerte est enregistrée dès S4 et envoyée par e-mail à partir de S5.
 
-**Mon compte** : le bénévole voit ses données, modifie son téléphone, retire son accord de conservation ou supprime son compte. La suppression annule ses inscriptions futures et anonymise son historique.
+**Mon compte** : le bénévole voit ses données (e-mail, nom, prénom, pseudo, téléphone, accord de recontact), modifie son téléphone et son pseudo (mêmes règles qu'au premier profil), donne ou retire son accord de conservation, ou supprime son compte. L'e-mail n'est pas modifiable dans cette version ; nom et prénom se corrigent auprès d'un coordinateur. La suppression, après une page de confirmation, annule toutes ses inscriptions dont la soirée n'est pas passée (y compris après la limite de R6, avec l'alerte éventuelle) et anonymise son historique : plus aucun e-mail, nom, prénom, pseudo ni téléphone en base ; ses inscriptions passées restent comptées sans être rattachables à une personne ; il est déconnecté de tous ses appareils. Une nouvelle connexion avec la même adresse crée un nouveau compte.
 
 **Back-office des coordinateurs** :
 
@@ -134,6 +134,7 @@ L'offre gratuite de Brevo permet 300 e-mails par jour. Avec une vingtaine de bé
 
 - **Responsable** : l'association (nom à préciser).
 - **Données** : nom, prénom, pseudo, e-mail, téléphone, inscriptions, accord de conservation, horodatages. Aucun champ libre, pour éviter la saisie de données sensibles, sauf le pseudo, étroitement borné : 3 à 20 caractères, lettres latines (accents compris), chiffres, tiret et souligné. Tous les bénévoles sont majeurs. Rien sur les personnes accueillies.
+- **Suppression à la demande** : depuis « Mon compte », par anonymisation de la ligne du bénévole ([ADR-0008](adr/0008-annulation-logique-et-anonymisation.md)) ; ses liens de connexion en cours et ses sessions sont supprimés. Les sauvegardes antérieures en gardent une copie jusqu'à leur expiration (à préciser dans la notice).
 - **Création du compte** : à la première connexion par lien magique, avec l'e-mail seul (le contrôle de l'adresse est prouvé) ; nom, prénom et téléphone suivent au formulaire de première connexion. Un compte resté sans profil sera supprimé par la purge (S5). Sessions stockées en base pendant 30 jours au plus.
 - **Visibilité** : le public voit les pseudos et les soirées où ils sont inscrits, rien d'autre ; le bénévole voit ses propres données ; les coordinateurs voient tout. Le bénévole est informé du caractère public de son pseudo par l'aide du champ, puis par la notice (S5).
 - **Base légale** : intérêt légitime de l'association pour organiser l'accueil (à confirmer). La conservation entre saisons repose sur le consentement, retirable à tout moment.
@@ -193,7 +194,8 @@ Rappels par SMS (payants), export iCal, messagerie relayée entre bénévoles d'
 5. Durée de connexion des bénévoles (30 jours, appliquée en S3 et modifiable) et heure du rappel (18 h).
 6. L'adresse du lieu reste-t-elle absente de la page publique ? Par défaut, oui : la page publique (S2) ne l'affiche pas, et le modèle de données ne la stocke pas encore.
 7. La notice d'information (S5) doit mentionner le pseudo public : son affichage sur le planning, visible par tous, sa finalité et la façon d'en changer.
-8. Modification du pseudo : elle viendra avec « Mon compte » (S4), qui permettra aussi aux coordinateurs de régler un pseudo usurpé.
+8. Modification du pseudo : le bénévole la fait dans « Mon compte » depuis S4a. Reste pour S4b : la modification par un coordinateur, pour régler un pseudo usurpé.
+9. Désinscription : l'activité de R6 est le soir J pour tous les types, petit-déjeuner compris (décision proposée en S4a, à confirmer avec les coordinateurs). La suppression d'un compte annule aussi les inscriptions de la soirée même ou du lendemain, après la limite de R6 : la page de confirmation demande de prévenir les coordinateurs.
 
 ## 12. Méthode de travail avec Claude
 

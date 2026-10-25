@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head(#{account.delete.title})}"></head>
+<body>
+<main class="page">
+    <nav th:replace="~{fragments :: nav}"></nav>
+    <h1 th:text="#{account.delete.title}">Supprimer mon compte</h1>
+    <p th:text="#{account.delete.erased}">Seront effacés : …</p>
+    <p th:text="#{account.delete.kept}">Vos participations passées restent comptées, sans votre nom.</p>
+    <p th:if="${upcomingCount > 0}" th:text="#{account.delete.upcoming(${upcomingCount})}">
+        Vos inscriptions à venir seront annulées.</p>
+    <th:block th:if="${pastDeadline}">
+        <p class="alerte" role="alert" th:text="#{account.delete.pastDeadline}">Une soirée est imminente.</p>
+        <p th:replace="~{fragments :: coordinators(#{account.delete.warn})}">Prévenez un coordinateur.</p>
+    </th:block>
+    <p class="bandeau" th:text="#{account.delete.irreversible}">Cette action est définitive.</p>
+    <form class="formulaire" th:action="@{/mon-compte/supprimer}" method="post">
+        <button class="bouton bouton--danger" type="submit" th:text="#{account.delete.submit}">
+            Supprimer définitivement mon compte</button>
+    </form>
+    <p><a th:href="@{/mon-compte}" th:text="#{account.delete.back}">Garder mon compte</a></p>
+</main>
+</body>
+</html>

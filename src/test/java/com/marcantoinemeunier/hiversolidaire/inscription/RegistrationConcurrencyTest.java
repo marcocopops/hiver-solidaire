@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.marcantoinemeunier.hiversolidaire.Browser;
 import com.marcantoinemeunier.hiversolidaire.TestClockAndMailConfiguration;
 import com.marcantoinemeunier.hiversolidaire.TestcontainersConfiguration;
+import com.marcantoinemeunier.hiversolidaire.benevole.AccountDeletionService;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.CancellationDecision;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.DishChoice;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.RegistrationDecision;
@@ -36,6 +37,9 @@ class RegistrationConcurrencyTest {
 
     @Autowired
     RegistrationService registrations;
+
+    @Autowired
+    AccountDeletionService deletion;
 
     @Autowired
     JdbcTemplate jdbc;
@@ -189,5 +193,27 @@ class RegistrationConcurrencyTest {
         assertThat(jdbc.queryForObject("""
                 SELECT count(*) FROM registration WHERE volunteer_id = ? AND cancelled_at IS NULL
                 """, Integer.class, alice)).isEqualTo(results.get(1) == RegistrationDecision.ACCEPTED ? 1 : 0);
+    }
+
+    @Test
+    void a_simultaneous_account_deletion_and_registration_stay_consistent() throws Exception {
+        for (int round = 0; round < 5; round++) {
+            clean();
+            var alice = volunteer();
+            var bob = volunteer();
+            registrations.register(alice, choice(RegistrationType.PREPARE_AT_HOME, DishChoice.MAIN_DISH));
+
+            var results = simultaneously(List.<Callable<Object>>of(
+                    () -> {
+                        deletion.delete(alice);
+                        return "deleted";
+                    },
+                    () -> registrations.register(bob, choice(RegistrationType.PREPARE_AND_SHARE,
+                            DishChoice.MAIN_DISH))));
+
+            assertThat(results.get(1)).isIn(RegistrationDecision.ACCEPTED, RegistrationDecision.DISH_TAKEN);
+            assertThat(activeCount("MAIN_DISH")).isEqualTo(results.get(1) == RegistrationDecision.ACCEPTED ? 1 : 0);
+            assertThat(jdbc.queryForObject("SELECT email FROM volunteer WHERE id = ?", String.class, alice)).isNull();
+        }
     }
 }

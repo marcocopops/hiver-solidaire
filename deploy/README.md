@@ -93,6 +93,8 @@ puis `docker compose -f compose.prod.yaml up -d`. Tant que `APP_TAG` n'est pas `
 - **E-mails** : aucun `MAIL_HOST` avant S5 (Brevo). L'appli démarre et la page de connexion affiche « momentanément indisponible » ; le planning public reste servi. Ne jamais pointer la production vers Mailpit.
 - **Sessions** : stockées en base (table `spring_session`, ADR-0007), elles survivent aux mises à jour. Pour déconnecter un bénévole de tous ses appareils : `DELETE FROM spring_session WHERE principal_name = '<identifiant du bénévole>';`.
 - **Limitation des demandes de lien** : 3 par adresse toutes les 15 minutes, 10 par IP par heure, **en mémoire**. Valable pour une instance unique : les compteurs repartent de zéro à chaque redémarrage et ne seraient pas partagés entre deux instances. L'IP vient de l'en-tête transmis par cloudflared (`forward-headers-strategy: native`) : l'appli ne doit être joignable que par cloudflared. La limitation de débit de Cloudflare reste la première barrière.
+- **`APP_COORDINATORS_PHONE`** (depuis S4a) : téléphone des coordinateurs, affiché dans « Mes inscriptions » après la limite de désinscription (la veille à 23 h 59). À renseigner dans le `.env` du serveur ; vide, l'appli affiche « contactez un coordinateur ». Une valeur qui n'est pas un numéro empêche le démarrage.
+- **Comptes supprimés** : la suppression par le bénévole (« Mon compte ») anonymise sa ligne, annule ses inscriptions à venir et supprime ses sessions et ses liens en cours (ADR-0008). Aucune action manuelle à prévoir.
 - **`APP_CLOCK_OFFSET`** : réservé au développement, ne jamais le définir en production (un avertissement apparaît au démarrage s'il l'est).
 
 ## Contrôles utiles

@@ -8,8 +8,9 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 /**
  * Avant toute inscription, le bénévole remplit le formulaire de première connexion (§6, étape 4) : sinon il y est
- * renvoyé, avec son choix. Enregistré sur {@code /inscription/**} et {@code /mes-inscriptions/**} ; le choix d'un
- * type ({@code GET /inscription}), public, n'est pas concerné.
+ * renvoyé, avec son choix. Enregistré sur {@code /inscription/**}, {@code /mes-inscriptions/**} et « Mon compte »
+ * (sauf la suppression, voir {@code WebConfig}) ; le choix d'un type ({@code GET /inscription}), public, n'est pas
+ * concerné.
  */
 @Component
 public class ProfileRequiredInterceptor implements HandlerInterceptor {

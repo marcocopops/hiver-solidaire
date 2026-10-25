@@ -28,5 +28,9 @@ interface VolunteerRepository extends Repository<VolunteerEntity, UUID> {
     @Query("select count(v) > 0 from VolunteerEntity v where lower(v.pseudo) = lower(:pseudo)")
     boolean pseudoTaken(@Param("pseudo") String pseudo);
 
+    /** Pseudo pris par un autre bénévole que celui-ci : on peut garder le sien ou en changer la casse. */
+    @Query("select count(v) > 0 from VolunteerEntity v where lower(v.pseudo) = lower(:pseudo) and v.id <> :id")
+    boolean pseudoTakenByOther(@Param("pseudo") String pseudo, @Param("id") UUID id);
+
     VolunteerEntity saveAndFlush(VolunteerEntity volunteer);
 }

@@ -11,3 +11,4 @@ Chaque décision structurante est consignée ici, au format du [modèle](templat
 | [0005](0005-postgresql-plutot-que-sqlite.md) | PostgreSQL plutôt que SQLite | Accepté |
 | [0006](0006-soirees-stockees-plutot-que-calculees.md) | Soirées stockées plutôt que calculées | Accepté |
 | [0007](0007-session-jdbc-plutot-que-se-souvenir-de-moi.md) | Session de 30 jours en base plutôt que « se souvenir de moi » | Accepté |
+| [0008](0008-annulation-logique-et-anonymisation.md) | Annulation logique et anonymisation plutôt que suppression | Proposé |

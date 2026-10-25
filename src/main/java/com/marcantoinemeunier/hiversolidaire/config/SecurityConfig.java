@@ -35,7 +35,8 @@ public class SecurityConfig {
 
     /** Pages du bénévole connecté : sans connexion, on l'envoie vers {@code /connexion}. */
     private static final String[] VOLUNTEER_PAGES = {
-        "/profil", "/inscription/confirmer", "/inscription/confirmee", "/mes-inscriptions", "/mes-inscriptions/annuler"
+        "/profil", "/inscription/confirmer", "/inscription/confirmee", "/mes-inscriptions", "/mes-inscriptions/annuler",
+        "/mon-compte", "/mon-compte/supprimer"
     };
 
     /**
@@ -63,12 +64,16 @@ public class SecurityConfig {
                 .requestMatchers("/", "/error").permitAll()
                 // Planning public et choix d'une soirée : lecture seule, sans donnée personnelle.
                 .requestMatchers(HttpMethod.GET, "/planning", "/inscription", "/notice").permitAll()
+                // Fin de la suppression du compte : la session vient d'être invalidée.
+                .requestMatchers(HttpMethod.GET, "/compte-supprime").permitAll()
                 // Demande du lien, page « Me connecter » et consommation du jeton (POST protégé par CSRF).
                 .requestMatchers(HttpMethod.GET, "/connexion", "/connexion/envoye", "/login/ott").permitAll()
                 .requestMatchers(HttpMethod.POST, "/connexion", "/login/ott").permitAll()
                 .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
                 .requestMatchers(HttpMethod.GET, VOLUNTEER_PAGES).hasRole(VolunteerPrincipal.ROLE)
-                .requestMatchers(HttpMethod.POST, "/profil", "/inscription", "/mes-inscriptions/annuler", "/deconnexion")
+                .requestMatchers(HttpMethod.POST, "/profil", "/inscription", "/mes-inscriptions/annuler",
+                        "/mon-compte/telephone", "/mon-compte/pseudo", "/mon-compte/recontact", "/mon-compte/supprimer",
+                        "/deconnexion")
                         .hasRole(VolunteerPrincipal.ROLE)
                 .anyRequest().denyAll())
                 .exceptionHandling(handling -> handling.authenticationEntryPoint(entryPoint()));
