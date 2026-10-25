@@ -75,6 +75,7 @@ class ProfilePseudoTest {
         assertThat(body.indexOf("id=\"firstName\"")).isLessThan(body.indexOf("id=\"pseudo\""));
         assertThat(body.indexOf("id=\"pseudo\"")).isLessThan(body.indexOf("id=\"phone\""));
         assertThat(body).contains("Votre pseudo est public").contains("autre chose que votre prénom")
+                .contains("Seul votre pseudo est public").doesNotContain("ces informations ne sont visibles")
                 .contains("<script src=\"/js/profil.js\" defer></script>");
     }
 
