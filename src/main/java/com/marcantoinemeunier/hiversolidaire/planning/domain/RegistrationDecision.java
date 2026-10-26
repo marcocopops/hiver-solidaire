@@ -7,8 +7,6 @@ public enum RegistrationDecision {
     NOT_OPEN_YET,
     /** R7 : soirée hors des dates de la saison. */
     OUT_OF_SEASON,
-    /** R7 : soirée fermée par un coordinateur. */
-    CLOSED,
     /** R7 : soirée passée (à partir de minuit le lendemain, heure de Paris). */
     PAST,
     /** R2 : le bénévole est déjà inscrit sur cette soirée. */

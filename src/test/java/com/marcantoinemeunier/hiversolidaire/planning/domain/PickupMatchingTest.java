@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 class PickupMatchingTest {
 
     private static Evening evening(Registration... registrations) {
-        return new Evening(LocalDate.of(2027, 1, 4), false, Needs.defaults(), List.of(registrations));
+        return new Evening(LocalDate.of(2027, 1, 4), Needs.defaults(), List.of(registrations));
     }
 
     @Test

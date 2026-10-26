@@ -29,11 +29,10 @@ public record Season(LocalDate firstEvening, LocalDate lastEvening, Instant regi
         return !date.isBefore(firstEvening) && !date.isAfter(lastEvening);
     }
 
-    /** R7 : inscriptions possibles de l'ouverture à la fin de saison, jamais sur une soirée passée ou fermée. */
+    /** R7 : inscriptions possibles de l'ouverture à la fin de saison, jamais sur une soirée passée. */
     public boolean acceptsRegistrations(Evening evening, Instant now) {
         return !now.isBefore(registrationsOpenAt)
                 && contains(evening.date())
-                && !evening.closed()
                 && !evening.isPast(ParisTime.today(now));
     }
 }

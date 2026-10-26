@@ -5,23 +5,27 @@
 <main class="page">
     <nav th:replace="~{fragments :: nav}"></nav>
     <h1 th:text="#{common.myRegistrations}">Mes inscriptions</h1>
-    <p class="bandeau" role="status" th:if="${cancelledLabel != null}"
-       th:text="#{myRegistrations.cancelled(${cancelledLabel})}">Désinscription enregistrée.</p>
+    <p class="bandeau" role="status" th:if="${cancelled != null}"
+       th:text="#{myRegistrations.cancelled(${#messages.msg(cancelled.key, cancelled.date)})}">
+        Désinscription enregistrée.</p>
     <p th:if="${registrations.isEmpty()}" th:text="#{myRegistrations.none}">Aucune inscription à venir.</p>
     <ul class="soirees" th:unless="${registrations.isEmpty()}">
         <li class="soiree" th:each="registration : ${registrations}">
-            <span class="soiree__date" th:text="${registration.label}">Lun. 4 → mar. 5 janv.</span>
+            <span class="soiree__date"
+                  th:text="${#messages.msg(registration.activity.key, registration.activity.date)}">
+                Dîner du lun. 4 janv.</span>
             <p class="soiree__manque" th:text="#{${'registration.option.' + registration.option}}">Type</p>
             <p class="soiree__action" th:if="${registration.cancellable}">
                 <a class="bouton bouton--petit" th:href="@{/mes-inscriptions/annuler(soiree=${registration.date})}"
                    th:text="#{myRegistrations.cancel}">Me désinscrire</a>
             </p>
+            <p class="aide" th:if="${registration.cancellable}"
+               th:text="#{cancellation.deadline(${registration.deadline})}">Possible jusqu’au…</p>
             <th:block th:unless="${registration.cancellable}">
                 <p th:replace="~{fragments :: coordinators(#{myRegistrations.tooLate})}">Trop tard.</p>
             </th:block>
         </li>
     </ul>
-    <p class="aide" th:unless="${registrations.isEmpty()}" th:text="#{myRegistrations.deadline}">Jusqu’à la veille.</p>
 </main>
 </body>
 </html>

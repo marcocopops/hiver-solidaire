@@ -33,7 +33,7 @@ public class ProfileRequiredInterceptor implements HandlerInterceptor {
         if (volunteers.profileCompleted(volunteerId)) {
             return true;
         }
-        var target = RegistrationChoice.parse(request.getParameter(RegistrationChoice.EVENING_PARAM),
+        var target = RegistrationChoice.parse(request.getParameter(RegistrationChoice.DAY_PARAM),
                 request.getParameter(RegistrationChoice.CHOICE_PARAM))
                 .map(choice -> choice.appendTo("/profil")).orElse("/profil");
         response.sendRedirect(request.getContextPath() + target);

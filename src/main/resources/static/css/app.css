@@ -2,15 +2,11 @@
     --fond: #f6f3ee;
     --texte: #1f2933;
     --accent: #0b5c8c;
-    /* Statut d'une soirée (R5) : texte foncé sur fond clair, contraste supérieur à 7:1 (WCAG AA). */
+    /* Statut d'une journée (R5) : texte foncé sur fond clair, contraste supérieur à 7:1 (WCAG AA). */
     --complete-fond: #d8f0df;
     --complete-texte: #14532d;
     --partielle-fond: #fde7c4;
     --partielle-texte: #7a3e00;
-    --vide-fond: #fbd5d5;
-    --vide-texte: #7f1d1d;
-    --fermee-fond: #e5e7eb;
-    --fermee-texte: #374151;
     --erreur: #9b1c1c;
     --bordure: #9aa5b1;
 }
@@ -99,40 +95,128 @@ a {
     font-size: 0.95rem;
 }
 
-.soiree--complete {
+/* Planning par journée (ADR-0009) : structure seulement, la mise en forme vient avec la session design. */
+.filtres {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0 0 1rem;
+}
+
+.filtres a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding: 0 1rem;
+    border: 1px solid var(--bordure);
+    border-radius: 1.5rem;
+    background: #fff;
+    text-decoration: none;
+}
+
+.filtres a[aria-current="page"] {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+}
+
+.journees {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.journee {
+    margin-bottom: 0.75rem;
+}
+
+.journee__carte {
+    border-left: 0.375rem solid;
+    border-radius: 0.375rem;
+    background: #fff;
+}
+
+.journee__carte summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.25rem 0.75rem;
+    min-height: 2.75rem;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+}
+
+.journee__date {
+    font-weight: 600;
+}
+
+.journee--complete {
     border-color: var(--complete-texte);
 }
 
-.soiree--complete .statut {
+.journee--complete .statut {
     background: var(--complete-fond);
     color: var(--complete-texte);
 }
 
-.soiree--partial {
+.journee--incomplete {
     border-color: var(--partielle-texte);
 }
 
-.soiree--partial .statut {
+.journee--incomplete .statut {
     background: var(--partielle-fond);
     color: var(--partielle-texte);
 }
 
-.soiree--empty {
-    border-color: var(--vide-texte);
+.postes {
+    margin: 0;
+    padding: 0 1rem 0.5rem;
+    list-style: none;
 }
 
-.soiree--empty .statut {
-    background: var(--vide-fond);
-    color: var(--vide-texte);
+.poste {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.75rem;
+    padding: 0.25rem 0;
 }
 
-.soiree--closed {
-    border-color: var(--fermee-texte);
+.poste__titre {
+    flex: 0 0 9rem;
 }
 
-.soiree--closed .statut {
-    background: var(--fermee-fond);
-    color: var(--fermee-texte);
+.poste__precision {
+    font-size: 0.9rem;
+}
+
+.poste__inscrits {
+    display: flex;
+    overflow-wrap: anywhere;
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    min-width: 0;
+}
+
+.pseudo--vous {
+    font-weight: 600;
+}
+
+.pseudo--libre {
+    font-style: italic;
+}
+
+.journee__vous,
+.journee__action {
+    margin: 0;
+    padding: 0.5rem 1rem 1rem;
+}
+
+.inscription__quoi {
+    margin: 0 0 0.5rem;
+    font-weight: 600;
 }
 
 /* Navigation : retour au planning, mes inscriptions, déconnexion. */
@@ -305,28 +389,6 @@ a:focus-visible {
     font-weight: 600;
 }
 
-/* Pseudos des inscrits, un poste par ligne : « Nuit  Jean-L, MarieD ». */
-.soiree__inscrits {
-    flex-basis: 100%;
-    margin: 0.25rem 0 0;
-    font-size: 0.95rem;
-}
-
-.soiree__poste {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0 0.5rem;
-}
-
-.soiree__poste dt {
-    font-weight: 600;
-}
-
-.soiree__poste dd {
-    margin: 0;
-    overflow-wrap: anywhere;
-}
-
 .soiree__action {
     flex-basis: 100%;
     margin: 0.25rem 0 0;
@@ -341,9 +403,11 @@ a:focus-visible {
     padding: 0.625rem 1rem;
 }
 
-.inscrit {
-    font-weight: 600;
-    color: var(--complete-texte);
+/* Action secondaire (désinscription depuis la carte d'une journée). */
+.bouton--secondaire {
+    border: 1px solid var(--bordure);
+    background: #fff;
+    color: var(--texte);
 }
 
 @media (min-width: 48rem) {

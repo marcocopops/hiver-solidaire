@@ -9,32 +9,67 @@
     </p>
     <h1 th:text="#{planning.title}">Planning de la saison</h1>
     <p class="saison" th:if="${planning.seasonLabel != null}" th:text="${planning.seasonLabel}">Saison</p>
-    <p class="bandeau" th:if="${planning.sample}" th:text="#{planning.sample}">Dates d’exemple</p>
     <p class="bandeau" th:if="${planning.opensOn != null}" th:text="#{planning.opensOn(${planning.opensOn})}">
         Les inscriptions ouvrent le lundi 14 décembre 2026.</p>
 
-    <p th:if="${planning.evenings.isEmpty()}" th:text="#{planning.none}">Aucune soirée à venir pour le moment.</p>
+    <!-- Filtres en GET, sans JavaScript ; le dernier n'est proposé qu'à un bénévole connecté. -->
+    <nav class="filtres" th:attr="aria-label=#{planning.filters}">
+        <a th:text="#{planning.filter.ALL}"
+           th:href="@{/planning}" th:aria-current="${planning.filter.name() == 'ALL'} ? 'page'">Toutes</a>
+        <a th:text="#{planning.filter.TO_COMPLETE}"
+           th:href="@{/planning(filtre='a-completer')}" th:aria-current="${planning.filter.name() == 'TO_COMPLETE'} ? 'page'">À compléter</a>
+        <a th:if="${planning.signedIn}" th:text="#{planning.filter.MINE}"
+           th:href="@{/planning(filtre='miennes')}" th:aria-current="${planning.filter.name() == 'MINE'} ? 'page'">Les miennes</a>
+    </nav>
 
-    <ul class="soirees" th:unless="${planning.evenings.isEmpty()}">
-        <li th:each="evening : ${planning.evenings}" th:class="'soiree soiree--' + ${evening.statusKey}">
-            <span class="soiree__date" th:text="${evening.label}">Lun. 4 → mar. 5 janv.</span>
-            <span class="statut" th:text="#{${'planning.status.' + evening.statusKey}}">Complète</span>
-            <p class="soiree__manque" th:unless="${evening.missingPostKeys.isEmpty()}"
-               th:text="#{planning.missing(${#strings.listJoin(#messages.listMsg(evening.missingPostKeys), ', ')})}">
-                Manque : nuit, petit-déjeuner</p>
-            <dl class="soiree__inscrits" th:unless="${evening.registrants.isEmpty()}">
-                <div class="soiree__poste" th:each="post : ${evening.registrants}">
-                    <dt th:text="#{${post.titleKey}}">Nuit</dt>
-                    <dd th:text="${#strings.listJoin(post.pseudos, ', ')}">MarieD</dd>
+    <p th:if="${planning.days.isEmpty()}"
+       th:text="${planning.anyUpcoming} ? #{planning.noneForFilter} : #{planning.none}">Aucune journée à venir.</p>
+
+    <!-- Une carte par journée (ADR-0009), dépliée si elle est à compléter. -->
+    <ul class="journees" th:unless="${planning.days.isEmpty()}">
+        <li class="journee" th:each="day : ${planning.days}">
+            <details th:class="'journee__carte journee--' + ${day.statusKey}" th:open="${day.open}">
+                <summary>
+                    <span class="journee__date" th:text="${day.label}">Lun. 4 janv.</span>
+                    <span class="statut" th:text="#{${'planning.status.' + day.statusKey}}">À compléter</span>
+                </summary>
+                <ul class="postes">
+                    <li th:each="line : ${day.posts}" th:class="'poste poste--' + ${line.post}">
+                        <span class="poste__titre">
+                            <th:block th:text="#{${line.titleKey}}">Nuit</th:block>
+                            <span class="poste__precision" th:if="${line.hintKey != null}"
+                                  th:text="#{${line.hintKey}}">jusqu’au matin</span>
+                        </span>
+                        <span class="poste__inscrits">
+                            <span class="pseudo pseudo--vous" th:if="${line.you}" th:text="#{planning.you}">Vous</span>
+                            <span class="pseudo" th:each="pseudo : ${line.pseudos}" th:text="${pseudo}">MarieD</span>
+                            <th:block th:if="${line.missingSlots > 0}">
+                                <span class="pseudo pseudo--libre"
+                                      th:each="slot : ${#numbers.sequence(1, line.missingSlots)}"
+                                      th:text="#{planning.toFill}">À pourvoir</span>
+                            </th:block>
+                        </span>
+                    </li>
+                </ul>
+                <div class="journee__vous" th:unless="${day.mine.isEmpty()}">
+                    <div class="inscription" th:each="mine : ${day.mine}">
+                        <p class="inscription__quoi" th:text="#{${mine.youKey}}">Vous passez la nuit</p>
+                        <th:block th:if="${mine.cancellable}">
+                            <a class="bouton bouton--secondaire"
+                               th:href="@{/mes-inscriptions/annuler(soiree=${mine.eveningDate})}"
+                               th:text="#{${mine.cancelKey}}">Me désinscrire</a>
+                            <p class="aide" th:text="#{cancellation.deadline(${mine.deadline})}">Possible jusqu’au…</p>
+                        </th:block>
+                        <th:block th:unless="${mine.cancellable}">
+                            <p th:replace="~{fragments :: coordinators(#{myRegistrations.tooLate})}">Appelez.</p>
+                        </th:block>
+                    </div>
                 </div>
-            </dl>
-            <p class="soiree__action" th:if="${evening.mine}">
-                <span class="inscrit" th:text="#{planning.mine}">Vous êtes inscrit</span>
-            </p>
-            <p class="soiree__action" th:if="${evening.registrable}">
-                <a class="bouton bouton--petit" th:href="@{/inscription(soiree=${evening.date})}"
-                   th:text="#{planning.register}">S’inscrire</a>
-            </p>
+                <p class="journee__action" th:if="${day.registrable}">
+                    <a class="bouton" th:href="@{/inscription(jour=${day.date})}"
+                       th:text="#{planning.register}">Je participe</a>
+                </p>
+            </details>
         </li>
     </ul>
 </main>

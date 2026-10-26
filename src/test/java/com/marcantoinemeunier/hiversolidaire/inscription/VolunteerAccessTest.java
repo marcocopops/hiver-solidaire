@@ -25,8 +25,10 @@ import org.springframework.test.web.servlet.MockMvc;
 @Import({TestcontainersConfiguration.class, TestClockAndMailConfiguration.class})
 class VolunteerAccessTest {
 
+    /** Soirée du vendredi 8 janvier 2027 : son petit-déjeuner est sur la journée du samedi 9. */
     private static final LocalDate EVENING = LocalDate.of(2027, 1, 8);
-    private static final String LABEL = "Ven. 8 → sam. 9 janv.";
+    private static final LocalDate DAY = EVENING.plusDays(1);
+    private static final String LABEL = "Petit-déjeuner du sam. 9 janv.";
 
     @Autowired
     MockMvc mockMvc;
@@ -63,7 +65,7 @@ class VolunteerAccessTest {
         "/profil",
         "/mes-inscriptions",
         "/inscription/confirmee",
-        "/inscription/confirmer?soiree=2027-01-08&choix=BREAKFAST"
+        "/inscription/confirmer?jour=2027-01-09&choix=BREAKFAST"
     })
     void volunteer_pages_redirect_anonymous_visitors_to_the_login_page(String url) throws Exception {
         var response = new Browser(mockMvc).get(url);
@@ -79,7 +81,7 @@ class VolunteerAccessTest {
         var browser = new Browser(mockMvc);
         browser.get("/connexion");
 
-        var response = browser.post(url, "soiree", EVENING.toString(), "choix", "BREAKFAST",
+        var response = browser.post(url, "jour", DAY.toString(), "choix", "BREAKFAST",
                 "lastName", "Martin", "firstName", "Anne", "phone", "0600000001");
 
         assertThat(response.getStatus()).isEqualTo(403);
@@ -92,7 +94,7 @@ class VolunteerAccessTest {
     void registration_without_csrf_token_is_refused() throws Exception {
         var browser = signedIn(true);
 
-        var response = browser.postWithoutCsrf("/inscription", "soiree", EVENING.toString(), "choix", "BREAKFAST");
+        var response = browser.postWithoutCsrf("/inscription", "jour", DAY.toString(), "choix", "BREAKFAST");
 
         assertThat(response.getStatus()).isEqualTo(403);
     }
@@ -101,7 +103,7 @@ class VolunteerAccessTest {
     void registration_cannot_be_made_by_get() throws Exception {
         var browser = signedIn(true);
 
-        assertThat(browser.get("/inscription?soiree=" + EVENING + "&choix=BREAKFAST").getStatus()).isEqualTo(200);
+        assertThat(browser.get("/inscription?jour=" + DAY + "&choix=BREAKFAST").getStatus()).isEqualTo(200);
         assertThat(jdbc.queryForObject("""
                 SELECT count(*) FROM registration r JOIN evening e ON e.id = r.evening_id WHERE e.evening_date = ?
                 """, Integer.class, EVENING)).isZero();
@@ -110,26 +112,26 @@ class VolunteerAccessTest {
     @Test
     void a_volunteer_does_not_see_the_registrations_of_another() throws Exception {
         var alice = signedIn(true);
-        alice.get("/inscription/confirmer?soiree=" + EVENING + "&choix=BREAKFAST");
-        alice.post("/inscription", "soiree", EVENING.toString(), "choix", "BREAKFAST");
+        alice.get("/inscription/confirmer?jour=" + DAY + "&choix=BREAKFAST");
+        alice.post("/inscription", "jour", DAY.toString(), "choix", "BREAKFAST");
         assertThat(alice.get("/mes-inscriptions").getContentAsString()).contains(LABEL);
 
         var bob = signedIn(true);
 
         assertThat(bob.get("/mes-inscriptions").getContentAsString()).doesNotContain(LABEL);
-        assertThat(bob.get("/planning").getContentAsString()).doesNotContain("Vous participez");
+        assertThat(bob.get("/planning").getContentAsString()).doesNotContain("Vous fournissez").doesNotContain("Me désinscrire");
     }
 
     @Test
     void a_volunteer_without_profile_is_sent_to_the_profile_form_before_registering() throws Exception {
         var browser = signedIn(false);
 
-        var confirm = browser.get("/inscription/confirmer?soiree=" + EVENING + "&choix=BREAKFAST");
-        assertThat(confirm.getRedirectedUrl()).isEqualTo("/profil?soiree=" + EVENING + "&choix=BREAKFAST");
+        var confirm = browser.get("/inscription/confirmer?jour=" + DAY + "&choix=BREAKFAST");
+        assertThat(confirm.getRedirectedUrl()).isEqualTo("/profil?jour=" + DAY + "&choix=BREAKFAST");
 
         browser.get("/profil");
-        var post = browser.post("/inscription", "soiree", EVENING.toString(), "choix", "BREAKFAST");
-        assertThat(post.getRedirectedUrl()).isEqualTo("/profil?soiree=" + EVENING + "&choix=BREAKFAST");
+        var post = browser.post("/inscription", "jour", DAY.toString(), "choix", "BREAKFAST");
+        assertThat(post.getRedirectedUrl()).isEqualTo("/profil?jour=" + DAY + "&choix=BREAKFAST");
         assertThat(browser.get("/mes-inscriptions").getRedirectedUrl()).isEqualTo("/profil");
     }
 

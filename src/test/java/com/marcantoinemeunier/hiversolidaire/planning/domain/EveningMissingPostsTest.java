@@ -7,11 +7,11 @@ import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-/** R5 Statut : complète (tous les minimums couverts), partielle ou vide. */
-class EveningStatusTest {
+/** R5 : postes dont le minimum n'est pas couvert, sur une soirée. Le statut se calcule par journée ({@link Day}). */
+class EveningMissingPostsTest {
 
     private static Evening evening(Registration... registrations) {
-        return new Evening(LocalDate.of(2027, 1, 4), false, Needs.defaults(), List.of(registrations));
+        return new Evening(LocalDate.of(2027, 1, 4), Needs.defaults(), List.of(registrations));
     }
 
     private static Registration[] fullEvening() {
@@ -24,35 +24,32 @@ class EveningStatusTest {
     }
 
     @Test
-    void evening_without_registration_is_empty() {
+    void evening_without_registration_misses_every_post() {
         var evening = evening();
 
-        assertThat(evening.status()).isEqualTo(EveningStatus.EMPTY);
         assertThat(evening.missingPosts()).containsExactly(Post.values());
     }
 
     @Test
-    void evening_with_every_minimum_covered_is_complete() {
+    void evening_with_every_minimum_covered_misses_nothing() {
         var evening = evening(fullEvening());
 
-        assertThat(evening.status()).isEqualTo(EveningStatus.COMPLETE);
         assertThat(evening.missingPosts()).isEmpty();
     }
 
     @Test
-    void one_night_volunteer_is_enough_for_a_complete_evening() {
-        // Nuit : 1 minimum, 2 maximum. La seconde place reste libre sans rendre la soirée partielle.
+    void one_night_volunteer_covers_the_night_minimum() {
+        // Nuit : 1 minimum, 2 maximum. La seconde place reste libre.
         var evening = evening(fullEvening());
 
         assertThat(evening.remaining(Post.NIGHT)).isEqualTo(1);
-        assertThat(evening.status()).isEqualTo(EveningStatus.COMPLETE);
+        assertThat(evening.missing(Post.NIGHT)).isZero();
     }
 
     @Test
-    void evening_with_some_registrations_but_missing_posts_is_partial() {
+    void evening_with_some_registrations_lists_the_missing_posts() {
         var evening = evening(of(RegistrationType.PREPARE_AND_SHARE, DishChoice.MAIN_DISH));
 
-        assertThat(evening.status()).isEqualTo(EveningStatus.PARTIAL);
         assertThat(evening.missingPosts())
                 .containsExactly(Post.SIDES, Post.DINNER_PRESENCE, Post.NIGHT, Post.BREAKFAST);
     }
@@ -65,7 +62,6 @@ class EveningStatusTest {
                 of(RegistrationType.NIGHT_AND_DINNER),
                 of(RegistrationType.BREAKFAST));
 
-        assertThat(evening.status()).isEqualTo(EveningStatus.PARTIAL);
         assertThat(evening.missingPosts()).containsExactly(Post.DINNER_PRESENCE);
     }
 }

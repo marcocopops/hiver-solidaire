@@ -26,7 +26,7 @@ class EveningCancellationTest {
     }
 
     private static Evening evening(Registration... registrations) {
-        return new Evening(DATE, false, Needs.defaults(), List.of(registrations));
+        return new Evening(DATE, Needs.defaults(), List.of(registrations));
     }
 
     @Test
@@ -61,20 +61,16 @@ class EveningCancellationTest {
     }
 
     @Test
-    void status_is_recomputed_without_the_cancelled_registration() {
+    void missing_posts_are_recomputed_without_the_cancelled_registration() {
         var full = evening(
                 Registration.by(alice, RegistrationType.PREPARE_AND_SHARE, DishChoice.MAIN_DISH),
                 Registration.by(bob, RegistrationType.PREPARE_AND_SHARE, DishChoice.SIDES),
                 Registration.by(UUID.randomUUID(), RegistrationType.NIGHT_AND_DINNER, null),
                 Registration.by(UUID.randomUUID(), RegistrationType.BREAKFAST, null));
-        assertThat(full.status()).isEqualTo(EveningStatus.COMPLETE);
+        assertThat(full.missingPosts()).isEmpty();
 
         var partial = full.without(alice);
-        assertThat(partial.status()).isEqualTo(EveningStatus.PARTIAL);
         assertThat(partial.missingPosts()).containsExactly(Post.MAIN_DISH, Post.DINNER_PRESENCE);
-
-        assertThat(evening(Registration.by(alice, RegistrationType.BREAKFAST, null)).without(alice).status())
-                .isEqualTo(EveningStatus.EMPTY);
     }
 
     @Test
@@ -106,13 +102,5 @@ class EveningCancellationTest {
         var evening = evening(Registration.by(alice, RegistrationType.BREAKFAST, null));
 
         assertThat(evening.decideCancellation(bob, BEFORE_DEADLINE)).isEqualTo(CancellationDecision.NOT_REGISTERED);
-    }
-
-    @Test
-    void cancellation_is_allowed_on_a_closed_evening_before_the_deadline() {
-        var closed = new Evening(DATE, true, Needs.defaults(),
-                List.of(Registration.by(alice, RegistrationType.BREAKFAST, null)));
-
-        assertThat(closed.decideCancellation(alice, BEFORE_DEADLINE)).isEqualTo(CancellationDecision.ACCEPTED);
     }
 }

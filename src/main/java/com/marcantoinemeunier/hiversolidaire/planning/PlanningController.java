@@ -6,8 +6,9 @@ import java.util.UUID;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
-/** Planning public, en lecture seule, sans authentification (cahier des charges, §4). */
+/** Planning public, en lecture seule, sans authentification (cahier des charges, §4), filtrable en GET (§6). */
 @Controller
 class PlanningController {
 
@@ -19,9 +20,10 @@ class PlanningController {
 
     /** Le nom du principal, s'il y en a un, est l'identifiant technique du bénévole connecté. */
     @GetMapping("/planning")
-    String planning(Principal principal, Model model) {
+    String planning(@RequestParam(name = PlanningFilter.PARAM, required = false) String filter, Principal principal,
+            Model model) {
         var volunteerId = Optional.ofNullable(principal).map(p -> UUID.fromString(p.getName()));
-        model.addAttribute("planning", planning.load(volunteerId));
+        model.addAttribute("planning", planning.load(volunteerId, PlanningFilter.parse(filter, principal != null)));
         return "planning";
     }
 }

@@ -13,7 +13,7 @@ class EveningCapacityTest {
     private static final LocalDate DATE = LocalDate.of(2027, 1, 4);
 
     private static Evening evening(Registration... registrations) {
-        return new Evening(DATE, false, Needs.defaults(), List.of(registrations));
+        return new Evening(DATE, Needs.defaults(), List.of(registrations));
     }
 
     @Test
@@ -81,7 +81,7 @@ class EveningCapacityTest {
                 new Need(Post.DINNER_PRESENCE, 2, 2),
                 new Need(Post.NIGHT, 1, 1),
                 new Need(Post.BREAKFAST, 1, 1)));
-        var evening = new Evening(DATE, false, needs,
+        var evening = new Evening(DATE, needs,
                 List.of(of(RegistrationType.NIGHT_AND_DINNER), of(RegistrationType.NIGHT_AND_DINNER)));
 
         assertThat(evening.remaining(Post.NIGHT)).isZero();

@@ -50,14 +50,16 @@ La bêta de la semaine 7 laisse une semaine de marge avant le gel. Les dates de 
 
 ## 4. Utilisateurs et rôles
 
-- **Visiteur** : voit le planning des soirées à venir, leur statut, les postes qui manquent (« Manque : nuit, petit-déjeuner ») et, par poste, les pseudos des inscrits (sauf sur une soirée fermée). Aucune autre donnée personnelle : ni nom, ni e-mail, ni téléphone. Les pages demandent aux moteurs de recherche de ne pas les indexer (`noindex`).
-- **Bénévole** : se connecte par lien magique, s'inscrit, se désinscrit, consulte et supprime ses données. Connecté, il voit en plus sur le planning les soirées où il participe lui-même, rien sur les autres.
+- **Visiteur** : voit le planning des journées à venir, leur statut et, par poste, les pseudos des inscrits et les places « À pourvoir ». Aucune autre donnée personnelle : ni nom, ni e-mail, ni téléphone. Les pages demandent aux moteurs de recherche de ne pas les indexer (`noindex`).
+- **Bénévole** : se connecte par lien magique, s'inscrit, se désinscrit, consulte et supprime ses données. Connecté, il voit en plus sur le planning « Vous » à la place de son pseudo, ce qu'il fait, de quoi se désinscrire, et un filtre sur ses propres journées ; rien sur les autres.
 - **Coordinateur (2 à 3)** : a un accès complet au planning, aux bénévoles et au paramétrage.
 - **Personnes accueillies** : aucune donnée les concernant n'est saisie.
 
 ## 5. Modèle métier
 
-L'unité du planning est la soirée : du soir J (dîner) au matin J+1 (petit-déjeuner). Elle s'affiche ainsi : « Lun. 5 → mar. 6 janv. » (« Sam. 31 janv. → dim. 1er févr. » quand le mois change). La saison 2025-2026 en comptait 76.
+L'unité des données et des règles est la soirée : du soir J (dîner) au matin J+1 (petit-déjeuner). La saison 2025-2026 en comptait 76.
+
+Le planning s'affiche par **journée calendaire** ([ADR-0009](adr/0009-affichage-par-journee-donnees-par-soiree.md)) : « Lun. 4 janv. » (« Lun. 1er févr. » le premier du mois). La carte du jour D montre le petit-déjeuner du matin D (soirée D-1), puis le plat principal, les accompagnements, les présences au dîner et la nuit du soir D (soirée D). Le premier jour de la saison n'a pas de petit-déjeuner ; le lendemain de la dernière soirée n'a que lui. Ailleurs (« Mes inscriptions », confirmations, désinscription), une inscription se désigne par le jour de son activité : « Petit-déjeuner du mar. 5 janv. », « Dîner du lun. 4 janv. », « Dîner et nuit du lun. 4 janv. ».
 
 Une saison est définie par sa première et sa dernière soirée (dates du soir J) et par la date d'ouverture des inscriptions. Ses soirées sont stockées en base, une ligne par soirée, générées à partir de ces dates ([ADR-0006](adr/0006-soirees-stockees-plutot-que-calculees.md)).
 
@@ -87,24 +89,26 @@ Une saison est définie par sa première et sa dernière soirée (dates du soir 
 - **R2 Unicité** : une seule inscription par bénévole et par soirée (hypothèse), sauf décision d'un coordinateur.
 - **R3 Préparation** : qui prépare choisit plat principal ou accompagnements, un de chaque par soirée.
 - **R4 Récupération** : chaque « préparer chez soi » doit avoir un « récupérer et partager » distinct le même soir (deux repas préparés chez soi demandent deux récupérations) ; sinon, les coordinateurs sont alertés et organisent la remise.
-- **R5 Statut** : une soirée est complète (tous les minimums couverts), partielle ou vide (aucune inscription), affichée par une couleur et un texte : « Complète » en vert, « À compléter » en orange, « Personne pour l'instant » en rouge ; une soirée fermée affiche « Fermée » en gris.
-- **R6 Désinscription** : en autonomie jusqu'à la veille de l'activité à 23 h 59, heure de Paris. L'activité est le soir J pour tous les types, petit-déjeuner du matin J+1 compris : la soirée est l'unité du planning, et un désistement à minuit pour un petit-déjeuner à 7 h ne laisserait pas le temps de trouver quelqu'un. Une soirée fermée n'empêche pas de se désinscrire. Ensuite, l'appli affiche le téléphone des coordinateurs (configuration du serveur, puis réglages de la saison en S4b). Une désinscription n'efface pas l'inscription : elle la marque annulée, et une inscription annulée ne compte plus dans R1, R2, R3 ni R5 ([ADR-0008](adr/0008-annulation-logique-et-anonymisation.md)).
-- **R7 Fenêtre** : inscriptions possibles de l'ouverture à la fin de saison, jamais sur une soirée passée. Une soirée est passée à partir de minuit le lendemain, heure de Paris : on peut encore s'inscrire le jour même. Un coordinateur peut fermer une soirée. La page publique n'affiche pas les soirées passées.
+- **R5 Statut** : une journée est « Complète » (en vert) si tous les minimums des postes de la journée sont couverts, sinon « À compléter » (en orange), avec ou sans inscrits ; la couleur est toujours accompagnée du texte. Les minimums sont ceux de chaque soirée : le petit-déjeuner de la soirée D-1, le reste de la soirée D.
+- **R6 Désinscription** : en autonomie jusqu'à la veille de l'activité à 23 h 59, heure de Paris. L'activité est le soir J pour tous les types, petit-déjeuner du matin J+1 compris : la soirée est l'unité des règles, et un désistement à minuit pour un petit-déjeuner à 7 h ne laisserait pas le temps de trouver quelqu'un. Pour le petit-déjeuner affiché sur la carte du jour D (soirée D-1), la limite tombe donc le jour D-2 à 23 h 59 : l'appli affiche toujours la date limite calculée (« Possible jusqu'au jeu. 7 janv. à 23 h 59 »), jamais une formule. Ensuite, l'appli affiche le téléphone des coordinateurs (configuration du serveur, puis réglages de la saison en S4b). Une désinscription n'efface pas l'inscription : elle la marque annulée, et une inscription annulée ne compte plus dans R1, R2, R3 ni R5 ([ADR-0008](adr/0008-annulation-logique-et-anonymisation.md)).
+- **R7 Fenêtre** : inscriptions possibles de l'ouverture à la fin de saison, jamais sur une soirée passée. Une soirée est passée à partir de minuit le lendemain, heure de Paris : on peut encore s'inscrire le jour même. Il n'y a pas de soirée fermée (supprimée en S4, ADR-0009). Le planning n'affiche pas les journées passées : la carte du jour D disparaît à minuit le lendemain ; le petit-déjeuner du jour même y reste affiché, mais n'est plus proposé (sa soirée, celle de la veille, est passée).
 
 ## 6. Parcours
 
+**Planning** : une carte par journée, repliable (`<details>`), dépliée si la journée est à compléter. Chaque poste est listé dans l'ordre de la journée avec les pseudos des inscrits et une place « À pourvoir » par bénévole manquant jusqu'au minimum ; la ligne « Nuit » précise « jusqu'au matin ». Des filtres en haut de page, en GET et sans JavaScript : « Toutes », « À compléter » et, pour un bénévole connecté, « Les miennes » (journées où il a une inscription active) ; une valeur inconnue revient à « Toutes ». Sur une journée où il est inscrit, le bénévole voit « Vous » à la place de son pseudo, une phrase qui dit ce qu'il fait (« Vous passez la nuit ») et, par inscription, un bouton « Me désinscrire » (« Me désinscrire du petit-déjeuner », « … du dîner » quand la carte en porte deux), avec la date limite exacte ; après la limite, le téléphone des coordinateurs.
+
 **S'inscrire** :
 
-1. Le bénévole choisit une soirée et un type d'inscription encore disponible.
+1. Le bénévole choisit une journée (« Je participe ») et un type d'inscription encore disponible. Le petit-déjeuner s'inscrit sur la soirée de la veille, le reste sur la soirée du jour ; R1 à R4 et R7 s'appliquent soirée par soirée. Un bénévole inscrit au dîner peut donc encore fournir le petit-déjeuner du même jour (R2 porte sur la soirée).
 2. Il saisit son e-mail dans un formulaire protégé par Turnstile. Le message affiché est le même, que l'adresse soit connue ou non.
-3. Il ouvre le lien reçu (usage unique, valable 15 minutes) et appuie sur « Me connecter ». La connexion se fait en POST, car les filtres des messageries ouvrent les liens et consommeraient le jeton. Le lien porte aussi le choix de l'étape 1 (soirée, type, plat, sans donnée personnelle) : il fonctionne sur un autre appareil que celui de la demande.
+3. Il ouvre le lien reçu (usage unique, valable 15 minutes) et appuie sur « Me connecter ». La connexion se fait en POST, car les filtres des messageries ouvrent les liens et consommeraient le jeton. Le lien porte aussi le choix de l'étape 1 (journée, type, plat, sans donnée personnelle) : il fonctionne sur un autre appareil que celui de la demande.
 4. La première fois, il donne son nom, son prénom, un **pseudo public** et son téléphone (obligatoire ; indicatif +33 par défaut, numéros étrangers acceptés, enregistré au format international). Le pseudo est proposé sous la forme prénom + initiale du nom (« MarieD ») et modifiable ; l'aide du champ dit qu'il est visible par tous sur le planning et qu'on peut choisir autre chose que son prénom. Il est unique sans tenir compte de la casse : en cas de doublon, une variante est proposée (« MarieD2 »). Une case « Me recontacter la saison prochaine », décochée par défaut, et un lien vers la notice d'information complètent le formulaire.
 5. Il confirme ; un e-mail récapitule la date, les horaires, l'adresse, les consignes et le numéro des coordinateurs.
 6. Il reste connecté 30 jours sur cet appareil (hypothèse) : session stockée en base, 30 jours au plus après la connexion, même utilisée chaque jour ([ADR-0007](adr/0007-session-jdbc-plutot-que-se-souvenir-de-moi.md)).
 
 L'adresse du lieu n'apparaît pas sur la page publique, seulement dans l'e-mail et l'espace bénévole (hypothèse, pour la sécurité des personnes accueillies).
 
-**Se désinscrire** : depuis « Mes inscriptions » ou le lien de l'e-mail (S5), jusqu'à la veille à 23 h 59 (R6). Le lien ouvre une page de confirmation, et l'action se fait en POST. La place libérée est immédiatement reprenable. Après la limite, le bouton disparaît et l'appli affiche le téléphone des coordinateurs. Si une soirée des 7 prochains jours (aujourd'hui compris) perd un minimum, les coordinateurs sont alertés : l'alerte est enregistrée dès S4 et envoyée par e-mail à partir de S5.
+**Se désinscrire** : depuis la carte de la journée sur le planning, « Mes inscriptions » ou le lien de l'e-mail (S5), jusqu'à la veille de la soirée à 23 h 59 (R6). Le lien ouvre une page de confirmation, et l'action se fait en POST. La place libérée est immédiatement reprenable. Après la limite, le bouton disparaît et l'appli affiche le téléphone des coordinateurs. Si une soirée des 7 prochains jours (aujourd'hui compris) perd un minimum, les coordinateurs sont alertés : l'alerte est enregistrée dès S4 et envoyée par e-mail à partir de S5.
 
 **Mon compte** : le bénévole voit ses données (e-mail, nom, prénom, pseudo, téléphone, accord de recontact), modifie son téléphone et son pseudo (mêmes règles qu'au premier profil), donne ou retire son accord de conservation, ou supprime son compte. L'e-mail n'est pas modifiable dans cette version ; nom et prénom se corrigent auprès d'un coordinateur. La suppression, après une page de confirmation, annule toutes ses inscriptions dont la soirée n'est pas passée (y compris après la limite de R6, avec l'alerte éventuelle) et anonymise son historique : plus aucun e-mail, nom, prénom, pseudo ni téléphone en base ; ses inscriptions passées restent comptées sans être rattachables à une personne ; il est déconnecté de tous ses appareils. Une nouvelle connexion avec la même adresse crée un nouveau compte.
 
@@ -113,7 +117,7 @@ L'adresse du lieu n'apparaît pas sur la page publique, seulement dans l'e-mail 
 - Tableau de bord, avec les soirées incomplètes des 14 prochains jours en tête
 - Fiche soirée : inscrits et coordonnées ; inscription par téléphone, même sans e-mail ; annulation ou déplacement
 - Bénévoles : liste, nouveaux bénévoles signalés, suppression sur demande
-- Saison : dates, besoins, horaires, soirées fermées, adresse et consignes
+- Saison : dates, besoins, horaires, adresse et consignes
 - Export PDF et CSV, pour l'affichage sur place et le plan B
 - Journal d'audit des actions des coordinateurs
 
@@ -188,14 +192,14 @@ Rappels par SMS (payants), export iCal, messagerie relayée entre bénévoles d'
 ## 11. Questions ouvertes
 
 1. Une seule inscription par bénévole et par soirée ? Appliqué en S3, garanti par une contrainte en base. Décidé le 25 octobre 2026 : l'exception décidée par un coordinateur fera l'objet d'une migration en S4.
-2. Dates de la saison 2026-2027, adresse et consignes du lieu. En attendant, une saison d'exemple aux dates fictives (4 janv. → 21 mars 2027 au matin) est en place, signalée comme telle sur la page publique ; elle sera remplacée depuis le back-office (S4).
+2. Dates de la saison 2026-2027, adresse et consignes du lieu. En attendant, une saison d'exemple aux dates fictives (4 janv. → 21 mars 2027 au matin) est en place ; elle sera remplacée depuis le back-office (S4b). Le bandeau « Dates d'exemple » a été retiré du planning en S4 ; le marqueur `season.sample` reste en base.
 3. Nom exact de l'association, pour la notice et l'expéditeur des e-mails.
 4. Durées de conservation proposées dans la section RGPD.
 5. Durée de connexion des bénévoles (30 jours, appliquée en S3 et modifiable) et heure du rappel (18 h).
 6. L'adresse du lieu reste-t-elle absente de la page publique ? Par défaut, oui : la page publique (S2) ne l'affiche pas, et le modèle de données ne la stocke pas encore.
 7. La notice d'information (S5) doit mentionner le pseudo public : son affichage sur le planning, visible par tous, sa finalité et la façon d'en changer.
 8. Modification du pseudo : le bénévole la fait dans « Mon compte » depuis S4a. Reste pour S4b : la modification par un coordinateur, pour régler un pseudo usurpé.
-9. Désinscription : l'activité de R6 est le soir J pour tous les types, petit-déjeuner compris (décision proposée en S4a, à confirmer avec les coordinateurs). La suppression d'un compte annule aussi les inscriptions de la soirée même ou du lendemain, après la limite de R6 : la page de confirmation demande de prévenir les coordinateurs.
+9. Désinscription : l'activité de R6 est le soir J pour tous les types, petit-déjeuner compris (décision proposée en S4a, à confirmer avec les coordinateurs). Avec l'affichage par journée (S4), la limite du petit-déjeuner du jour D tombe le jour D-2 à 23 h 59 : à confirmer aussi. La suppression d'un compte annule aussi les inscriptions de la soirée même ou du lendemain, après la limite de R6 : la page de confirmation demande de prévenir les coordinateurs.
 
 ## 12. Méthode de travail avec Claude
 

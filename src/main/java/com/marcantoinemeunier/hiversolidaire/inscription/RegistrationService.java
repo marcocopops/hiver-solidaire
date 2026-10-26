@@ -3,14 +3,12 @@ package com.marcantoinemeunier.hiversolidaire.inscription;
 import com.marcantoinemeunier.hiversolidaire.notification.CoordinatorAlerts;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.Cancellation;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.CancellationDecision;
-import com.marcantoinemeunier.hiversolidaire.planning.domain.DishChoice;
+import com.marcantoinemeunier.hiversolidaire.planning.domain.Day;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.Evening;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.IncompleteEveningAlert;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.ParisTime;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.Registration;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.RegistrationDecision;
-import com.marcantoinemeunier.hiversolidaire.planning.domain.RegistrationType;
-import com.marcantoinemeunier.hiversolidaire.planning.domain.Season;
 import com.marcantoinemeunier.hiversolidaire.planning.persistence.EveningEntity;
 import com.marcantoinemeunier.hiversolidaire.planning.persistence.EveningRepository;
 import com.marcantoinemeunier.hiversolidaire.planning.persistence.RegistrationEntity;
@@ -20,7 +18,7 @@ import com.marcantoinemeunier.hiversolidaire.planning.persistence.SeasonReposito
 import com.marcantoinemeunier.hiversolidaire.planning.persistence.UpcomingRegistration;
 import java.time.Clock;
 import java.time.LocalDate;
-import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -32,16 +30,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 
 @Service
 public class RegistrationService {
-
-    /** Types et plats dans l'ordre d'affichage du choix. */
-    static final List<RegistrationChoiceOption> OPTIONS = List.of(
-            new RegistrationChoiceOption(RegistrationType.PREPARE_AND_SHARE, DishChoice.MAIN_DISH),
-            new RegistrationChoiceOption(RegistrationType.PREPARE_AND_SHARE, DishChoice.SIDES),
-            new RegistrationChoiceOption(RegistrationType.PREPARE_AT_HOME, DishChoice.MAIN_DISH),
-            new RegistrationChoiceOption(RegistrationType.PREPARE_AT_HOME, DishChoice.SIDES),
-            new RegistrationChoiceOption(RegistrationType.PICK_UP_AND_SHARE, null),
-            new RegistrationChoiceOption(RegistrationType.NIGHT_AND_DINNER, null),
-            new RegistrationChoiceOption(RegistrationType.BREAKFAST, null));
 
     private final SeasonRepository seasons;
     private final EveningRepository evenings;
@@ -58,19 +46,11 @@ public class RegistrationService {
         this.clock = clock;
     }
 
-    /** Une option de choix : un type et, s'il prépare, son plat. */
-    record RegistrationChoiceOption(RegistrationType type, DishChoice dishChoice) {
-
-        String param() {
-            return RegistrationChoice.choiceParam(type, dishChoice);
-        }
-    }
-
     /**
-     * Ce qu'il faut pour afficher le choix d'une soirée : sa date, si elle accepte encore des inscriptions (R7,
-     * et R2 pour un bénévole connecté) et les options encore disponibles (R1, R3).
+     * Ce qu'il faut pour afficher le choix d'une journée : les options encore disponibles, chacune sur sa soirée
+     * (R1, R3, et R2 pour un bénévole connecté), ou le motif qui bloque tout (R7, R2, R1).
      */
-    record EveningChoice(LocalDate date, RegistrationDecision blocking, List<RegistrationChoiceOption> available) {
+    record DayChoice(LocalDate day, RegistrationDecision blocking, List<String> available) {
     }
 
     /**
@@ -144,37 +124,36 @@ public class RegistrationService {
         return Cancellation.allowed(eveningDate, clock.instant());
     }
 
+    /**
+     * Choix d'une journée (ADR-0009) : le petit-déjeuner de la soirée de la veille, puis le dîner et la nuit de la
+     * soirée du jour. Vide si aucune des deux soirées n'existe dans la saison courante.
+     */
     @Transactional(readOnly = true)
-    public Optional<EveningChoice> choice(LocalDate date, Optional<UUID> volunteerId) {
-        return currentSeason().flatMap(season -> evenings.findBySeasonAndDate(season.id(), date)
-                .map(evening -> choice(season, evening, volunteerId)));
-    }
-
-    private EveningChoice choice(SeasonEntity season, EveningEntity entity, Optional<UUID> volunteerId) {
-        var evening = toDomain(season, entity);
-        // Un bénévole fictif suffit pour vérifier R7 ; le vrai bénévole connecté vérifie aussi R2.
-        var who = volunteerId.orElseGet(UUID::randomUUID);
-        var available = new ArrayList<RegistrationChoiceOption>();
-        RegistrationDecision blocking = null;
-        for (var option : OPTIONS) {
-            var decision = evening.decide(season.toDomain(),
-                    Registration.by(who, option.type(), option.dishChoice()), clock.instant());
-            if (decision.accepted()) {
-                available.add(option);
-            } else if (decision != RegistrationDecision.FULL && decision != RegistrationDecision.DISH_TAKEN) {
-                blocking = decision;
+    public Optional<DayChoice> choice(LocalDate day, Optional<UUID> volunteerId) {
+        return currentSeason().flatMap(season -> {
+            var previous = evenings.findBySeasonAndDate(season.id(), day.minusDays(1))
+                    .map(evening -> toDomain(season, evening)).orElse(null);
+            var current = evenings.findBySeasonAndDate(season.id(), day)
+                    .map(evening -> toDomain(season, evening)).orElse(null);
+            if (previous == null && current == null) {
+                return Optional.empty();
             }
-        }
-        if (blocking == null && available.isEmpty()) {
-            blocking = RegistrationDecision.FULL;
-        }
-        return new EveningChoice(entity.date(), blocking, blocking == null ? available : List.of());
+            // Un bénévole fictif suffit pour vérifier R7 ; le vrai bénévole connecté vérifie aussi R2.
+            var who = volunteerId.orElseGet(UUID::randomUUID);
+            var offers = new Day(day, previous, current).offers(season.toDomain(), who, clock.instant());
+            var available = offers.available().stream()
+                    .map(offer -> RegistrationChoice.choiceParam(offer.type(), offer.dishChoice()))
+                    .toList();
+            return Optional.of(new DayChoice(day, offers.blocking(), available));
+        });
     }
 
-    /** Inscriptions à venir du bénévole, et seulement les siennes. */
+    /** Inscriptions à venir du bénévole, et seulement les siennes, dans l'ordre des jours d'activité. */
     @Transactional(readOnly = true)
     public List<UpcomingRegistration> upcoming(UUID volunteerId) {
-        return registrations.findUpcoming(volunteerId, ParisTime.today(clock.instant()));
+        return registrations.findUpcoming(volunteerId, ParisTime.today(clock.instant())).stream()
+                .sorted(Comparator.comparing(registration -> registration.type().activityDate(registration.date())))
+                .toList();
     }
 
     /** Inscription active à venir du bénévole sur cette soirée, et seulement la sienne. */

@@ -13,14 +13,12 @@ import java.util.UUID;
 public final class Evening {
 
     private final LocalDate date;
-    private final boolean closed;
     private final Needs needs;
     private final List<Registration> registrations;
     private final Map<Post, Integer> occupied = new EnumMap<>(Post.class);
 
-    public Evening(LocalDate date, boolean closed, Needs needs, List<Registration> registrations) {
+    public Evening(LocalDate date, Needs needs, List<Registration> registrations) {
         this.date = Objects.requireNonNull(date, "date");
-        this.closed = closed;
         this.needs = Objects.requireNonNull(needs, "needs");
         this.registrations = List.copyOf(registrations);
         for (Post post : Post.values()) {
@@ -39,11 +37,6 @@ public final class Evening {
 
     public List<Registration> registrations() {
         return registrations;
-    }
-
-    /** Fermée par un coordinateur (R7). */
-    public boolean closed() {
-        return closed;
     }
 
     public int occupied(Post post) {
@@ -74,9 +67,6 @@ public final class Evening {
         if (!season.contains(date)) {
             return RegistrationDecision.OUT_OF_SEASON;
         }
-        if (closed) {
-            return RegistrationDecision.CLOSED;
-        }
         if (isPast(ParisTime.today(now))) {
             return RegistrationDecision.PAST;
         }
@@ -92,7 +82,7 @@ public final class Evening {
         return RegistrationDecision.ACCEPTED;
     }
 
-    /** R6 : contrôle de la désinscription d'un bénévole. Une soirée fermée n'empêche pas de libérer une place. */
+    /** R6 : contrôle de la désinscription d'un bénévole. */
     public CancellationDecision decideCancellation(UUID volunteerId, Instant now) {
         if (registrations.stream().noneMatch(registration -> volunteerId.equals(registration.volunteerId()))) {
             return CancellationDecision.NOT_REGISTERED;
@@ -105,7 +95,7 @@ public final class Evening {
 
     /** La même soirée sans l'inscription du bénévole : R1, R2, R3 et R5 sont recalculés sans elle. */
     public Evening without(UUID volunteerId) {
-        return new Evening(date, closed, needs, registrations.stream()
+        return new Evening(date, needs, registrations.stream()
                 .filter(registration -> !volunteerId.equals(registration.volunteerId()))
                 .toList());
     }
@@ -132,23 +122,20 @@ public final class Evening {
         return unmatchedHomePreparations() > 0;
     }
 
-    /** R5 : postes dont le minimum n'est pas couvert, dans l'ordre d'affichage. */
+    /** R5 : places manquantes sur un poste pour atteindre son minimum. */
+    public int missing(Post post) {
+        return Math.max(0, needs.of(post).minimum() - occupied(post));
+    }
+
+    /** R5 : postes dont le minimum n'est pas couvert, dans l'ordre de {@link Post}. */
     public List<Post> missingPosts() {
         var missing = new ArrayList<Post>();
         for (Post post : Post.values()) {
-            if (occupied(post) < needs.of(post).minimum()) {
+            if (missing(post) > 0) {
                 missing.add(post);
             }
         }
         return missing;
-    }
-
-    /** R5 : complète, partielle ou vide. */
-    public EveningStatus status() {
-        if (missingPosts().isEmpty()) {
-            return EveningStatus.COMPLETE;
-        }
-        return registrations.isEmpty() ? EveningStatus.EMPTY : EveningStatus.PARTIAL;
     }
 
     /** R7 : une soirée est passée à partir de minuit le lendemain, heure de Paris. */

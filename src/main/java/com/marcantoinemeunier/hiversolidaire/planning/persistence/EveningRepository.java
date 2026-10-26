@@ -8,7 +8,7 @@ import org.springframework.data.repository.Repository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-/** Aucune méthode d'écriture : les soirées sont créées par migration, puis par le back-office (S4). */
+/** Aucune méthode d'écriture : les soirées sont créées par migration, puis par le back-office (S4b). */
 public interface EveningRepository extends Repository<EveningEntity, UUID> {
 
     @Query("select e from EveningEntity e where e.seasonId = :seasonId and e.date >= :from order by e.date asc")
@@ -22,7 +22,7 @@ public interface EveningRepository extends Repository<EveningEntity, UUID> {
 
     /**
      * Identifiant seul, pour verrouiller ensuite : charger l'entité avant {@link #lockById(UUID)} la mettrait en
-     * cache, et le verrou renverrait cette copie lue sans verrou (une fermeture concurrente serait manquée).
+     * cache, et le verrou renverrait cette copie lue sans verrou.
      */
     @Query("select e.id from EveningEntity e where e.seasonId = :seasonId and e.date = :date")
     Optional<UUID> findIdBySeasonAndDate(@Param("seasonId") UUID seasonId, @Param("date") LocalDate date);

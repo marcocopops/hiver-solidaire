@@ -30,10 +30,10 @@
     <th:block th:if="${coordinatorsPhone == null}" th:text="#{coordinators.contact}">contactez un coordinateur.</th:block>
 </p>
 
-<!-- Champs cachés qui portent le choix fait sur le planning (soirée, type, plat) d'une page à l'autre. -->
+<!-- Champs cachés qui portent le choix fait sur le planning (journée, type, plat) d'une page à l'autre. -->
 <th:block th:fragment="choice(choice)">
     <th:block th:if="${choice != null}">
-        <input type="hidden" name="soiree" th:value="${choice.eveningDate}">
+        <input type="hidden" name="jour" th:value="${choice.day}">
         <input type="hidden" name="choix" th:value="${choice.choiceParam()}">
     </th:block>
 </th:block>

@@ -33,9 +33,13 @@ import org.springframework.test.web.servlet.MockMvc;
 @ExtendWith(OutputCaptureExtension.class)
 class CancellationJourneyTest {
 
-    /** Vendredi 8 → samedi 9 janvier 2027 : dans les 7 jours qui suivent l'horloge de test (4 janvier). */
+    /**
+     * Soirée du vendredi 8 janvier 2027 : dans les 7 jours qui suivent l'horloge de test (4 janvier). Son
+     * petit-déjeuner a lieu le samedi 9 au matin ; la limite reste la veille de la soirée, jeudi 7 à 23 h 59 (R6).
+     */
     private static final LocalDate SOON = LocalDate.of(2027, 1, 8);
-    private static final String SOON_LABEL = "Ven. 8 → sam. 9 janv.";
+    private static final String SOON_LABEL = "Petit-déjeuner du sam. 9 janv.";
+    private static final String SOON_DEADLINE = "Possible jusqu’au jeu. 7 janv. à 23 h 59";
     /** Mercredi 17 février 2027 : au-delà de la fenêtre de l'alerte. */
     private static final LocalDate LATER = LocalDate.of(2027, 2, 17);
     private static final String COORDINATORS_PHONE = "01 99 00 12 34";
@@ -81,8 +85,10 @@ class CancellationJourneyTest {
     }
 
     private static void register(Browser browser, LocalDate date, String choice) throws Exception {
-        browser.get("/inscription/confirmer?soiree=" + date + "&choix=" + choice);
-        assertThat(browser.post("/inscription", "soiree", date.toString(), "choix", choice).getRedirectedUrl())
+        // Inscription depuis la journée de l'activité : le lendemain de la soirée pour un petit-déjeuner.
+        var day = "BREAKFAST".equals(choice) ? date.plusDays(1) : date;
+        browser.get("/inscription/confirmer?jour=" + day + "&choix=" + choice);
+        assertThat(browser.post("/inscription", "jour", day.toString(), "choix", choice).getRedirectedUrl())
                 .isEqualTo("/inscription/confirmee");
     }
 
@@ -112,16 +118,19 @@ class CancellationJourneyTest {
         var alice = signedIn();
         var browser = alice.browser();
         register(browser, SOON, "BREAKFAST");
-        assertThat(browser.get("/planning").getContentAsString()).contains(alice.pseudo());
+        var visitor = new Browser(mockMvc);
+        assertThat(visitor.get("/planning").getContentAsString()).contains(alice.pseudo());
+        assertThat(browser.get("/planning").getContentAsString()).contains("Vous fournissez le petit-déjeuner");
 
         // 1. « Mes inscriptions » propose de se désinscrire.
         var mine = browser.get("/mes-inscriptions").getContentAsString();
-        assertThat(mine).contains(SOON_LABEL).contains("href=\"/mes-inscriptions/annuler?soiree=" + SOON + "\"");
+        assertThat(mine).contains(SOON_LABEL).contains("href=\"/mes-inscriptions/annuler?soiree=" + SOON + "\"")
+                .contains(SOON_DEADLINE);
 
         // 2. Le lien ouvre une page de confirmation : un GET n'annule rien.
         var confirm = browser.get("/mes-inscriptions/annuler?soiree=" + SOON);
         assertThat(confirm.getStatus()).isEqualTo(200);
-        assertThat(confirm.getContentAsString()).contains(SOON_LABEL)
+        assertThat(confirm.getContentAsString()).contains(SOON_LABEL).contains(SOON_DEADLINE)
                 .contains("action=\"/mes-inscriptions/annuler\"").contains("name=\"soiree\" value=\"" + SOON + "\"");
         assertThat(active(SOON)).isEqualTo(1);
 
@@ -134,8 +143,8 @@ class CancellationJourneyTest {
         // 4. Confirmation à l'écran, la soirée disparaît de « Mes inscriptions » et le pseudo du planning.
         var after = browser.get("/mes-inscriptions").getContentAsString();
         assertThat(after).contains("Désinscription enregistrée").contains("Aucune inscription à venir");
-        var planning = browser.get("/planning").getContentAsString();
-        assertThat(planning).doesNotContain(alice.pseudo());
+        assertThat(visitor.get("/planning").getContentAsString()).doesNotContain(alice.pseudo());
+        assertThat(browser.get("/planning").getContentAsString()).doesNotContain("Vous fournissez");
 
         // 5. La place libérée est immédiatement reprenable, par elle comme par un autre.
         register(browser, SOON, "BREAKFAST");
@@ -189,10 +198,11 @@ class CancellationJourneyTest {
         clock.set(LocalDateTime.of(2027, 1, 8, 0, 0).atZone(ParisTime.ZONE).toInstant());
 
         var mine = alice.get("/mes-inscriptions").getContentAsString();
-        assertThat(mine).contains(SOON_LABEL).doesNotContain("/mes-inscriptions/annuler")
+        assertThat(mine).contains(SOON_LABEL).doesNotContain("/mes-inscriptions/annuler").doesNotContain(SOON_DEADLINE)
                 .contains(COORDINATORS_PHONE).contains("href=\"tel:0199001234\"");
         var page = alice.get("/mes-inscriptions/annuler?soiree=" + SOON).getContentAsString();
-        assertThat(page).contains(COORDINATORS_PHONE).doesNotContain("action=\"/mes-inscriptions/annuler\"");
+        assertThat(page).contains(COORDINATORS_PHONE).doesNotContain("action=\"/mes-inscriptions/annuler\"")
+                .contains("la limite était le jeu. 7 janv. à 23 h 59");
 
         // Un POST forgé est refusé : l'inscription reste.
         var post = alice.post("/mes-inscriptions/annuler", "soiree", SOON.toString());

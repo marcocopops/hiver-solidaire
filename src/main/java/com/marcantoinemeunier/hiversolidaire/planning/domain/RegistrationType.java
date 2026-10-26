@@ -1,5 +1,6 @@
 package com.marcantoinemeunier.hiversolidaire.planning.domain;
 
+import java.time.LocalDate;
 import java.util.EnumSet;
 import java.util.Set;
 
@@ -27,6 +28,16 @@ public enum RegistrationType {
     /** Vrai si le type demande de choisir entre plat principal et accompagnements (R3). */
     public boolean preparesDish() {
         return preparesDish;
+    }
+
+    /** Jour de l'activité (ADR-0009) : le lendemain matin pour le petit-déjeuner, le soir même sinon. */
+    public LocalDate activityDate(LocalDate eveningDate) {
+        return this == BREAKFAST ? eveningDate.plusDays(1) : eveningDate;
+    }
+
+    /** Soirée qui porte cette activité le jour {@code day} : l'inverse de {@link #activityDate(LocalDate)}. */
+    public LocalDate eveningDate(LocalDate day) {
+        return this == BREAKFAST ? day.minusDays(1) : day;
     }
 
     /** Postes couverts ; {@code dishChoice} est obligatoire si le type prépare un plat, interdit sinon. */
