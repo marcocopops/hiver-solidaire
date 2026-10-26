@@ -2,7 +2,7 @@
 <html lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments :: head(#{planning.title})}"></head>
 <body>
-<header th:replace="~{fragments :: entete(#{planning.title})}"></header>
+<header th:replace="~{fragments :: entete(#{planning.title}, true)}"></header>
 <main class="page">
     <p class="saison" th:if="${planning.seasonLabel != null}" th:text="${planning.seasonLabel}">Saison</p>
     <p class="bandeau" th:if="${planning.opensOn != null}" th:text="#{planning.opensOn(${planning.opensOn})}">

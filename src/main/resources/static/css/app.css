@@ -367,13 +367,14 @@ a:hover {
     font-size: 1.25rem;
 }
 
-/* Navigation des pages bénévoles (refondue à l'étape suivante de la session design). */
+/* Navigation sous l'en-tête : retour au planning ; pour un bénévole, ses inscriptions, son compte, la déconnexion. */
 .nav {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: var(--esp-2) var(--esp-5);
-    margin: 0 0 var(--esp-6);
+    gap: 0 var(--esp-5);
+    margin: 0 0 var(--esp-4);
+    font-size: 0.9375rem;
 }
 
 .nav a {
@@ -587,12 +588,26 @@ a:hover {
     width: 100%;
 }
 
-/* 7. Formulaires : libellés au-dessus, champs de 48 px. */
+/* 7. Formulaires : un groupe par champ (libellé au-dessus, champ de 48 px, aide, erreur reliée au champ). */
 .formulaire {
     display: flex;
     flex-direction: column;
-    gap: var(--esp-2);
+    gap: var(--esp-5);
     margin: var(--esp-4) 0;
+}
+
+.formulaire > p {
+    margin: 0;
+}
+
+.champ {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-2);
+}
+
+.champ .bandeau {
+    margin: 0;
 }
 
 .formulaire label {
@@ -612,13 +627,19 @@ a:hover {
     font: inherit;
 }
 
+.formulaire input[type="email"]:focus-visible,
+.formulaire input[type="text"]:focus-visible,
+.formulaire input[type="tel"]:focus-visible {
+    border-color: var(--texte);
+}
+
 .formulaire input[aria-invalid="true"] {
     border: 2px solid var(--erreur);
 }
 
+/* Sur mobile, le bouton du formulaire prend toute la largeur, à portée de pouce. */
 .formulaire .bouton {
-    align-self: flex-start;
-    margin-top: var(--esp-3);
+    width: 100%;
 }
 
 .formulaire fieldset {
@@ -631,6 +652,10 @@ a:hover {
     margin-bottom: var(--esp-2);
     padding: 0;
     font-weight: 700;
+}
+
+.formulaire fieldset.champ > legend {
+    margin-bottom: 0;
 }
 
 /* Téléphone : indicatif étroit, numéro sur le reste de la ligne. */
@@ -750,5 +775,10 @@ a:hover {
 
     .entete h1 {
         font-size: 2.25rem;
+    }
+
+    .formulaire .bouton {
+        align-self: flex-start;
+        width: auto;
     }
 }

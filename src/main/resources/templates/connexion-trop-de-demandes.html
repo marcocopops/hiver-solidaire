@@ -2,10 +2,10 @@
 <html lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments :: head(#{login.tooMany.title})}"></head>
 <body>
+<header th:replace="~{fragments :: entete(#{login.tooMany.title}, false)}"></header>
 <main class="page">
     <nav th:replace="~{fragments :: nav}"></nav>
-    <h1 th:text="#{login.tooMany.title}">Trop de demandes</h1>
-    <p th:text="#{login.tooMany.text}">Réessayez dans une heure.</p>
+    <p class="alerte" th:text="#{login.tooMany.text}">Réessayez dans une heure.</p>
 </main>
 </body>
 </html>

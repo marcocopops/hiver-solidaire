@@ -12,25 +12,28 @@
     <link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
 <body>
-<!-- En-tête de chaque page : nom de l'appli (vers l'accueil), « Mon espace » ou « Me connecter », titre de la page. -->
-<header class="entete" th:fragment="entete(title)">
+<!-- En-tête de chaque page : nom de l'appli (vers l'accueil), « Mon espace » ou « Me connecter », titre de la page.
+     withAccount = false sur les pages de connexion, où « Me connecter » ramènerait au début. -->
+<header class="entete" th:fragment="entete(title, withAccount)">
     <div class="entete__contenu">
         <div class="entete__barre">
             <a class="entete__marque" th:href="@{/}">
                 <svg class="icone" aria-hidden="true" focusable="false"><use th:href="@{/images/icones.svg#lune}"></use></svg>
                 <span th:text="#{app.name}">Hiver Solidaire</span>
             </a>
-            <a class="entete__action" th:if="${signedIn}" th:href="@{/mes-inscriptions}"
-               th:text="#{header.mySpace}">Mon espace</a>
-            <a class="entete__action" th:unless="${signedIn}" th:href="@{/connexion}"
-               th:text="#{header.signIn}">Me connecter</a>
+            <th:block th:if="${withAccount}">
+                <a class="entete__action" th:if="${signedIn}" th:href="@{/mes-inscriptions}"
+                   th:text="#{header.mySpace}">Mon espace</a>
+                <a class="entete__action" th:unless="${signedIn}" th:href="@{/connexion}"
+                   th:text="#{header.signIn}">Me connecter</a>
+            </th:block>
         </div>
         <h1 th:text="${title}">Titre de la page</h1>
     </div>
 </header>
 
 <!-- Navigation : retour au planning ; pour un bénévole connecté, ses inscriptions, son compte et la déconnexion (POST). -->
-<nav class="nav" th:fragment="nav">
+<nav class="nav" th:fragment="nav" th:attr="aria-label=${signedIn} ? #{header.mySpace} : #{common.nav}">
     <a th:href="@{/planning}" th:text="#{common.back.planning}">Retour au planning</a>
     <th:block th:if="${signedIn}">
         <a th:href="@{/mes-inscriptions}" th:text="#{common.myRegistrations}">Mes inscriptions</a>

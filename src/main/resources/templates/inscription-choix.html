@@ -2,9 +2,9 @@
 <html lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments :: head(#{registration.choose.title})}"></head>
 <body>
+<header th:replace="~{fragments :: entete(#{registration.choose.title}, true)}"></header>
 <main class="page">
     <nav th:replace="~{fragments :: nav}"></nav>
-    <h1 th:text="#{registration.choose.title}">S’inscrire</h1>
     <p class="lead" th:text="${label}">Lun. 4 janv.</p>
 
     <p class="alerte" role="alert" th:if="${refusal != null}"

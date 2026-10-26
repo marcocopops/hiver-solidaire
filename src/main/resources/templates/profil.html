@@ -2,64 +2,85 @@
 <html lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments :: head(#{profile.title})}"></head>
 <body>
+<header th:replace="~{fragments :: entete(#{profile.title}, true)}"></header>
 <main class="page">
     <nav th:replace="~{fragments :: nav}"></nav>
-    <h1 th:text="#{profile.title}">Vos coordonnées</h1>
     <p th:text="#{profile.intro}">Première connexion.</p>
 
+    <!-- Chaque champ invalide annonce son message d'erreur (aria-describedby), en plus de son aide éventuelle. -->
     <form class="formulaire" th:action="@{/profil}" th:object="${profileForm}" method="post" novalidate>
         <th:block th:replace="~{fragments :: choice(${choice})}"></th:block>
 
-        <label for="lastName" th:text="#{profile.lastName}">Nom</label>
-        <input id="lastName" type="text" autocomplete="family-name" required maxlength="100" th:field="*{lastName}"
-               th:attr="aria-invalid=${#fields.hasErrors('lastName')} ? 'true' : 'false'">
-        <p class="erreur" th:if="${#fields.hasErrors('lastName')}" th:text="#{profile.error.lastName}">Nom.</p>
+        <div class="champ">
+            <label for="lastName" th:text="#{profile.lastName}">Nom</label>
+            <input id="lastName" type="text" autocomplete="family-name" required maxlength="100" th:field="*{lastName}"
+                   th:attr="aria-invalid=${#fields.hasErrors('lastName')} ? 'true' : 'false',
+                            aria-describedby=${#fields.hasErrors('lastName')} ? 'lastName-error' : null">
+            <p class="erreur" id="lastName-error" th:if="${#fields.hasErrors('lastName')}"
+               th:text="#{profile.error.lastName}">Nom.</p>
+        </div>
 
-        <label for="firstName" th:text="#{profile.firstName}">Prénom</label>
-        <input id="firstName" type="text" autocomplete="given-name" required maxlength="100"
-               th:field="*{firstName}"
-               th:attr="aria-invalid=${#fields.hasErrors('firstName')} ? 'true' : 'false'">
-        <p class="erreur" th:if="${#fields.hasErrors('firstName')}" th:text="#{profile.error.firstName}">Prénom.</p>
+        <div class="champ">
+            <label for="firstName" th:text="#{profile.firstName}">Prénom</label>
+            <input id="firstName" type="text" autocomplete="given-name" required maxlength="100"
+                   th:field="*{firstName}"
+                   th:attr="aria-invalid=${#fields.hasErrors('firstName')} ? 'true' : 'false',
+                            aria-describedby=${#fields.hasErrors('firstName')} ? 'firstName-error' : null">
+            <p class="erreur" id="firstName-error" th:if="${#fields.hasErrors('firstName')}"
+               th:text="#{profile.error.firstName}">Prénom.</p>
+        </div>
 
-        <label for="pseudo" th:text="#{profile.pseudo}">Pseudo</label>
-        <p class="bandeau" th:if="${pseudoSuggested}" th:text="#{profile.pseudo.suggested}">Pseudo proposé.</p>
-        <input id="pseudo" type="text" autocomplete="nickname" required minlength="3" maxlength="20"
-               spellcheck="false" autocapitalize="off" th:field="*{pseudo}" aria-describedby="pseudo-hint"
-               th:attr="aria-invalid=${#fields.hasErrors('pseudo') or pseudoTaken != null} ? 'true' : 'false'">
-        <p class="aide" id="pseudo-hint" th:text="#{profile.pseudo.hint}">Votre pseudo est public.</p>
-        <p class="erreur" th:if="${#fields.hasErrors('pseudo')}" th:text="#{profile.error.pseudo}">Pseudo.</p>
-        <p class="erreur" th:if="${pseudoTaken != null}" th:text="#{profile.error.pseudoTaken(${pseudoTaken})}">
-            Pris.</p>
+        <div class="champ">
+            <label for="pseudo" th:text="#{profile.pseudo}">Pseudo</label>
+            <p class="bandeau" th:if="${pseudoSuggested}" th:text="#{profile.pseudo.suggested}">Pseudo proposé.</p>
+            <input id="pseudo" type="text" autocomplete="nickname" required minlength="3" maxlength="20"
+                   spellcheck="false" autocapitalize="off" th:field="*{pseudo}"
+                   th:attr="aria-invalid=${#fields.hasErrors('pseudo') or pseudoTaken != null} ? 'true' : 'false',
+                            aria-describedby='pseudo-hint'
+                                + (${#fields.hasErrors('pseudo')} ? ' pseudo-error' : '')
+                                + (${pseudoTaken != null} ? ' pseudo-taken-error' : '')">
+            <p class="aide" id="pseudo-hint" th:text="#{profile.pseudo.hint}">Votre pseudo est public.</p>
+            <p class="erreur" id="pseudo-error" th:if="${#fields.hasErrors('pseudo')}"
+               th:text="#{profile.error.pseudo}">Pseudo.</p>
+            <p class="erreur" id="pseudo-taken-error" th:if="${pseudoTaken != null}"
+               th:text="#{profile.error.pseudoTaken(${pseudoTaken})}">Pris.</p>
+        </div>
 
-        <fieldset class="telephone" aria-describedby="phone-hint">
+        <fieldset class="champ telephone">
             <legend th:text="#{profile.phone}">Téléphone</legend>
             <div class="telephone__champs">
                 <div class="telephone__indicatif">
                     <label for="phoneCountryCode" th:text="#{profile.phoneCountryCode}">Indicatif</label>
                     <input id="phoneCountryCode" type="text" autocomplete="tel-country-code" inputmode="tel"
                            required maxlength="6" th:field="*{phoneCountryCode}"
-                           th:attr="aria-invalid=${#fields.hasErrors('phoneCountryCode')} ? 'true' : 'false'">
+                           th:attr="aria-invalid=${#fields.hasErrors('phoneCountryCode')} ? 'true' : 'false',
+                                    aria-describedby='phone-hint'
+                                        + (${#fields.hasErrors('phoneCountryCode')} ? ' phoneCountryCode-error' : '')">
                 </div>
                 <div class="telephone__numero">
                     <label for="phone" th:text="#{profile.phoneNumber}">Numéro</label>
                     <input id="phone" type="tel" autocomplete="tel-national" inputmode="tel" required maxlength="30"
                            th:field="*{phone}"
-                           th:attr="aria-invalid=${#fields.hasErrors('phone') or #fields.hasErrors('phoneValid')} ? 'true' : 'false'">
+                           th:attr="aria-invalid=${#fields.hasErrors('phone') or #fields.hasErrors('phoneValid')} ? 'true' : 'false',
+                                    aria-describedby='phone-hint'
+                                        + (${#fields.hasErrors('phone') or #fields.hasErrors('phoneValid')} ? ' phone-error' : '')">
                 </div>
             </div>
+            <p class="aide" id="phone-hint" th:text="#{profile.phone.hint}">Indicatif +33 pour la France.</p>
+            <p class="erreur" id="phoneCountryCode-error" th:if="${#fields.hasErrors('phoneCountryCode')}"
+               th:text="#{profile.error.phoneCountryCode}">Indicatif.</p>
+            <p class="erreur" id="phone-error" th:if="${#fields.hasErrors('phone') or #fields.hasErrors('phoneValid')}"
+               th:text="#{profile.error.phone}">Téléphone.</p>
         </fieldset>
-        <p class="aide" id="phone-hint" th:text="#{profile.phone.hint}">Indicatif +33 pour la France.</p>
-        <p class="erreur" th:if="${#fields.hasErrors('phoneCountryCode')}" th:text="#{profile.error.phoneCountryCode}">
-            Indicatif.</p>
-        <p class="erreur" th:if="${#fields.hasErrors('phone') or #fields.hasErrors('phoneValid')}"
-           th:text="#{profile.error.phone}">Téléphone.</p>
 
-        <div class="case">
-            <input id="recontactNextSeason" type="checkbox" th:field="*{recontactNextSeason}"
-                   aria-describedby="recontact-hint">
-            <label for="recontactNextSeason" th:text="#{profile.recontact}">Me recontacter</label>
+        <div class="champ">
+            <div class="case">
+                <input id="recontactNextSeason" type="checkbox" th:field="*{recontactNextSeason}"
+                       aria-describedby="recontact-hint">
+                <label for="recontactNextSeason" th:text="#{profile.recontact}">Me recontacter</label>
+            </div>
+            <p class="aide" id="recontact-hint" th:text="#{profile.recontact.hint}">Sans cette case…</p>
         </div>
-        <p class="aide" id="recontact-hint" th:text="#{profile.recontact.hint}">Sans cette case…</p>
 
         <p><a th:href="@{/notice}" target="_blank" rel="noopener" th:text="#{profile.notice}">Notice</a></p>
 
