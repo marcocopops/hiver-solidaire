@@ -1,17 +1,109 @@
-:root {
-    --fond: #f6f3ee;
-    --texte: #1f2933;
-    --accent: #0b5c8c;
-    /* Statut d'une journée (R5) : texte foncé sur fond clair, contraste supérieur à 7:1 (WCAG AA). */
-    --complete-fond: #d8f0df;
-    --complete-texte: #14532d;
-    --partielle-fond: #fde7c4;
-    --partielle-texte: #7a3e00;
-    --erreur: #9b1c1c;
-    --bordure: #9aa5b1;
+/*
+ * Hiver Solidaire — langage visuel « veillée chaleureuse » (maquette docs/design/planning-par-journee.html).
+ * 1. Police  2. Variables  3. Base  4. Mise en page et en-tête  5. Composants  6. Planning  7. Formulaires
+ * 8. Pages  9. Préférences. Les variables et composants servent aussi au back-office (S4b).
+ * Contrastes (WCAG 2.2 AA) : chaque couple texte/fond ci-dessous dépasse 4,5:1 ; bordures de contrôles >= 3:1.
+ */
+
+/* 1. Police : Atkinson Hyperlegible (SIL OFL 1.1, voir /fonts/OFL.txt), servie par l'appli. */
+@font-face {
+    font-family: "Atkinson Hyperlegible";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("/fonts/atkinson-hyperlegible-latin-400-normal.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+        U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
-* {
+@font-face {
+    font-family: "Atkinson Hyperlegible";
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url("/fonts/atkinson-hyperlegible-latin-700-normal.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+        U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Lettres latines étendues : les pseudos acceptent Ā à ž. */
+@font-face {
+    font-family: "Atkinson Hyperlegible";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("/fonts/atkinson-hyperlegible-latin-ext-400-normal.woff2") format("woff2");
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+        U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+    font-family: "Atkinson Hyperlegible";
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url("/fonts/atkinson-hyperlegible-latin-ext-700-normal.woff2") format("woff2");
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+        U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* 2. Variables */
+:root {
+    /* Couleurs */
+    --fond: #f6f3ee;
+    --surface: #ffffff;
+    --texte: #1f2a44;
+    --texte-secondaire: #475569;
+    --nuit: #1f2a44;
+    --nuit-texte: #f8fafc;
+    --lune: #fbbf24;
+    --ambre: #b45309;
+    --ambre-fonce: #92400e;
+    --ambre-texte: #9a4508;
+    --ambre-clair: #fef3c7;
+    --ambre-clair-texte: #78350f;
+    --complete-fond: #dcfce7;
+    --complete-texte: #14532d;
+    --partielle-fond: #ffedd5;
+    --partielle-texte: #7c2d12;
+    --erreur: #9b1c1c;
+    --erreur-fond: #fee2e2;
+    --erreur-texte: #7f1d1d;
+    --contour: #64748b;
+    --contour-sur-nuit: #94a3b8;
+    --separateur: #e7e2da;
+    --focus: #1f2a44;
+    --focus-sur-nuit: #fbbf24;
+    --ombre: 0 1px 3px rgba(31, 42, 68, 0.12);
+
+    /* Rayons */
+    --rayon-pilule: 999px;
+    --rayon-carte: 1.25rem;
+    --rayon-entete: 1.75rem;
+    --rayon-champ: 0.75rem;
+
+    /* Espacements */
+    --esp-1: 0.25rem;
+    --esp-2: 0.5rem;
+    --esp-3: 0.75rem;
+    --esp-4: 1rem;
+    --esp-5: 1.25rem;
+    --esp-6: 1.5rem;
+    --esp-8: 2rem;
+
+    /* Tailles */
+    --cible-tactile: 2.75rem;
+    --hauteur-bouton: 3rem;
+    --largeur-max: 40rem;
+    --icone: 1.25rem;
+
+    --police: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* 3. Base */
+*,
+*::before,
+*::after {
     box-sizing: border-box;
 }
 
@@ -19,141 +111,380 @@ body {
     margin: 0;
     background: var(--fond);
     color: var(--texte);
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-family: var(--police);
+    font-size: 1rem;
     line-height: 1.5;
+    overflow-wrap: break-word;
 }
 
-.page {
-    max-width: 40rem;
-    margin: 0 auto;
-    padding: 2rem 1rem;
+h1,
+h2,
+h3 {
+    line-height: 1.2;
 }
 
 h1 {
-    margin: 0 0 1rem;
-    color: var(--accent);
-    font-size: 1.75rem;
+    margin: 0 0 var(--esp-4);
+    font-size: 1.875rem;
+}
+
+h2 {
+    margin: var(--esp-8) 0 var(--esp-3);
+    font-size: 1.375rem;
+}
+
+a {
+    color: var(--ambre-texte);
+}
+
+a:hover {
+    color: var(--ambre-fonce);
+}
+
+:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+}
+
+.icone {
+    flex: 0 0 var(--icone);
+    width: var(--icone);
+    height: var(--icone);
+}
+
+/* 4. Mise en page et en-tête : une colonne centrée, largeur maximale sur grand écran. */
+.page {
+    max-width: var(--largeur-max);
+    margin: 0 auto;
+    padding: var(--esp-5) var(--esp-4) var(--esp-8);
+}
+
+.entete {
+    padding: var(--esp-5) var(--esp-5) var(--esp-6);
+    border-radius: 0 0 var(--rayon-entete) var(--rayon-entete);
+    background: var(--nuit);
+    color: var(--nuit-texte);
+}
+
+.entete__contenu {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-4);
+    max-width: calc(var(--largeur-max) - 2 * var(--esp-4));
+    margin: 0 auto;
+}
+
+.entete__barre {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--esp-3);
+}
+
+.entete__marque {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--esp-2);
+    min-height: var(--cible-tactile);
+    color: var(--nuit-texte);
+    font-size: 1.0625rem;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.entete__marque .icone {
+    color: var(--lune);
+}
+
+.entete__action {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--cible-tactile);
+    padding: 0 0.875rem;
+    border: 1px solid var(--contour-sur-nuit);
+    border-radius: var(--rayon-pilule);
+    color: var(--nuit-texte);
+    font-size: 0.9375rem;
+    text-decoration: none;
+}
+
+.entete a:hover {
+    color: var(--nuit-texte);
+    text-decoration: underline;
+}
+
+.entete :focus-visible {
+    outline-color: var(--focus-sur-nuit);
+}
+
+.entete h1 {
+    margin: 0;
+    font-size: 1.875rem;
+    line-height: 1.15;
+}
+
+/* 5. Composants */
+
+/* Boutons : pilules d'au moins 48 px ; principal ambre plein, secondaire à contour. */
+.bouton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--hauteur-bouton);
+    padding: 0 var(--esp-6);
+    border: 1.5px solid var(--ambre);
+    border-radius: var(--rayon-pilule);
+    background: var(--ambre);
+    color: #ffffff;
+    font: inherit;
+    font-weight: 700;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.bouton:hover {
+    border-color: var(--ambre-fonce);
+    background: var(--ambre-fonce);
+    color: #ffffff;
+}
+
+.bouton--secondaire {
+    border-color: var(--contour);
+    background: transparent;
+    color: var(--texte);
+}
+
+.bouton--secondaire:hover {
+    border-color: var(--texte);
+    background: var(--fond);
+    color: var(--texte);
+}
+
+/* Action définitive (suppression du compte). */
+.bouton--danger {
+    border-color: var(--erreur);
+    background: var(--erreur);
+}
+
+.bouton--danger:hover {
+    border-color: var(--erreur-texte);
+    background: var(--erreur-texte);
+}
+
+.bouton--petit {
+    min-height: var(--cible-tactile);
+    padding: 0 var(--esp-4);
+}
+
+/* Bouton qui a l'air d'un lien (déconnexion en POST). */
+.lien {
+    min-height: var(--cible-tactile);
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--ambre-texte);
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+/* Pastilles : statut d'une journée (R5, le texte dit le statut) et pseudos. */
+.statut,
+.pseudo {
+    display: inline-block;
+    max-width: 100%;
+    border-radius: var(--rayon-pilule);
+    overflow-wrap: anywhere;
+}
+
+.statut {
+    padding: var(--esp-1) var(--esp-3);
+    font-size: 0.875rem;
+    font-weight: 700;
+}
+
+.pseudo {
+    padding: 0.125rem 0.625rem;
+    background: var(--ambre-clair);
+    color: var(--ambre-clair-texte);
+}
+
+.pseudo--vous {
+    background: var(--ambre);
+    color: #ffffff;
+    font-weight: 700;
+}
+
+.pseudo--libre {
+    padding: 0.0625rem 0.5625rem;
+    border: 1.5px dashed var(--ambre-texte);
+    background: transparent;
+    color: var(--ambre-texte);
+    font-weight: 700;
+}
+
+/* Cartes */
+.carte {
+    padding: var(--esp-4) 1.125rem;
+    border-radius: var(--rayon-carte);
+    background: var(--surface);
+    box-shadow: var(--ombre);
+}
+
+/* Messages : information (bandeau) et alerte. */
+.bandeau,
+.alerte {
+    padding: var(--esp-3) var(--esp-4);
+    border-radius: var(--esp-4);
+}
+
+.bandeau {
+    background: var(--ambre-clair);
+    color: var(--ambre-clair-texte);
+}
+
+.alerte {
+    background: var(--erreur-fond);
+    color: var(--erreur-texte);
+    font-weight: 700;
+}
+
+.aide {
+    margin: 0;
+    color: var(--texte-secondaire);
+    font-size: 0.9375rem;
+}
+
+.erreur {
+    margin: 0;
+    color: var(--erreur);
+    font-weight: 700;
 }
 
 .lead {
     font-size: 1.25rem;
 }
 
-a {
-    color: var(--accent);
-}
-
-.bouton {
-    display: inline-block;
-    padding: 0.75rem 1.25rem;
-    border-radius: 0.5rem;
-    background: var(--accent);
-    color: #fff;
-    font-weight: 600;
-    text-decoration: none;
-}
-
-.bandeau {
-    padding: 0.75rem 1rem;
-    border-left: 0.25rem solid var(--accent);
-    background: #fff;
-}
-
-.soirees {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-
-.soiree {
+/* Navigation des pages bénévoles (refondue à l'étape suivante de la session design). */
+.nav {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.25rem 0.75rem;
-    margin-bottom: 0.5rem;
-    padding: 0.75rem 1rem;
-    border-left: 0.375rem solid;
-    border-radius: 0.375rem;
-    background: #fff;
+    gap: var(--esp-2) var(--esp-5);
+    margin: 0 0 var(--esp-6);
 }
 
-.soiree__date {
-    font-weight: 600;
+.nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--cible-tactile);
 }
 
-.statut {
-    padding: 0.125rem 0.625rem;
-    border-radius: 1rem;
-    font-size: 0.9rem;
-    font-weight: 600;
-}
-
-.soiree__manque {
-    flex-basis: 100%;
+.nav__deconnexion {
     margin: 0;
-    font-size: 0.95rem;
 }
 
-/* Planning par journée (ADR-0009) : structure seulement, la mise en forme vient avec la session design. */
+/* 6. Planning par journée (ADR-0009) */
+.saison {
+    margin: 0 0 var(--esp-3);
+    color: var(--texte-secondaire);
+}
+
+/* Filtres : pilules de 44 px, le filtre actif plein (aria-current). */
 .filtres {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
-    margin: 0 0 1rem;
+    gap: var(--esp-2);
+    margin: 0 0 var(--esp-4);
 }
 
 .filtres a {
     display: inline-flex;
     align-items: center;
-    min-height: 2.75rem;
-    padding: 0 1rem;
-    border: 1px solid var(--bordure);
-    border-radius: 1.5rem;
-    background: #fff;
+    min-height: var(--cible-tactile);
+    padding: 0 var(--esp-4);
+    border: 1.5px solid var(--contour);
+    border-radius: var(--rayon-pilule);
+    background: var(--surface);
+    color: var(--texte);
+    font-size: 0.9375rem;
     text-decoration: none;
 }
 
+.filtres a:hover {
+    border-color: var(--texte);
+    color: var(--texte);
+}
+
 .filtres a[aria-current="page"] {
-    border-color: var(--accent);
-    background: var(--accent);
-    color: #fff;
-    font-weight: 600;
+    border-color: var(--nuit);
+    background: var(--nuit);
+    color: #ffffff;
+    font-weight: 700;
 }
 
 .journees {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
     margin: 0;
     padding: 0;
     list-style: none;
 }
 
-.journee {
-    margin-bottom: 0.75rem;
-}
-
 .journee__carte {
-    border-left: 0.375rem solid;
-    border-radius: 0.375rem;
-    background: #fff;
+    border-radius: var(--rayon-carte);
+    background: var(--surface);
+    box-shadow: var(--ombre);
 }
 
+/* Journée où le bénévole connecté participe : contour ambre (le bloc « Vous passez… » le dit en texte). */
+.journee__carte:has(.journee__vous) {
+    box-shadow: 0 0 0 2px var(--ambre);
+}
+
+/* <summary> : toute la ligne déplie la carte, au clavier comme au doigt ; chevron à la place du marqueur. */
 .journee__carte summary {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 0.25rem 0.75rem;
-    min-height: 2.75rem;
-    padding: 0.75rem 1rem;
+    gap: var(--esp-2);
+    min-height: 4rem;
+    padding: 0.875rem 1.125rem;
+    border-radius: var(--rayon-carte);
     cursor: pointer;
+    list-style: none;
+}
+
+.journee__carte summary::-webkit-details-marker {
+    display: none;
+}
+
+.journee__carte[open] summary {
+    padding-bottom: 0.375rem;
 }
 
 .journee__date {
-    font-weight: 600;
+    font-size: 1.25rem;
+    font-weight: 700;
 }
 
-.journee--complete {
-    border-color: var(--complete-texte);
+.journee__etat {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 0.625rem;
+}
+
+.journee__chevron {
+    --icone: 1.375rem;
+    color: var(--texte-secondaire);
+}
+
+.journee__carte[open] .journee__chevron {
+    transform: rotate(180deg);
 }
 
 .journee--complete .statut {
@@ -161,114 +492,122 @@ a {
     color: var(--complete-texte);
 }
 
-.journee--incomplete {
-    border-color: var(--partielle-texte);
-}
-
 .journee--incomplete .statut {
     background: var(--partielle-fond);
     color: var(--partielle-texte);
 }
 
+.journee__contenu {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+    padding: var(--esp-1) 1.125rem 1.125rem;
+}
+
+/* Postes : icône, libellé en colonne, pastilles qui passent à la ligne. */
 .postes {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-2);
     margin: 0;
-    padding: 0 1rem 0.5rem;
+    padding: 0;
+    font-size: 0.9375rem;
     list-style: none;
 }
 
 .poste {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem 0.75rem;
-    padding: 0.25rem 0;
+    align-items: flex-start;
+    gap: var(--esp-2);
+}
+
+.poste__icone {
+    margin-top: 0.125rem;
+    color: var(--texte-secondaire);
 }
 
 .poste__titre {
-    flex: 0 0 9rem;
+    flex: 0 0 8.25rem;
+    color: var(--texte-secondaire);
 }
 
 .poste__precision {
-    font-size: 0.9rem;
+    display: block;
+    font-size: 0.8125rem;
 }
 
 .poste__inscrits {
     display: flex;
-    overflow-wrap: anywhere;
     flex: 1 1 auto;
     flex-wrap: wrap;
     gap: 0.375rem;
     min-width: 0;
 }
 
-.pseudo--vous {
-    font-weight: 600;
+/* Ce que fait le bénévole connecté ce jour-là, sa désinscription et la date limite (R6). */
+.journee__vous {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-4);
+    padding-top: var(--esp-3);
+    border-top: 1px solid var(--separateur);
 }
 
-.pseudo--libre {
-    font-style: italic;
-}
-
-.journee__vous,
-.journee__action {
-    margin: 0;
-    padding: 0.5rem 1rem 1rem;
+.inscription {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
 }
 
 .inscription__quoi {
-    margin: 0 0 0.5rem;
-    font-weight: 600;
-}
-
-/* Navigation : retour au planning, mes inscriptions, déconnexion. */
-.nav {
-    display: flex;
-    flex-wrap: wrap;
+    display: inline-flex;
     align-items: center;
-    gap: 0.5rem 1.25rem;
-    margin: 0 0 1.5rem;
+    gap: var(--esp-2);
+    margin: 0;
+    color: var(--ambre-texte);
+    font-size: 0.9375rem;
+    font-weight: 700;
 }
 
-.nav a,
-.lien {
-    display: inline-block;
-    min-height: 2.75rem;
-    padding: 0.625rem 0;
+.inscription__quoi .icone {
+    --icone: 1.125rem;
 }
 
-.nav__deconnexion {
+.inscription .aide {
+    font-size: 0.8125rem;
+}
+
+.journee__action {
     margin: 0;
 }
 
-.lien {
-    border: 0;
-    background: none;
-    color: var(--accent);
-    font: inherit;
-    text-decoration: underline;
-    cursor: pointer;
+.journee__action .bouton,
+.inscription .bouton {
+    display: flex;
+    width: 100%;
 }
 
-/* Formulaires : un champ par ligne, grandes zones tactiles (§8 « Ergonomie »). */
+/* 7. Formulaires : libellés au-dessus, champs de 48 px. */
 .formulaire {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    margin: 1rem 0;
+    gap: var(--esp-2);
+    margin: var(--esp-4) 0;
 }
 
 .formulaire label {
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .formulaire input[type="email"],
 .formulaire input[type="text"],
 .formulaire input[type="tel"] {
     width: 100%;
-    min-height: 2.75rem;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--bordure);
-    border-radius: 0.375rem;
-    background: #fff;
+    min-height: var(--hauteur-bouton);
+    padding: var(--esp-2) var(--esp-3);
+    border: 1.5px solid var(--contour);
+    border-radius: var(--rayon-champ);
+    background: var(--surface);
     color: var(--texte);
     font: inherit;
 }
@@ -277,21 +616,9 @@ a {
     border: 2px solid var(--erreur);
 }
 
-.formulaire input:focus-visible,
-.bouton:focus-visible,
-.lien:focus-visible,
-a:focus-visible {
-    outline: 3px solid var(--accent);
-    outline-offset: 2px;
-}
-
 .formulaire .bouton {
     align-self: flex-start;
-    margin-top: 0.75rem;
-    border: 0;
-    font: inherit;
-    font-weight: 600;
-    cursor: pointer;
+    margin-top: var(--esp-3);
 }
 
 .formulaire fieldset {
@@ -301,15 +628,15 @@ a:focus-visible {
 }
 
 .formulaire legend {
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--esp-2);
     padding: 0;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 /* Téléphone : indicatif étroit, numéro sur le reste de la ligne. */
 .telephone__champs {
     display: flex;
-    gap: 0.75rem;
+    gap: var(--esp-3);
 }
 
 .telephone__indicatif {
@@ -323,7 +650,7 @@ a:focus-visible {
 
 .telephone__champs label {
     display: block;
-    margin-bottom: 0.25rem;
+    margin-bottom: var(--esp-1);
     font-weight: 400;
 }
 
@@ -332,11 +659,12 @@ a:focus-visible {
 .case {
     display: flex;
     align-items: flex-start;
-    gap: 0.75rem;
-    margin-bottom: 0.5rem;
-    padding: 0.75rem 1rem;
-    border-radius: 0.375rem;
-    background: #fff;
+    gap: var(--esp-3);
+    margin-bottom: var(--esp-2);
+    padding: var(--esp-3) var(--esp-4);
+    border-radius: var(--esp-4);
+    background: var(--surface);
+    box-shadow: var(--ombre);
 }
 
 .choix input,
@@ -345,6 +673,7 @@ a:focus-visible {
     width: 1.5rem;
     height: 1.5rem;
     margin: 0;
+    accent-color: var(--ambre);
 }
 
 .choix label,
@@ -353,69 +682,73 @@ a:focus-visible {
     cursor: pointer;
 }
 
-.aide {
-    margin: 0;
-    font-size: 0.95rem;
-}
+/* 8. Pages */
 
-.erreur {
-    margin: 0;
-    color: var(--erreur);
-    font-weight: 600;
-}
-
-.alerte {
-    padding: 0.75rem 1rem;
-    border-left: 0.25rem solid var(--erreur);
-    background: #fff;
-    color: var(--erreur);
-    font-weight: 600;
-}
-
-/* Récapitulatif d'une inscription. */
+/* Récapitulatif d'une inscription ou des données du compte. */
 .recap {
-    margin: 1rem 0;
-    padding: 0.75rem 1rem;
-    border-radius: 0.375rem;
-    background: #fff;
+    margin: var(--esp-4) 0;
+    padding: var(--esp-4) 1.125rem;
+    border-radius: var(--rayon-carte);
+    background: var(--surface);
+    box-shadow: var(--ombre);
 }
 
 .recap dt {
-    font-size: 0.9rem;
+    color: var(--texte-secondaire);
+    font-size: 0.875rem;
 }
 
 .recap dd {
-    margin: 0 0 0.5rem;
-    font-weight: 600;
+    margin: 0 0 var(--esp-2);
+    font-weight: 700;
 }
 
+/* « Mes inscriptions » : une carte par soirée. */
+.soirees {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.soiree {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--esp-1) var(--esp-3);
+    padding: var(--esp-4) 1.125rem;
+    border-radius: var(--rayon-carte);
+    background: var(--surface);
+    box-shadow: var(--ombre);
+}
+
+.soiree__date {
+    font-weight: 700;
+}
+
+.soiree__manque,
 .soiree__action {
     flex-basis: 100%;
-    margin: 0.25rem 0 0;
+    margin: 0;
 }
 
-/* Action définitive (suppression du compte). */
-.bouton--danger {
-    background: var(--erreur);
-}
-
-.bouton--petit {
-    padding: 0.625rem 1rem;
-}
-
-/* Action secondaire (désinscription depuis la carte d'une journée). */
-.bouton--secondaire {
-    border: 1px solid var(--bordure);
-    background: #fff;
-    color: var(--texte);
+/* 9. Préférences : le chevron pivote en douceur, sauf si la personne a demandé moins d'animations. */
+@media (prefers-reduced-motion: no-preference) {
+    .journee__chevron {
+        transition: transform 0.2s ease;
+    }
 }
 
 @media (min-width: 48rem) {
-    .page {
-        padding-top: 4rem;
+    .entete {
+        padding-top: var(--esp-6);
+        padding-bottom: var(--esp-8);
     }
 
-    h1 {
+    .entete h1 {
         font-size: 2.25rem;
     }
 }

@@ -5,9 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow">
     <title th:text="${title} + ' · ' + #{app.name}">Page · Hiver Solidaire</title>
+    <link rel="preload" th:href="@{/fonts/atkinson-hyperlegible-latin-400-normal.woff2}" as="font" type="font/woff2"
+          crossorigin>
+    <link rel="preload" th:href="@{/fonts/atkinson-hyperlegible-latin-700-normal.woff2}" as="font" type="font/woff2"
+          crossorigin>
     <link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
 <body>
+<!-- En-tête de chaque page : nom de l'appli (vers l'accueil), « Mon espace » ou « Me connecter », titre de la page. -->
+<header class="entete" th:fragment="entete(title)">
+    <div class="entete__contenu">
+        <div class="entete__barre">
+            <a class="entete__marque" th:href="@{/}">
+                <svg class="icone" aria-hidden="true" focusable="false"><use th:href="@{/images/icones.svg#lune}"></use></svg>
+                <span th:text="#{app.name}">Hiver Solidaire</span>
+            </a>
+            <a class="entete__action" th:if="${signedIn}" th:href="@{/mes-inscriptions}"
+               th:text="#{header.mySpace}">Mon espace</a>
+            <a class="entete__action" th:unless="${signedIn}" th:href="@{/connexion}"
+               th:text="#{header.signIn}">Me connecter</a>
+        </div>
+        <h1 th:text="${title}">Titre de la page</h1>
+    </div>
+</header>
+
 <!-- Navigation : retour au planning ; pour un bénévole connecté, ses inscriptions, son compte et la déconnexion (POST). -->
 <nav class="nav" th:fragment="nav">
     <a th:href="@{/planning}" th:text="#{common.back.planning}">Retour au planning</a>

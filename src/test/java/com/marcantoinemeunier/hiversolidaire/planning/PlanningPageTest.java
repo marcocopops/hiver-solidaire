@@ -171,6 +171,29 @@ class PlanningPageTest {
     }
 
     @Test
+    void each_post_has_its_decorative_icon() throws Exception {
+        var block = dayBlock(page(), "Mar. 5 janv.");
+
+        for (var post : new String[] {"BREAKFAST", "MAIN_DISH", "SIDES", "DINNER_PRESENCE", "NIGHT"}) {
+            assertThat(block).as(post).contains("<use href=\"/images/icones.svg#poste-" + post + "\">");
+        }
+        // Icônes décoratives : le libellé du poste reste dans le texte.
+        assertThat(count(block, "<svg ")).isEqualTo(count(block, "aria-hidden=\"true\""));
+    }
+
+    @Test
+    void the_header_offers_a_visitor_to_sign_in_and_leads_home() throws Exception {
+        var body = page();
+        var header = body.substring(body.indexOf("<header"), body.indexOf("</header>"));
+
+        assertThat(header).contains("href=\"/\"").contains("Hiver Solidaire")
+                .contains("href=\"/connexion\"").contains("Me connecter")
+                .contains("<h1>Planning de la saison</h1>")
+                .doesNotContain("Mon espace");
+        assertThat(body).doesNotContain("href=\"/mes-inscriptions\"").doesNotContain("Retour à l’accueil");
+    }
+
+    @Test
     void the_breakfast_of_an_evening_shows_on_the_next_day() throws Exception {
         register(LocalDate.of(2027, 1, 5), "BREAKFAST", null, "Léa");
 
