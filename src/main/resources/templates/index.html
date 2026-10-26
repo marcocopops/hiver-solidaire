@@ -1,14 +1,9 @@
 <!DOCTYPE html>
 <html lang="fr" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{app.name}">Hiver Solidaire</title>
-    <link rel="stylesheet" th:href="@{/css/app.css}">
-</head>
+<head th:replace="~{fragments :: head(#{home.title})}"></head>
 <body>
+<header th:replace="~{fragments :: entete(#{home.heading}, true)}"></header>
 <main class="page">
-    <h1 th:text="#{app.name}">Hiver Solidaire</h1>
     <p class="lead" th:text="#{home.opening}">Inscriptions à partir du 14 décembre 2026</p>
     <p><a class="bouton" th:href="@{/planning}" th:text="#{home.planning}">Voir le planning</a></p>
 </main>

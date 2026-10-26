@@ -36,4 +36,21 @@ class TemplatesHaveNoInlineCodeTest {
             assertThat(EVENT_HANDLER.matcher(html).find()).as(name + " : gestionnaire d'événement inline").isFalse();
         }
     }
+
+    @Test
+    void every_page_uses_the_common_head_and_header() throws IOException {
+        var templates = new PathMatchingResourcePatternResolver().getResources("classpath:templates/**/*.html");
+
+        for (var template : templates) {
+            var name = template.getFilename();
+            if ("fragments.html".equals(name)) {
+                continue;
+            }
+            var html = template.getContentAsString(StandardCharsets.UTF_8);
+
+            // Le titre de la page est dans l'en-tête commun (fragment entete), jamais en dur.
+            assertThat(html).as(name).contains("~{fragments :: head(").contains("~{fragments :: entete(")
+                    .doesNotContain("<h1");
+        }
+    }
 }

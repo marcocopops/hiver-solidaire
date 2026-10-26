@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<!--/* Page d'erreur de Spring Boot (BasicErrorController) : un message par cas, jamais de détail technique (§8).
+     403 couvre un formulaire expiré (CSRF) et un accès refusé ; l'en-tête propose alors « Me connecter ».
+     Commentaire de gabarit : il n'est pas envoyé au navigateur. */-->
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      th:with="key=${status == 404} ? 'error.notFound' : (${status == 403} ? 'error.forbidden' : 'error.other')">
+<head th:replace="~{fragments :: head(#{${key + '.title'}})}"></head>
+<body>
+<header th:replace="~{fragments :: entete(#{${key + '.title'}}, true)}"></header>
+<main class="page">
+    <p class="lead" th:text="#{${key + '.text'}}">Cette page n’existe pas.</p>
+    <p><a class="bouton" th:href="@{/planning}" th:text="#{common.back.planning}">Retour au planning</a></p>
+</main>
+</body>
+</html>

@@ -2,9 +2,9 @@
 <html lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments :: head(#{common.myRegistrations})}"></head>
 <body>
+<header th:replace="~{fragments :: entete(#{common.myRegistrations}, true)}"></header>
 <main class="page">
     <nav th:replace="~{fragments :: nav}"></nav>
-    <h1 th:text="#{common.myRegistrations}">Mes inscriptions</h1>
     <p class="bandeau" role="status" th:if="${cancelled != null}"
        th:text="#{myRegistrations.cancelled(${#messages.msg(cancelled.key, cancelled.date)})}">
         Désinscription enregistrée.</p>
@@ -16,7 +16,7 @@
                 Dîner du lun. 4 janv.</span>
             <p class="soiree__manque" th:text="#{${'registration.option.' + registration.option}}">Type</p>
             <p class="soiree__action" th:if="${registration.cancellable}">
-                <a class="bouton bouton--petit" th:href="@{/mes-inscriptions/annuler(soiree=${registration.date})}"
+                <a class="bouton bouton--secondaire" th:href="@{/mes-inscriptions/annuler(soiree=${registration.date})}"
                    th:text="#{myRegistrations.cancel}">Me désinscrire</a>
             </p>
             <p class="aide" th:if="${registration.cancellable}"

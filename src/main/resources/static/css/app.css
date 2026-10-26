@@ -273,11 +273,6 @@ a:hover {
     background: var(--erreur-texte);
 }
 
-.bouton--petit {
-    min-height: var(--cible-tactile);
-    padding: 0 var(--esp-4);
-}
-
 /* Bouton qui a l'air d'un lien (déconnexion en POST). */
 .lien {
     min-height: var(--cible-tactile);
@@ -760,6 +755,19 @@ a:hover {
     margin: 0;
 }
 
+.soiree__action .bouton {
+    width: 100%;
+}
+
+.soiree .aide {
+    font-size: 0.8125rem;
+}
+
+/* Actions d'une page (confirmer, garder, revenir) : pleine largeur sur mobile, à portée de pouce. */
+.page > p > .bouton {
+    width: 100%;
+}
+
 /* 9. Préférences : le chevron pivote en douceur, sauf si la personne a demandé moins d'animations. */
 @media (prefers-reduced-motion: no-preference) {
     .journee__chevron {
@@ -777,7 +785,8 @@ a:hover {
         font-size: 2.25rem;
     }
 
-    .formulaire .bouton {
+    .formulaire .bouton,
+    .page > p > .bouton {
         align-self: flex-start;
         width: auto;
     }

@@ -2,9 +2,9 @@
 <html lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments :: head(#{account.delete.title})}"></head>
 <body>
+<header th:replace="~{fragments :: entete(#{account.delete.title}, true)}"></header>
 <main class="page">
     <nav th:replace="~{fragments :: nav}"></nav>
-    <h1 th:text="#{account.delete.title}">Supprimer mon compte</h1>
     <p th:text="#{account.delete.erased}">Seront effacés : …</p>
     <p th:text="#{account.delete.kept}">Vos participations passées restent comptées, sans votre nom.</p>
     <p th:if="${upcomingCount > 0}" th:text="#{account.delete.upcoming(${upcomingCount})}">
@@ -18,7 +18,8 @@
         <button class="bouton bouton--danger" type="submit" th:text="#{account.delete.submit}">
             Supprimer définitivement mon compte</button>
     </form>
-    <p><a th:href="@{/mon-compte}" th:text="#{account.delete.back}">Garder mon compte</a></p>
+    <p><a class="bouton bouton--secondaire" th:href="@{/mon-compte}" th:text="#{account.delete.back}">
+        Garder mon compte</a></p>
 </main>
 </body>
 </html>
