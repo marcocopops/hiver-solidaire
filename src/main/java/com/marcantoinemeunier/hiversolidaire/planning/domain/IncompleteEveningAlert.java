@@ -4,7 +4,8 @@ import java.time.LocalDate;
 
 /**
  * Alerte « soirée devenue incomplète » (cahier des charges §6) : une annulation fait perdre un minimum à une soirée
- * des 7 prochains jours (aujourd'hui compris). Une soirée fermée par un coordinateur ne déclenche rien.
+ * des 7 prochains jours (aujourd'hui compris). Calculée par soirée, même si le planning s'affiche par journée
+ * (ADR-0009).
  */
 public final class IncompleteEveningAlert {
 
@@ -16,8 +17,7 @@ public final class IncompleteEveningAlert {
 
     public static boolean triggeredBy(Evening before, Evening after, LocalDate today) {
         var date = before.date();
-        return !before.closed()
-                && !date.isBefore(today)
+        return !date.isBefore(today)
                 && !date.isAfter(today.plusDays(DAYS_AHEAD))
                 && !before.lostMinimums(after).isEmpty();
     }

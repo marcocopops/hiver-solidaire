@@ -29,7 +29,7 @@ class RegistrationDecisionTest {
     }
 
     private static Evening evening(Registration... registrations) {
-        return new Evening(EVENING_DATE, false, Needs.defaults(), List.of(registrations));
+        return new Evening(EVENING_DATE, Needs.defaults(), List.of(registrations));
     }
 
     private static RegistrationDecision decide(Evening evening, Registration candidate, Instant now) {
@@ -130,16 +130,8 @@ class RegistrationDecisionTest {
     }
 
     @Test
-    void r7_refuses_a_closed_evening() {
-        var closed = new Evening(EVENING_DATE, true, Needs.defaults(), List.of());
-
-        assertThat(decide(closed, Registration.by(ALICE, RegistrationType.BREAKFAST, null), DURING_SEASON))
-                .isEqualTo(RegistrationDecision.CLOSED);
-    }
-
-    @Test
     void r7_refuses_an_evening_outside_the_season() {
-        var outside = new Evening(LocalDate.of(2027, 3, 21), false, Needs.defaults(), List.of());
+        var outside = new Evening(LocalDate.of(2027, 3, 21), Needs.defaults(), List.of());
 
         assertThat(decide(outside, Registration.by(ALICE, RegistrationType.BREAKFAST, null), DURING_SEASON))
                 .isEqualTo(RegistrationDecision.OUT_OF_SEASON);

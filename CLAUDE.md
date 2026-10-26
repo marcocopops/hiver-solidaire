@@ -26,6 +26,7 @@ Mets cette section à jour si elles changent.
 
 - Découpage par fonctionnalité : `planning`, `inscription`, `benevole`, `auth`, `admin`, `notification`, `config`.
 - Tests d'intégration web : `@Import({TestcontainersConfiguration.class, TestClockAndMailConfiguration.class})` donne une horloge réglable (`MutableClock`) et un double de l'envoi (`RecordingMagicLinkSender`) ; `Browser` simule un navigateur (cookie de session, jeton CSRF, IP propre). `src/test/resources/config/application.properties` fixe les réglages propres aux tests (téléphone fictif des coordinateurs).
+- Le planning s'affiche par journée, les données et les règles restent par soirée (ADR-0009) : `Day` regroupe le petit-déjeuner de la soirée D-1 et le reste de la soirée D. Paramètre `jour` dans le parcours d'inscription, `soiree` pour la désinscription.
 - Inscriptions annulées logiquement (`cancelled_at`) : toute lecture d'inscriptions filtre `cancelled_at IS NULL`. Comptes supprimés anonymisés (`deleted_at`). Alertes aux coordinateurs écrites dans `coordinator_alert` (ADR-0008).
 - Le domaine (règles R1 à R7) est en Java pur, sans dépendance Spring, et testé unitairement.
 - Rendu serveur avec Thymeleaf ; htmx seulement pour des échanges partiels. Pas de SPA, pas de framework JavaScript.

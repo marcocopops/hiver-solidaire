@@ -5,15 +5,15 @@
 <main class="page">
     <nav th:replace="~{fragments :: nav}"></nav>
     <h1 th:text="#{registration.choose.title}">S’inscrire</h1>
-    <p class="lead" th:text="${label}">Lun. 4 → mar. 5 janv.</p>
+    <p class="lead" th:text="${label}">Lun. 4 janv.</p>
 
     <p class="alerte" role="alert" th:if="${refusal != null}"
        th:text="#{${'registration.refusal.' + refusal}}">Refus.</p>
-    <p class="bandeau" th:if="${blocking != null}" th:text="#{${'registration.refusal.' + blocking}}">Fermée.</p>
+    <p class="bandeau" th:if="${blocking != null}" th:text="#{${'registration.refusal.' + blocking}}">Motif.</p>
 
     <!-- Formulaire en GET : il ne modifie rien, il mène à la demande de lien ou à la page de confirmation. -->
     <form class="formulaire" th:if="${blocking == null}" th:action="@{${next}}" method="get">
-        <input type="hidden" name="soiree" th:value="${date}">
+        <input type="hidden" name="jour" th:value="${date}">
         <fieldset>
             <legend th:text="#{registration.choose.legend}">Ce que vous proposez</legend>
             <div class="choix" th:each="option, status : ${options}">

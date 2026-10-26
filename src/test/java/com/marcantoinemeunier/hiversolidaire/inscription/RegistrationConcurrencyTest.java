@@ -62,7 +62,7 @@ class RegistrationConcurrencyTest {
     }
 
     private static RegistrationChoice choice(RegistrationType type, DishChoice dish) {
-        return new RegistrationChoice(EVENING, type, dish);
+        return RegistrationChoice.onEvening(EVENING, type, dish);
     }
 
     /** Lance toutes les tentatives en même temps et renvoie leurs décisions. */

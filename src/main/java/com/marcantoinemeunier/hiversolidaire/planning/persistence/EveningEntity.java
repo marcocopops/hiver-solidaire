@@ -24,9 +24,6 @@ public class EveningEntity {
     @Column(name = "evening_date", nullable = false)
     private LocalDate date;
 
-    @Column(name = "closed", nullable = false)
-    private boolean closed;
-
     protected EveningEntity() {
     }
 
@@ -43,6 +40,6 @@ public class EveningEntity {
     }
 
     public Evening toDomain(Needs needs, List<Registration> registrations) {
-        return new Evening(date, closed, needs, registrations);
+        return new Evening(date, needs, registrations);
     }
 }

@@ -94,8 +94,10 @@ class AccountDeletionTest {
     }
 
     private static void register(Browser browser, LocalDate date, String choice) throws Exception {
-        browser.get("/inscription/confirmer?soiree=" + date + "&choix=" + choice);
-        assertThat(browser.post("/inscription", "soiree", date.toString(), "choix", choice).getRedirectedUrl())
+        // Inscription depuis la journée de l'activité : le lendemain de la soirée pour un petit-déjeuner.
+        var day = "BREAKFAST".equals(choice) ? date.plusDays(1) : date;
+        browser.get("/inscription/confirmer?jour=" + day + "&choix=" + choice);
+        assertThat(browser.post("/inscription", "jour", day.toString(), "choix", choice).getRedirectedUrl())
                 .isEqualTo("/inscription/confirmee");
     }
 

@@ -44,11 +44,11 @@ class LoginController {
     }
 
     @GetMapping("/connexion")
-    String loginForm(@RequestParam(name = RegistrationChoice.EVENING_PARAM, required = false) String evening,
+    String loginForm(@RequestParam(name = RegistrationChoice.DAY_PARAM, required = false) String day,
             @RequestParam(name = RegistrationChoice.CHOICE_PARAM, required = false) String choice,
             HttpServletRequest request, Model model) {
         model.addAttribute("invalidLink", request.getParameterMap().containsKey("lien-invalide"));
-        return form(model, RegistrationChoice.parse(evening, choice).orElse(null), "");
+        return form(model, RegistrationChoice.parse(day, choice).orElse(null), "");
     }
 
     /**
@@ -57,10 +57,10 @@ class LoginController {
      */
     @PostMapping("/connexion")
     String requestLink(@RequestParam(name = "email", defaultValue = "") String email,
-            @RequestParam(name = RegistrationChoice.EVENING_PARAM, required = false) String evening,
+            @RequestParam(name = RegistrationChoice.DAY_PARAM, required = false) String day,
             @RequestParam(name = RegistrationChoice.CHOICE_PARAM, required = false) String choiceParam,
             HttpServletRequest request, HttpServletResponse response, Model model) {
-        var choice = RegistrationChoice.parse(evening, choiceParam).orElse(null);
+        var choice = RegistrationChoice.parse(day, choiceParam).orElse(null);
         if (!sender.available()) {
             response.setStatus(HttpStatus.SERVICE_UNAVAILABLE.value());
             return form(model, choice, email);
@@ -94,7 +94,7 @@ class LoginController {
      */
     @GetMapping("/login/ott")
     String confirmLogin(@RequestParam(name = "token", required = false) String token,
-            @RequestParam(name = RegistrationChoice.EVENING_PARAM, required = false) String evening,
+            @RequestParam(name = RegistrationChoice.DAY_PARAM, required = false) String day,
             @RequestParam(name = RegistrationChoice.CHOICE_PARAM, required = false) String choice, Model model) {
         if (token == null || token.isBlank()) {
             return "redirect:/connexion";
@@ -105,7 +105,7 @@ class LoginController {
         }
         model.addAttribute("token", token);
         model.addAttribute("maskedEmail", EmailAddress.mask(email.get()));
-        model.addAttribute("choice", RegistrationChoice.parse(evening, choice).orElse(null));
+        model.addAttribute("choice", RegistrationChoice.parse(day, choice).orElse(null));
         return "connexion-confirmer";
     }
 

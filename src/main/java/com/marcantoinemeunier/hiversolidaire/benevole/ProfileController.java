@@ -28,10 +28,10 @@ class ProfileController {
 
     @GetMapping("/profil")
     String form(Principal principal,
-            @RequestParam(name = RegistrationChoice.EVENING_PARAM, required = false) String evening,
+            @RequestParam(name = RegistrationChoice.DAY_PARAM, required = false) String day,
             @RequestParam(name = RegistrationChoice.CHOICE_PARAM, required = false) String choiceParam,
             Model model) {
-        var choice = RegistrationChoice.parse(evening, choiceParam).orElse(null);
+        var choice = RegistrationChoice.parse(day, choiceParam).orElse(null);
         if (volunteers.profileCompleted(volunteerId(principal))) {
             return "redirect:" + next(choice);
         }
@@ -43,10 +43,10 @@ class ProfileController {
     @PostMapping("/profil")
     String submit(Principal principal, @Valid @ModelAttribute("profileForm") ProfileForm form,
             BindingResult binding,
-            @RequestParam(name = RegistrationChoice.EVENING_PARAM, required = false) String evening,
+            @RequestParam(name = RegistrationChoice.DAY_PARAM, required = false) String day,
             @RequestParam(name = RegistrationChoice.CHOICE_PARAM, required = false) String choiceParam,
             Model model) {
-        var choice = RegistrationChoice.parse(evening, choiceParam).orElse(null);
+        var choice = RegistrationChoice.parse(day, choiceParam).orElse(null);
         var id = volunteerId(principal);
         if (volunteers.profileCompleted(id)) {
             return "redirect:" + next(choice);

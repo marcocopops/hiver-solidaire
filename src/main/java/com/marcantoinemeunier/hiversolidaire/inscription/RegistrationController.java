@@ -1,7 +1,8 @@
 package com.marcantoinemeunier.hiversolidaire.inscription;
 
 import com.marcantoinemeunier.hiversolidaire.inscription.RegistrationService.UnknownEveningException;
-import com.marcantoinemeunier.hiversolidaire.planning.EveningLabelFormatter;
+import com.marcantoinemeunier.hiversolidaire.planning.ActivityLabel;
+import com.marcantoinemeunier.hiversolidaire.planning.DayLabelFormatter;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.RegistrationDecision;
 import java.security.Principal;
 import java.time.LocalDate;
@@ -17,8 +18,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
- * Inscription depuis le planning (cahier des charges §6) : choix d'un type encore disponible, confirmation par
- * un POST protégé par CSRF, page de confirmation. Le bénévole est celui de la session, jamais un paramètre.
+ * Inscription depuis une journée du planning (cahier des charges §6, ADR-0009) : choix d'un type encore disponible,
+ * confirmation par un POST protégé par CSRF, page de confirmation. Le bénévole est celui de la session, jamais un
+ * paramètre. L'inscription est enregistrée sur sa soirée : la veille pour un petit-déjeuner, le jour même sinon.
  */
 @Controller
 class RegistrationController {
@@ -31,14 +33,13 @@ class RegistrationController {
 
     /** Choix d'un type, ouvert à tous : un visiteur poursuit vers la demande de lien, un bénévole vers la confirmation. */
     @GetMapping("/inscription")
-    String choose(@RequestParam(name = RegistrationChoice.EVENING_PARAM) String evening,
+    String choose(@RequestParam(name = RegistrationChoice.DAY_PARAM) String day,
             @RequestParam(name = "refus", required = false) String refusal, Principal principal, Model model) {
-        var date = parseDate(evening);
+        var date = parseDate(day);
         var choice = registrations.choice(date, volunteerId(principal)).orElseThrow(UnknownEveningException::new);
         model.addAttribute("date", date);
-        model.addAttribute("label", EveningLabelFormatter.format(date));
-        model.addAttribute("options", choice.available().stream().map(RegistrationService.RegistrationChoiceOption::param)
-                .toList());
+        model.addAttribute("label", DayLabelFormatter.format(date));
+        model.addAttribute("options", choice.available());
         model.addAttribute("blocking", choice.blocking() == null ? null : choice.blocking().name());
         model.addAttribute("refusal", knownRefusal(refusal));
         model.addAttribute("next", principal == null ? "/connexion" : "/inscription/confirmer");
@@ -46,24 +47,24 @@ class RegistrationController {
     }
 
     @GetMapping("/inscription/confirmer")
-    String confirm(@RequestParam(name = RegistrationChoice.EVENING_PARAM) String evening,
+    String confirm(@RequestParam(name = RegistrationChoice.DAY_PARAM) String day,
             @RequestParam(name = RegistrationChoice.CHOICE_PARAM) String choiceParam, Model model) {
-        var choice = RegistrationChoice.parse(evening, choiceParam).orElseThrow(UnknownEveningException::new);
+        var choice = RegistrationChoice.parse(day, choiceParam).orElseThrow(UnknownEveningException::new);
         model.addAttribute("choice", choice);
-        model.addAttribute("label", EveningLabelFormatter.format(choice.eveningDate()));
+        model.addAttribute("activity", ActivityLabel.of(choice.type(), choice.eveningDate()));
         return "inscription-confirmer";
     }
 
     @PostMapping("/inscription")
-    String register(@RequestParam(name = RegistrationChoice.EVENING_PARAM) String evening,
+    String register(@RequestParam(name = RegistrationChoice.DAY_PARAM) String day,
             @RequestParam(name = RegistrationChoice.CHOICE_PARAM) String choiceParam, Principal principal,
             RedirectAttributes redirect) {
-        var choice = RegistrationChoice.parse(evening, choiceParam).orElseThrow(UnknownEveningException::new);
+        var choice = RegistrationChoice.parse(day, choiceParam).orElseThrow(UnknownEveningException::new);
         var decision = registrations.register(volunteerId(principal).orElseThrow(), choice);
         if (!decision.accepted()) {
-            return "redirect:/inscription?soiree=" + choice.eveningDate() + "&refus=" + decision.name();
+            return "redirect:/inscription?jour=" + choice.day() + "&refus=" + decision.name();
         }
-        redirect.addFlashAttribute("label", EveningLabelFormatter.format(choice.eveningDate()));
+        redirect.addFlashAttribute("activity", ActivityLabel.of(choice.type(), choice.eveningDate()));
         redirect.addFlashAttribute("option", choice.choiceParam());
         return "redirect:/inscription/confirmee";
     }
@@ -71,15 +72,15 @@ class RegistrationController {
     /** Page de confirmation à l'écran (l'e-mail récapitulatif arrive en S5). */
     @GetMapping("/inscription/confirmee")
     String confirmed(Model model) {
-        if (!model.containsAttribute("label")) {
+        if (!model.containsAttribute("activity")) {
             return "redirect:/mes-inscriptions";
         }
         return "inscription-confirmee";
     }
 
-    private static LocalDate parseDate(String evening) {
+    private static LocalDate parseDate(String day) {
         try {
-            return LocalDate.parse(evening);
+            return LocalDate.parse(day);
         } catch (DateTimeParseException e) {
             throw new UnknownEveningException();
         }

@@ -32,7 +32,7 @@ class LoginSuccessHandler implements AuthenticationSuccessHandler {
             Authentication authentication) throws IOException {
         request.getSession().setAttribute(SessionLifetimeFilter.AUTHENTICATED_AT, clock.instant());
         var principal = (VolunteerPrincipal) authentication.getPrincipal();
-        var choice = RegistrationChoice.parse(request.getParameter(RegistrationChoice.EVENING_PARAM),
+        var choice = RegistrationChoice.parse(request.getParameter(RegistrationChoice.DAY_PARAM),
                 request.getParameter(RegistrationChoice.CHOICE_PARAM));
         String target;
         if (!volunteers.profileCompleted(principal.id())) {

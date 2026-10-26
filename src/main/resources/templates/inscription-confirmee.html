@@ -6,8 +6,8 @@
     <nav th:replace="~{fragments :: nav}"></nav>
     <h1 th:text="#{registration.confirmed.title}">Inscription confirmée</h1>
     <dl class="recap">
-        <dt th:text="#{registration.recap.evening}">Soirée</dt>
-        <dd th:text="${label}">Lun. 4 → mar. 5 janv.</dd>
+        <dt th:text="#{registration.recap.when}">Quand</dt>
+        <dd th:text="${#messages.msg(activity.key, activity.date)}">Dîner du lun. 4 janv.</dd>
         <dt th:text="#{registration.recap.option}">Ce que vous proposez</dt>
         <dd th:text="#{${'registration.option.' + option}}">Type</dd>
     </dl>
