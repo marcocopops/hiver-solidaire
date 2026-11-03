@@ -11,5 +11,6 @@ Chaque fichier décrit une session de travail confiée à Claude Code : objectif
 | [s4a-desinscription-et-mon-compte.md](s4a-desinscription-et-mon-compte.md) | S4 | Désinscription (R6, annulation logique) et « Mon compte » (modification, suppression et anonymisation) |
 | [s4-planning-par-journee.md](s4-planning-par-journee.md) | S4 | Planning par journée, deux statuts, filtres, désinscription depuis la carte, suppression des soirées fermées |
 | [s4-design-veillee.md](s4-design-veillee.md) | S4 | Design « veillée » de toutes les pages bénévoles, d'après `docs/design/planning-par-journee.html` |
+| [s4b-back-office.md](s4b-back-office.md) | S4 | Back-office des coordinateurs, en session cloud sans surveillance (décisions par défaut, ordre de priorité) |
 
 Pour lancer une session : ouvrir claude.ai/code sur ce dépôt, ou lancer `claude` en local dans le clone (selon le champ « Où » du fichier), choisir le mode plan, puis envoyer le message de lancement indiqué en tête du fichier.
