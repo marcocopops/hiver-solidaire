@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head(#{admin.volunteer.delete.title})}"></head>
+<body>
+<main class="page page--large">
+    <nav th:replace="~{admin/fragments :: nav}"></nav>
+    <h1 th:text="#{admin.volunteer.delete.title}">Supprimer un bénévole</h1>
+    <p class="bandeau" th:text="${volunteer.lastName} + ' ' + ${volunteer.firstName} + ' (' + ${volunteer.pseudo} + ')'">
+        Martin Anne (AnneM)</p>
+    <th:block th:if="${self}">
+        <p th:text="#{admin.volunteer.delete.self}">Passez par « Mon compte ».</p>
+    </th:block>
+    <th:block th:unless="${self}">
+        <p th:text="#{admin.volunteer.delete.intro}">Données effacées.</p>
+        <p th:text="#{admin.volunteer.delete.upcoming(${upcomingCount})}">1 inscription à venir sera annulée.</p>
+        <p th:text="#{admin.volunteer.delete.irreversible}">Définitif.</p>
+        <form class="formulaire" th:action="@{/admin/benevoles/{id}/supprimer(id=${volunteer.id})}" method="post">
+            <button class="bouton bouton--danger" type="submit" th:text="#{admin.volunteer.delete.submit}">Supprimer</button>
+        </form>
+    </th:block>
+    <p><a th:href="@{/admin/benevoles/{id}(id=${volunteer.id})}" th:text="#{admin.volunteer.back}">Retour à la fiche</a></p>
+</main>
+</body>
+</html>
