@@ -13,7 +13,8 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 
 /**
  * Après la connexion : note l'heure de connexion (durée absolue de 30 jours), puis envoie vers le formulaire de
- * première connexion, vers la suite du choix fait sur le planning, ou vers « Mes inscriptions ». L'adresse de
+ * première connexion, vers la suite du choix fait sur le planning, vers le back-office pour un coordinateur, ou vers
+ * « Mes inscriptions ». L'adresse de
  * redirection est toujours un chemin local reconstruit ici : aucune redirection ouverte.
  */
 class LoginSuccessHandler implements AuthenticationSuccessHandler {
@@ -39,6 +40,8 @@ class LoginSuccessHandler implements AuthenticationSuccessHandler {
             target = "/profil";
         } else if (choice.isPresent()) {
             target = "/inscription/confirmer";
+        } else if (principal.coordinator()) {
+            target = "/admin";
         } else {
             target = "/mes-inscriptions";
         }

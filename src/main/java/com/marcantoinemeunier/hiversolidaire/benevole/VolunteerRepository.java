@@ -1,6 +1,7 @@
 package com.marcantoinemeunier.hiversolidaire.benevole;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.Modifying;
@@ -31,6 +32,14 @@ interface VolunteerRepository extends Repository<VolunteerEntity, UUID> {
     /** Pseudo pris par un autre bénévole que celui-ci : on peut garder le sien ou en changer la casse. */
     @Query("select count(v) > 0 from VolunteerEntity v where lower(v.pseudo) = lower(:pseudo) and v.id <> :id")
     boolean pseudoTakenByOther(@Param("pseudo") String pseudo, @Param("id") UUID id);
+
+    /** Nouveaux bénévoles à signaler (§2) : profil rempli, compte actif, pas encore vus par un coordinateur. */
+    @Query("""
+            select v from VolunteerEntity v
+            where v.profileCompletedAt is not null and v.deletedAt is null and v.reviewedAt is null
+            order by v.createdAt asc, v.id asc
+            """)
+    List<VolunteerEntity> findToReview();
 
     VolunteerEntity saveAndFlush(VolunteerEntity volunteer);
 }

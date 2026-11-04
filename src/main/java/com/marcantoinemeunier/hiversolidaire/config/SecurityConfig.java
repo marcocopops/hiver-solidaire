@@ -75,6 +75,9 @@ public class SecurityConfig {
                         "/mon-compte/telephone", "/mon-compte/pseudo", "/mon-compte/recontact", "/mon-compte/supprimer",
                         "/deconnexion")
                         .hasRole(VolunteerPrincipal.ROLE)
+                // Back-office : rôle coordinateur sur chaque route, toutes méthodes, en plus de Cloudflare Access
+                // (défense en profondeur : l'appli ne fait pas confiance à Access, cahier des charges §8).
+                .requestMatchers("/admin", "/admin/**").hasRole(VolunteerPrincipal.COORDINATOR_ROLE)
                 .anyRequest().denyAll())
                 .exceptionHandling(handling -> handling.authenticationEntryPoint(entryPoint()));
         magicLinkLogin.apply(http);
