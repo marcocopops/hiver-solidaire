@@ -64,6 +64,18 @@ class CoordinatorPlanning {
         }
     }
 
+    /** Inscription active et coordonnées de son bénévole. */
+    @Transactional(readOnly = true)
+    Optional<RegistrationContact> registration(UUID registrationId) {
+        return registrations.findActiveContact(registrationId);
+    }
+
+    /** Inscriptions actives d'un bénévole, passées comprises. */
+    @Transactional(readOnly = true)
+    List<RegistrationContact> registrationsOf(UUID volunteerId) {
+        return registrations.findContactsOfVolunteer(volunteerId);
+    }
+
     LocalDate today() {
         return ParisTime.today(clock.instant());
     }

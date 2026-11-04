@@ -41,5 +41,13 @@ interface VolunteerRepository extends Repository<VolunteerEntity, UUID> {
             """)
     List<VolunteerEntity> findToReview();
 
+    /** Bénévoles actifs au profil rempli, par nom puis prénom : ceux qu'un coordinateur peut inscrire. */
+    @Query("""
+            select v from VolunteerEntity v
+            where v.profileCompletedAt is not null and v.deletedAt is null
+            order by lower(v.lastName) asc, lower(v.firstName) asc, v.id asc
+            """)
+    List<VolunteerEntity> findActiveWithProfile();
+
     VolunteerEntity saveAndFlush(VolunteerEntity volunteer);
 }

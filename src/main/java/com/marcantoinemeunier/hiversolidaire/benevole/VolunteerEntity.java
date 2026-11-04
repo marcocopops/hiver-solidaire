@@ -57,6 +57,19 @@ public class VolunteerEntity {
     protected VolunteerEntity() {
     }
 
+    /**
+     * Bénévole inscrit par téléphone par un coordinateur (S4b) : profil complet, sans e-mail, donc sans connexion
+     * possible. Vu d'office : c'est un coordinateur qui l'a créé.
+     */
+    static VolunteerEntity withoutEmail(String lastName, String firstName, String pseudo, String phone, Instant now) {
+        var volunteer = new VolunteerEntity();
+        volunteer.id = UUID.randomUUID();
+        volunteer.createdAt = now;
+        volunteer.completeProfile(lastName, firstName, pseudo, phone, false, now);
+        volunteer.reviewedAt = now;
+        return volunteer;
+    }
+
     public UUID id() {
         return id;
     }
@@ -100,6 +113,14 @@ public class VolunteerEntity {
         this.phone = phone;
         this.recontactNextSeason = recontactNextSeason;
         this.profileCompletedAt = now;
+        this.updatedAt = now;
+    }
+
+    /** Correction par un coordinateur (§6 « Mon compte » : nom et prénom se corrigent auprès d'un coordinateur). */
+    void correctIdentity(String lastName, String firstName, String pseudo, Instant now) {
+        this.lastName = lastName;
+        this.firstName = firstName;
+        this.pseudo = pseudo;
         this.updatedAt = now;
     }
 

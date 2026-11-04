@@ -138,6 +138,53 @@ public class VolunteerService {
         return volunteer.isPresent();
     }
 
+    /** Coordonnées d'un bénévole actif (back-office), vide s'il n'existe pas ou que son compte est supprimé. */
+    @Transactional(readOnly = true)
+    public Optional<VolunteerContact> contact(UUID id) {
+        return volunteers.findById(id).filter(v -> !v.deleted()).map(VolunteerEntity::toContact);
+    }
+
+    /** Bénévoles actifs au profil rempli, par nom : ceux qu'un coordinateur peut inscrire. */
+    @Transactional(readOnly = true)
+    public List<VolunteerContact> activeWithProfile() {
+        return volunteers.findActiveWithProfile().stream().map(VolunteerEntity::toContact).toList();
+    }
+
+    /**
+     * Bénévole inscrit par téléphone par un coordinateur, sans e-mail (§6 « Fiche soirée ») : mêmes règles de nom, de
+     * prénom, de pseudo et de téléphone qu'au premier profil. Il ne peut pas se connecter.
+     *
+     * @param pseudo pseudo déjà normalisé par {@link Pseudo#normalize(String)}
+     * @throws PseudoTakenException si le pseudo est déjà pris
+     */
+    @Transactional
+    public UUID createWithoutEmail(ProfileForm form, String pseudo) {
+        if (volunteers.pseudoTaken(pseudo)) {
+            throw new PseudoTakenException();
+        }
+        var volunteer = VolunteerEntity.withoutEmail(form.normalizedLastName(), form.normalizedFirstName(), pseudo,
+                form.normalizedPhone(), clock.instant());
+        saveCheckingPseudo(volunteer);
+        return volunteer.id();
+    }
+
+    /**
+     * Correction du nom, du prénom et du pseudo par un coordinateur (pseudo usurpé, §11 question 8) : mêmes règles et
+     * même unicité que pour le bénévole.
+     *
+     * @param pseudo pseudo déjà normalisé par {@link Pseudo#normalize(String)}
+     * @throws PseudoTakenException si un autre bénévole a déjà ce pseudo
+     */
+    @Transactional
+    public void correctIdentity(UUID id, IdentityForm form, String pseudo) {
+        if (volunteers.pseudoTakenByOther(pseudo, id)) {
+            throw new PseudoTakenException();
+        }
+        var volunteer = volunteers.findById(id).filter(v -> !v.deleted()).orElseThrow();
+        volunteer.correctIdentity(form.normalizedLastName(), form.normalizedFirstName(), pseudo, clock.instant());
+        saveCheckingPseudo(volunteer);
+    }
+
     /** Le pseudo vient d'être pris par un autre bénévole. */
     public static class PseudoTakenException extends RuntimeException {
     }
