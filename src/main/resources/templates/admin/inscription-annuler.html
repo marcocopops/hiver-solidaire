@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head(#{admin.cancel.title})}"></head>
+<body>
+<main class="page page--large">
+    <nav th:replace="~{admin/fragments :: nav}"></nav>
+    <h1 th:text="#{admin.cancel.title}">Annuler une inscription</h1>
+    <dl th:replace="~{admin/fragments-recap :: recap(${line})}"></dl>
+    <p th:text="#{admin.cancel.text}">L’inscription sera annulée.</p>
+    <p class="alerte" th:if="${line.afterDeadline}" th:text="#{admin.cancel.afterDeadline}">Limite passée.</p>
+    <form class="formulaire" th:action="@{/admin/inscriptions/annuler}" method="post">
+        <input type="hidden" name="inscription" th:value="${line.registrationId}">
+        <button class="bouton bouton--danger" type="submit" th:text="#{admin.cancel.submit}">Confirmer</button>
+    </form>
+    <p><a th:href="@{/admin/journee(jour=${day})}" th:text="#{admin.back.day}">Retour à la journée</a></p>
+</main>
+</body>
+</html>

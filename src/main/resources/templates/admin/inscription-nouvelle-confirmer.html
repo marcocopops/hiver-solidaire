@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head(#{admin.register.title(${label})})}"></head>
+<body>
+<main class="page page--large">
+    <nav th:replace="~{admin/fragments :: nav}"></nav>
+    <h1 th:text="#{admin.register.title(${label})}">Inscrire un bénévole</h1>
+    <dl class="recap">
+        <dt th:text="#{admin.register.who}">Bénévole</dt>
+        <dd th:text="${volunteer.lastName} + ' ' + ${volunteer.firstName} + ' (' + ${volunteer.pseudo} + ')'">Martin Anne</dd>
+        <dt th:text="#{registration.recap.when}">Quand</dt>
+        <dd th:text="${#messages.msg(activity.key, activity.date)}">Dîner du lun. 4 janv.</dd>
+        <dt th:text="#{admin.col.what}">Inscription</dt>
+        <dd th:text="#{${'registration.option.' + choice.choiceParam()}}">Option</dd>
+    </dl>
+    <form class="formulaire" th:action="@{/admin/inscriptions/nouvelle}" method="post">
+        <input type="hidden" name="jour" th:value="${choice.day}">
+        <input type="hidden" name="choix" th:value="${choice.choiceParam()}">
+        <input type="hidden" name="benevole" th:value="${volunteer.id}">
+        <button class="bouton" type="submit" th:text="#{admin.register.submit}">Confirmer l’inscription</button>
+    </form>
+    <p><a th:href="@{/admin/inscriptions/nouvelle(jour=${date},benevole=${volunteer.id})}"
+          th:text="#{registration.confirm.change}">Changer de choix</a></p>
+    <p><a th:href="@{/admin/journee(jour=${date})}" th:text="#{admin.back.day}">Retour à la journée</a></p>
+</main>
+</body>
+</html>

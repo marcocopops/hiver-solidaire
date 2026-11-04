@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head(#{admin.day.title(${label})})}"></head>
+<body>
+<main class="page page--large">
+    <nav th:replace="~{admin/fragments :: nav}"></nav>
+    <h1 th:text="#{admin.day.title(${label})}">Journée du Lun. 4 janv.</h1>
+    <p th:replace="~{admin/fragments :: done}"></p>
+    <p><span th:class="'statut journee--' + ${statusKey}" th:text="#{${'planning.status.' + statusKey}}">À compléter</span></p>
+    <p class="actions">
+        <a th:if="${previous != null}" th:href="@{/admin/journee(jour=${previous})}" th:text="#{admin.day.previous}">Précédente</a>
+        <a th:if="${next != null}" th:href="@{/admin/journee(jour=${next})}" th:text="#{admin.day.next}">Suivante</a>
+    </p>
+    <p class="actions">
+        <a class="bouton bouton--petit" th:href="@{/admin/inscriptions/nouvelle(jour=${date})}"
+           th:text="#{admin.day.register}">Inscrire un bénévole</a>
+        <a class="bouton bouton--petit bouton--secondaire" th:href="@{/admin/benevoles/nouveau(jour=${date})}"
+           th:text="#{admin.day.newVolunteer}">Nouveau bénévole sans e-mail</a>
+    </p>
+
+    <section th:each="section : ${sections}">
+        <h2 th:text="#{${section.titleKey}(${section.eveningLabel})}">Dîner et nuit (soirée du lun. 4 janv.)</h2>
+        <ul>
+            <li th:each="post : ${section.posts}">
+                <th:block th:text="#{admin.day.post(${#messages.msg(post.postKey)}, ${post.occupied})}">Nuit : 1 inscrit</th:block><th:block
+                    th:if="${post.missing > 0}" th:text="#{admin.day.post.missing(${post.missing})}">, 1 manquant</th:block>
+            </li>
+        </ul>
+        <p class="alerte" th:if="${section.pickupAlert}" th:text="#{admin.day.pickupAlert}">Repas sans récupération.</p>
+        <p th:if="${section.lines.isEmpty()}" th:text="#{admin.day.none}">Aucun inscrit.</p>
+        <div class="tableau-defilant" th:unless="${section.lines.isEmpty()}">
+            <table class="tableau">
+                <thead>
+                <tr>
+                    <th scope="col" th:text="#{admin.col.what}">Inscription</th>
+                    <th scope="col" th:text="#{admin.col.pseudo}">Pseudo</th>
+                    <th scope="col" th:text="#{admin.col.name}">Nom</th>
+                    <th scope="col" th:text="#{admin.col.phone}">Téléphone</th>
+                    <th scope="col" th:text="#{admin.col.email}">E-mail</th>
+                    <th scope="col" th:text="#{admin.col.actions}">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="line : ${section.lines}">
+                    <td>
+                        <th:block th:text="#{${line.optionKey}}">Passer la nuit</th:block>
+                        <p class="aide" th:if="${line.afterDeadline}" th:text="#{admin.day.afterDeadline}">Limite passée</p>
+                    </td>
+                    <td><a th:href="@{/admin/benevoles/{id}(id=${line.volunteerId})}" th:text="${line.pseudo}">AnneM</a></td>
+                    <td th:text="${line.lastName} + ' ' + ${line.firstName}">Martin Anne</td>
+                    <td><a th:href="'tel:' + ${line.phone}" th:text="${line.phone}">+33600000001</a></td>
+                    <td>
+                        <a th:if="${line.email != null}" th:href="'mailto:' + ${line.email}" th:text="${line.email}">anne@example.org</a>
+                        <th:block th:if="${line.email == null}" th:text="#{admin.noEmail}">Sans e-mail</th:block>
+                    </td>
+                    <td class="actions">
+                        <th:block th:if="${line.changeable}">
+                            <a th:href="@{/admin/inscriptions/annuler(inscription=${line.registrationId})}"
+                               th:text="#{admin.action.cancel}">Annuler</a>
+                            <a th:href="@{/admin/inscriptions/deplacer(inscription=${line.registrationId})}"
+                               th:text="#{admin.action.move}">Déplacer</a>
+                        </th:block>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+</body>
+</html>
