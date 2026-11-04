@@ -144,6 +144,21 @@ public class VolunteerService {
         return volunteers.findById(id).filter(v -> !v.deleted()).map(VolunteerEntity::toContact);
     }
 
+    /**
+     * Recherche du back-office sur le nom, le prénom, le pseudo, l'e-mail et le téléphone, sans tenir compte de la
+     * casse. Les caractères spéciaux de {@code LIKE} sont échappés : « % » cherche un « % ». Vide : tous les comptes
+     * actifs.
+     */
+    @Transactional(readOnly = true)
+    public List<VolunteerContact> search(String query) {
+        var text = query == null ? "" : query.strip().toLowerCase(java.util.Locale.ROOT);
+        if (text.length() > 100) {
+            text = text.substring(0, 100);
+        }
+        var escaped = text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+        return volunteers.search("%" + escaped + "%").stream().map(VolunteerEntity::toContact).toList();
+    }
+
     /** Bénévoles actifs au profil rempli, par nom : ceux qu'un coordinateur peut inscrire. */
     @Transactional(readOnly = true)
     public List<VolunteerContact> activeWithProfile() {

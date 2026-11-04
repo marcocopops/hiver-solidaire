@@ -49,5 +49,19 @@ interface VolunteerRepository extends Repository<VolunteerEntity, UUID> {
             """)
     List<VolunteerEntity> findActiveWithProfile();
 
+    /**
+     * Back-office : comptes actifs dont le nom, le prénom, le pseudo, l'e-mail ou le téléphone contient le motif
+     * (paramètre {@code LIKE} déjà échappé, en minuscules), les plus récents d'abord.
+     */
+    @Query("""
+            select v from VolunteerEntity v
+            where v.deletedAt is null and (
+                lower(v.lastName) like :pattern escape '\\' or lower(v.firstName) like :pattern escape '\\'
+                or lower(v.pseudo) like :pattern escape '\\' or lower(v.email) like :pattern escape '\\'
+                or v.phone like :pattern escape '\\')
+            order by v.createdAt desc, v.id asc
+            """)
+    List<VolunteerEntity> search(@Param("pattern") String pattern);
+
     VolunteerEntity saveAndFlush(VolunteerEntity volunteer);
 }
