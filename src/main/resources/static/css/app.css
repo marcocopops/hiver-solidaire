@@ -855,6 +855,11 @@ a:hover {
     flex: 1 1 12rem;
 }
 
+/* Consignes du lieu, saisies sur plusieurs lignes par un coordinateur. */
+.consignes {
+    white-space: pre-line;
+}
+
 /* Page imprimable du planning (plan B, §8) : le navigateur l'enregistre en PDF. */
 @media print {
     body {

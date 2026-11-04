@@ -4,9 +4,8 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
- * Téléphone des coordinateurs, affiché quand le bénévole ne peut plus se désinscrire seul (R6). Il vient de la
- * configuration ({@code APP_COORDINATORS_PHONE}), jamais du dépôt ; S4b pourra le déplacer dans les réglages de la
- * saison.
+ * Téléphone des coordinateurs, affiché quand le bénévole ne peut plus se désinscrire seul (R6). Il vient des réglages
+ * de la saison (S4b), sinon de la configuration ({@code APP_COORDINATORS_PHONE}), jamais du dépôt.
  *
  * @param display numéro tel que configuré, pour l'affichage
  * @param telUri lien {@code tel:} (chiffres et « + » seulement)

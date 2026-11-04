@@ -1,0 +1,222 @@
+package com.marcantoinemeunier.hiversolidaire.admin;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.marcantoinemeunier.hiversolidaire.Browser;
+import com.marcantoinemeunier.hiversolidaire.MutableClock;
+import com.marcantoinemeunier.hiversolidaire.RecordingMagicLinkSender;
+import com.marcantoinemeunier.hiversolidaire.TestClockAndMailConfiguration;
+import com.marcantoinemeunier.hiversolidaire.TestCoordinatorEmails;
+import com.marcantoinemeunier.hiversolidaire.TestVolunteers;
+import com.marcantoinemeunier.hiversolidaire.TestcontainersConfiguration;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
+
+/**
+ * Saison (cahier des charges §6 « Saison », ADR-0006) : création qui remplace la saison d'exemple, génération des
+ * soirées, refus d'un changement de dates qui supprimerait des soirées avec inscriptions.
+ *
+ * <p>Ces tests changent la saison vue par toute l'appli : ils ont leur propre contexte Spring (propriété distincte),
+ * donc leur propre base Testcontainers, recréée après chaque test.
+ */
+@SpringBootTest
+@AutoConfigureMockMvc
+@Import({TestcontainersConfiguration.class, TestClockAndMailConfiguration.class})
+@TestPropertySource(properties = "test.isolated-database=season")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+class SeasonAdminTest {
+
+    private static final LocalDate FIRST = LocalDate.of(2027, 1, 4);
+    private static final LocalDate LAST = LocalDate.of(2027, 3, 28);
+
+    @Autowired
+    MockMvc mockMvc;
+
+    @Autowired
+    RecordingMagicLinkSender sender;
+
+    @Autowired
+    TestCoordinatorEmails coordinators;
+
+    @Autowired
+    JdbcTemplate jdbc;
+
+    @Autowired
+    MutableClock clock;
+
+    TestVolunteers volunteers;
+
+    @BeforeEach
+    void setUp() {
+        volunteers = new TestVolunteers(mockMvc, sender, coordinators, jdbc);
+    }
+
+    @AfterEach
+    void resetClock() {
+        clock.set(TestClockAndMailConfiguration.DURING_SEASON);
+    }
+
+    /** Champs du formulaire de saison, besoins de 2025-2026 dans l'ordre d'une journée. */
+    private static String[] form(LocalDate first, LocalDate last, String... overrides) {
+        var params = new ArrayList<>(List.of(
+                "label", "Saison 2026-2027",
+                "firstEvening", first.toString(),
+                "lastEvening", last.toString(),
+                "registrationsOpenAt", "2026-12-14T00:00",
+                "venueAddress", "1 rue de l’Exemple, 00000 Ville-Fictive",
+                "instructions", "Sonner deux fois.\nClé chez le voisin fictif.",
+                "coordinatorsPhone", ""));
+        String[][] needs = {{"BREAKFAST", "1", "1", "7 h"}, {"MAIN_DISH", "1", "1", "19 h"}, {"SIDES", "1", "1", "19 h"},
+            {"DINNER_PRESENCE", "2", "2", "19 h → 21 h"}, {"NIGHT", "1", "2", "Jusqu’au matin"}};
+        for (int i = 0; i < needs.length; i++) {
+            params.addAll(List.of("needs[" + i + "].post", needs[i][0], "needs[" + i + "].minimum", needs[i][1],
+                    "needs[" + i + "].maximum", needs[i][2], "needs[" + i + "].schedule", needs[i][3]));
+        }
+        for (int i = 0; i < overrides.length; i += 2) {
+            var index = params.indexOf(overrides[i]);
+            if (index >= 0) {
+                params.set(index + 1, overrides[i + 1]);
+            } else {
+                params.addAll(List.of(overrides[i], overrides[i + 1]));
+            }
+        }
+        return params.toArray(String[]::new);
+    }
+
+    private MockHttpServletResponse create(Browser browser, String... overrides) throws Exception {
+        browser.get("/admin/saison/nouvelle");
+        return browser.post("/admin/saison/nouvelle", form(FIRST, LAST, overrides));
+    }
+
+    private int evenings() {
+        return jdbc.queryForObject("SELECT count(*) FROM evening", Integer.class);
+    }
+
+    private int audits(UUID coordinatorId, String action) {
+        return jdbc.queryForObject("SELECT count(*) FROM audit_log WHERE coordinator_id = ? AND action = ?",
+                Integer.class, coordinatorId, action);
+    }
+
+    @Test
+    void a_new_season_replaces_the_sample_season_and_generates_its_evenings() throws Exception {
+        var coordinator = volunteers.coordinator();
+        var browser = coordinator.browser();
+        assertThat(browser.get("/admin/saison").getRedirectedUrl()).isEqualTo("/admin/saison/nouvelle");
+        assertThat(browser.get("/admin/saison/nouvelle").getContentAsString()).contains("saison d’exemple");
+
+        var response = create(browser);
+
+        assertThat(response.getRedirectedUrl()).isEqualTo("/admin/saison");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM season", Integer.class)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT sample FROM season", Boolean.class)).isFalse();
+        // ADR-0006 : une soirée par date, bornes comprises (4 janvier → 28 mars : 84 soirées).
+        assertThat(evenings()).isEqualTo(84);
+        assertThat(jdbc.queryForObject("SELECT min(evening_date) FROM evening", LocalDate.class)).isEqualTo(FIRST);
+        assertThat(jdbc.queryForObject("SELECT max(evening_date) FROM evening", LocalDate.class)).isEqualTo(LAST);
+        assertThat(jdbc.queryForObject("SELECT schedule FROM season_need WHERE post = 'NIGHT'", String.class))
+                .isEqualTo("Jusqu’au matin");
+        assertThat(audits(coordinator.id(), "SAMPLE_SEASON_DELETED")).isEqualTo(1);
+        assertThat(audits(coordinator.id(), "SEASON_CREATED")).isEqualTo(1);
+        assertThat(browser.get("/admin/saison").getContentAsString()).contains("value=\"Saison 2026-2027\"");
+
+        // Une seule saison active à la fois : une seconde création est refusée.
+        var again = create(browser, "label", "Autre saison");
+        assertThat(again.getContentAsString()).contains("Une saison est déjà en cours ou à venir");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM season", Integer.class)).isEqualTo(1);
+    }
+
+    @Test
+    void the_sample_season_is_not_replaced_while_it_has_active_registrations() throws Exception {
+        var anne = volunteers.volunteer();
+        TestVolunteers.register(anne.browser(), LocalDate.of(2027, 1, 20), "NIGHT_AND_DINNER");
+        var browser = volunteers.coordinator().browser();
+
+        assertThat(browser.get("/admin/saison/nouvelle").getContentAsString())
+                .contains("La saison d’exemple a encore 1 inscription active")
+                .doesNotContain("action=\"/admin/saison/nouvelle\"");
+        var refused = browser.post("/admin/saison/nouvelle", form(FIRST, LAST));
+        assertThat(refused.getStatus()).isEqualTo(200);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM season WHERE sample", Integer.class)).isEqualTo(1);
+
+        // Une fois l'inscription annulée, la saison d'exemple est remplacée, et l'inscription annulée part avec elle.
+        anne.browser().get("/mes-inscriptions/annuler?soiree=2027-01-20");
+        anne.browser().post("/mes-inscriptions/annuler", "soiree", "2027-01-20");
+        assertThat(create(browser).getRedirectedUrl()).isEqualTo("/admin/saison");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM season WHERE sample", Integer.class)).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM registration", Integer.class)).isZero();
+    }
+
+    @Test
+    void a_date_change_never_removes_an_evening_with_active_registrations() throws Exception {
+        var coordinator = volunteers.coordinator();
+        var browser = coordinator.browser();
+        create(browser);
+        var anne = volunteers.volunteer();
+        TestVolunteers.register(anne.browser(), LAST, "NIGHT_AND_DINNER");
+        browser.get("/admin/saison");
+
+        var refused = browser.post("/admin/saison", form(FIRST, LAST.minusDays(7), "label", "Raccourcie"));
+
+        assertThat(refused.getStatus()).isEqualTo(200);
+        assertThat(refused.getContentAsString()).contains("Ces dates ne peuvent pas sortir de la saison")
+                .contains("dim. 28 mars");
+        assertThat(evenings()).isEqualTo(84);
+        assertThat(jdbc.queryForObject("SELECT label FROM season", String.class)).isEqualTo("Saison 2026-2027");
+        assertThat(audits(coordinator.id(), "SEASON_UPDATED")).isZero();
+
+        // Sans inscription, les soirées sortantes sont supprimées et les nouvelles créées.
+        var updated = browser.post("/admin/saison", form(FIRST.plusDays(3), LAST.plusDays(2), "label", "Décalée"));
+        assertThat(updated.getRedirectedUrl()).isEqualTo("/admin/saison");
+        assertThat(evenings()).isEqualTo(84 - 3 + 2);
+        assertThat(jdbc.queryForObject("SELECT min(evening_date) FROM evening", LocalDate.class))
+                .isEqualTo(FIRST.plusDays(3));
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM registration WHERE cancelled_at IS NULL", Integer.class))
+                .isEqualTo(1);
+        assertThat(audits(coordinator.id(), "SEASON_UPDATED")).isEqualTo(1);
+    }
+
+    @Test
+    void an_invalid_season_is_refused_without_any_change() throws Exception {
+        var coordinator = volunteers.coordinator();
+        var browser = coordinator.browser();
+
+        var response = create(browser, "lastEvening", "2026-12-01", "needs[4].minimum", "3",
+                "coordinatorsPhone", "appelez-nous", "label", "");
+
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(response.getContentAsString()).contains("Indiquez une première et une dernière soirée")
+                .contains("le maximum au moins égal au minimum").contains("Indiquez un numéro de téléphone")
+                .contains("Indiquez le nom de la saison");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM season WHERE sample", Integer.class)).isEqualTo(1);
+        assertThat(audits(coordinator.id(), "SEASON_CREATED")).isZero();
+    }
+
+    @Test
+    void the_venue_and_the_season_phone_reach_volunteers_but_never_the_public_planning() throws Exception {
+        create(volunteers.coordinator().browser(), "coordinatorsPhone", "01 99 00 56 78");
+        var anne = volunteers.volunteer();
+        // Soirée du jour même : la limite de R6 est passée, le téléphone des coordinateurs s'affiche.
+        TestVolunteers.register(anne.browser(), FIRST, "NIGHT_AND_DINNER");
+
+        var mine = anne.browser().get("/mes-inscriptions").getContentAsString();
+
+        assertThat(mine).contains("1 rue de l’Exemple").contains("Sonner deux fois.").contains("01 99 00 56 78")
+                .doesNotContain("01 99 00 12 34");
+        var publicPage = new Browser(mockMvc).get("/planning").getContentAsString();
+        assertThat(publicPage).doesNotContain("rue de l’Exemple").doesNotContain("Sonner");
+    }
+}
