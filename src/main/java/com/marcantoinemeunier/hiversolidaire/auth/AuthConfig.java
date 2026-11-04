@@ -12,15 +12,16 @@ class AuthConfig {
 
     /**
      * Seul moyen de s'authentifier : le jeton consommé porte l'adresse e-mail ; le bénévole est retrouvé, ou créé
-     * à sa première connexion, et le principal ne garde que son identifiant technique.
+     * à sa première connexion, et le principal ne garde que son identifiant technique, et s'il est coordinateur
+     * (adresse dans {@code APP_COORDINATOR_EMAILS} au moment de la connexion).
      *
      * <p>Déclaré comme bean pour que Spring Boot ne crée pas d'utilisateur en mémoire par défaut (avec un mot de
      * passe généré écrit dans les logs).
      */
     @Bean
     OneTimeTokenAuthenticationProvider oneTimeTokenAuthenticationProvider(HashedJdbcOneTimeTokenService tokens,
-            VolunteerService volunteers) {
+            VolunteerService volunteers, CoordinatorEmails coordinators) {
         return new OneTimeTokenAuthenticationProvider(tokens,
-                email -> new VolunteerPrincipal(volunteers.findOrCreate(email)));
+                email -> new VolunteerPrincipal(volunteers.findOrCreate(email), coordinators.contains(email)));
     }
 }

@@ -50,6 +50,10 @@ public class VolunteerEntity {
     @Column(name = "deleted_at")
     private Instant deletedAt;
 
+    /** Vu par un coordinateur : n'est plus signalé comme nouveau bénévole (§2). */
+    @Column(name = "reviewed_at")
+    private Instant reviewedAt;
+
     protected VolunteerEntity() {
     }
 
@@ -67,6 +71,20 @@ public class VolunteerEntity {
 
     Account toAccount() {
         return new Account(email, lastName, firstName, pseudo, phone, recontactNextSeason);
+    }
+
+    VolunteerContact toContact() {
+        return new VolunteerContact(id, lastName, firstName, pseudo, phone, email, createdAt, reviewedAt != null);
+    }
+
+    public boolean deleted() {
+        return deletedAt != null;
+    }
+
+    void markReviewed(Instant now) {
+        if (reviewedAt == null) {
+            this.reviewedAt = now;
+        }
     }
 
     /** Vrai une fois le formulaire de première connexion rempli (§6, étape 4). */

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head(#{admin.dashboard.title})}"></head>
+<body>
+<main class="page page--large">
+    <nav th:replace="~{admin/fragments :: nav}"></nav>
+    <h1 th:text="#{admin.dashboard.title}">Tableau de bord</h1>
+    <p th:replace="~{admin/fragments :: done}"></p>
+
+    <section aria-labelledby="incomplete-title">
+        <h2 id="incomplete-title" th:text="#{admin.dashboard.incomplete(${daysAhead})}">Journées à compléter</h2>
+        <p th:if="${incompleteDays.isEmpty()}" th:text="#{admin.dashboard.incomplete.none}">Aucune.</p>
+        <ul class="soirees" th:unless="${incompleteDays.isEmpty()}">
+            <li class="soiree journee--incomplete" th:each="day : ${incompleteDays}">
+                <a class="soiree__date" th:href="@{/admin/journee(jour=${day.date})}" th:text="${day.label}">Lun. 4 janv.</a>
+                <span class="soiree__manque">
+                    <th:block th:each="missing, iter : ${day.missing}">
+                        <th:block th:text="#{admin.dashboard.missing(${#messages.msg(missing.postKey)}, ${missing.count})}">Nuit : 1</th:block><th:block th:unless="${iter.last}">, </th:block>
+                    </th:block>
+                </span>
+            </li>
+        </ul>
+    </section>
+
+    <section aria-labelledby="alerts-title">
+        <h2 id="alerts-title" th:text="#{admin.dashboard.alerts}">Alertes</h2>
+        <p th:if="${alerts.isEmpty()}" th:text="#{admin.dashboard.alerts.none}">Aucune alerte.</p>
+        <ul class="soirees" th:unless="${alerts.isEmpty()}">
+            <li class="soiree" th:each="alert : ${alerts}">
+                <a th:href="@{/admin/journee(jour=${alert.eveningDate})}"
+                   th:text="#{${alert.kindKey}(${alert.evening})}">Soirée du lun. 4 janv. devenue incomplète</a>
+                <form th:action="@{/admin/alertes/traiter}" method="post">
+                    <input type="hidden" name="alerte" th:value="${alert.id}">
+                    <button class="bouton bouton--petit" type="submit" th:text="#{admin.dashboard.alerts.handle}">
+                        Marquer comme traitée</button>
+                </form>
+            </li>
+        </ul>
+    </section>
+
+    <section aria-labelledby="pickups-title">
+        <h2 id="pickups-title" th:text="#{admin.dashboard.pickups}">Préparations chez soi sans récupération</h2>
+        <p th:if="${pickups.isEmpty()}" th:text="#{admin.dashboard.pickups.none}">Aucune.</p>
+        <ul class="soirees" th:unless="${pickups.isEmpty()}">
+            <li class="soiree" th:each="pickup : ${pickups}">
+                <a class="soiree__date" th:href="@{/admin/journee(jour=${pickup.eveningDate})}" th:text="${pickup.label}">
+                    Lun. 4 janv.</a>
+                <span class="soiree__manque" th:text="#{admin.dashboard.pickups.count(${pickup.count})}">1 repas</span>
+            </li>
+        </ul>
+    </section>
+
+    <section aria-labelledby="new-title">
+        <h2 id="new-title" th:text="#{admin.dashboard.newVolunteers}">Nouveaux bénévoles</h2>
+        <p th:if="${newVolunteers.isEmpty()}" th:text="#{admin.dashboard.newVolunteers.none}">Aucun.</p>
+        <ul class="soirees" th:unless="${newVolunteers.isEmpty()}">
+            <li class="soiree" th:each="volunteer : ${newVolunteers}">
+                <a th:href="@{/admin/benevoles/{id}(id=${volunteer.id})}"
+                   th:text="${volunteer.firstName} + ' ' + ${volunteer.lastName} + ' (' + ${volunteer.pseudo} + ')'">
+                    Anne Martin (AnneM)</a>
+                <form th:action="@{/admin/benevoles/vu}" method="post">
+                    <input type="hidden" name="benevole" th:value="${volunteer.id}">
+                    <button class="bouton bouton--petit" type="submit" th:text="#{admin.volunteer.review}">Vu</button>
+                </form>
+            </li>
+        </ul>
+    </section>
+</main>
+</body>
+</html>

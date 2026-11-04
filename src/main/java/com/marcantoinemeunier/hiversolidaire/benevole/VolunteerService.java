@@ -1,6 +1,7 @@
 package com.marcantoinemeunier.hiversolidaire.benevole;
 
 import java.time.Clock;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -117,6 +118,24 @@ public class VolunteerService {
             candidate = Pseudo.variant(pseudo, n);
         }
         return candidate;
+    }
+
+    /** Nouveaux bénévoles à signaler aux coordinateurs (§2), les plus anciens d'abord. */
+    @Transactional(readOnly = true)
+    public List<VolunteerContact> toReview() {
+        return volunteers.findToReview().stream().map(VolunteerEntity::toContact).toList();
+    }
+
+    /**
+     * Un coordinateur a vu ce bénévole : il n'est plus signalé comme nouveau.
+     *
+     * @return faux si le bénévole n'existe pas ou que son compte est supprimé
+     */
+    @Transactional
+    public boolean markReviewed(UUID id) {
+        var volunteer = volunteers.findById(id).filter(v -> !v.deleted());
+        volunteer.ifPresent(v -> v.markReviewed(clock.instant()));
+        return volunteer.isPresent();
     }
 
     /** Le pseudo vient d'être pris par un autre bénévole. */

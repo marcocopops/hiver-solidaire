@@ -64,5 +64,50 @@ public interface RegistrationRepository extends Repository<RegistrationEntity, U
             """)
     List<UpcomingRegistration> findUpcoming(@Param("volunteerId") UUID volunteerId, @Param("from") LocalDate from);
 
+    /**
+     * Back-office : inscriptions actives des soirées d'une saison entre deux dates (soirs J, bornes comprises), avec
+     * les coordonnées de leurs bénévoles. Réservé aux coordinateurs.
+     */
+    @Query("""
+            select new com.marcantoinemeunier.hiversolidaire.planning.persistence.RegistrationContact(
+                r.id, e.id, e.date, r.type, r.dishChoice, v.id, v.lastName, v.firstName, v.pseudo, v.phone, v.email)
+            from RegistrationEntity r, EveningEntity e, VolunteerEntity v
+            where r.eveningId = e.id and v.id = r.volunteerId and r.cancelledAt is null
+                and e.seasonId = :seasonId and e.date >= :from and e.date <= :to
+            order by e.date asc, r.createdAt asc
+            """)
+    List<RegistrationContact> findContacts(@Param("seasonId") UUID seasonId, @Param("from") LocalDate from,
+            @Param("to") LocalDate to);
+
+    /** Back-office : inscriptions actives d'un bénévole, passées comprises, dans l'ordre des soirées. */
+    @Query("""
+            select new com.marcantoinemeunier.hiversolidaire.planning.persistence.RegistrationContact(
+                r.id, e.id, e.date, r.type, r.dishChoice, v.id, v.lastName, v.firstName, v.pseudo, v.phone, v.email)
+            from RegistrationEntity r, EveningEntity e, VolunteerEntity v
+            where r.eveningId = e.id and v.id = r.volunteerId and r.cancelledAt is null and v.id = :volunteerId
+            order by e.date asc
+            """)
+    List<RegistrationContact> findContactsOfVolunteer(@Param("volunteerId") UUID volunteerId);
+
+    /** Back-office : une inscription active par son identifiant, avec les coordonnées de son bénévole. */
+    @Query("""
+            select new com.marcantoinemeunier.hiversolidaire.planning.persistence.RegistrationContact(
+                r.id, e.id, e.date, r.type, r.dishChoice, v.id, v.lastName, v.firstName, v.pseudo, v.phone, v.email)
+            from RegistrationEntity r, EveningEntity e, VolunteerEntity v
+            where r.eveningId = e.id and v.id = r.volunteerId and r.cancelledAt is null and r.id = :id
+            """)
+    Optional<RegistrationContact> findActiveContact(@Param("id") UUID id);
+
+    /**
+     * Soirée d'une inscription active, sans charger l'inscription : on verrouille la soirée avant de la lire (voir
+     * {@link EveningRepository#findIdBySeasonAndDate}).
+     */
+    @Query("select r.eveningId from RegistrationEntity r where r.id = :id and r.cancelledAt is null")
+    Optional<UUID> findActiveEveningId(@Param("id") UUID id);
+
+    /** Inscription active par son identifiant (back-office), à relire sous le verrou de sa soirée. */
+    @Query("select r from RegistrationEntity r where r.id = :id and r.cancelledAt is null")
+    Optional<RegistrationEntity> findActiveById(@Param("id") UUID id);
+
     RegistrationEntity saveAndFlush(RegistrationEntity registration);
 }
