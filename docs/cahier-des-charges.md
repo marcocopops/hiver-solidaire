@@ -1,6 +1,6 @@
 # Hiver Solidaire — Cahier des charges du MVP
 
-*Version 0.5 · 25 octobre 2026 · Marc-Antoine Meunier · statut : à valider*
+*Version 0.6 · 4 novembre 2026 (back-office des coordinateurs, S4b) · Marc-Antoine Meunier · statut : à valider*
 
 Ce document est la référence du projet. Toute évolution passe par une PR qui le met à jour.
 
@@ -52,7 +52,7 @@ La bêta de la semaine 7 laisse une semaine de marge avant le gel. Les dates de 
 
 - **Visiteur** : voit le planning des journées à venir, leur statut et, par poste, les pseudos des inscrits et les places « À pourvoir ». Aucune autre donnée personnelle : ni nom, ni e-mail, ni téléphone. Les pages demandent aux moteurs de recherche de ne pas les indexer (`noindex`).
 - **Bénévole** : se connecte par lien magique, s'inscrit, se désinscrit, consulte et supprime ses données. Connecté, il voit en plus sur le planning « Vous » à la place de son pseudo, ce qu'il fait, de quoi se désinscrire, et un filtre sur ses propres journées ; rien sur les autres.
-- **Coordinateur (2 à 3)** : a un accès complet au planning, aux bénévoles et au paramétrage.
+- **Coordinateur (2 à 3)** : a un accès complet au planning, aux bénévoles et au paramétrage, par le back-office (`/admin`). C'est un bénévole dont l'adresse figure dans la configuration du serveur (`APP_COORDINATOR_EMAILS`, [ADR-0010](adr/0010-coordinateurs-par-variable-d-environnement.md)) : il reçoit le rôle à la connexion par lien magique et peut aussi s'inscrire comme les autres.
 - **Personnes accueillies** : aucune donnée les concernant n'est saisie.
 
 ## 5. Modèle métier
@@ -86,11 +86,11 @@ Une saison est définie par sa première et sa dernière soirée (dates du soir 
 **Règles** :
 
 - **R1 Capacité** : une inscription n'est acceptée que s'il reste de la place sur chaque poste qu'elle couvre. La base le garantit par une transaction avec verrou sur la soirée : jamais deux personnes sur la dernière place.
-- **R2 Unicité** : une seule inscription par bénévole et par soirée (hypothèse), sauf décision d'un coordinateur.
+- **R2 Unicité** : une seule inscription par bénévole et par soirée (hypothèse), sauf décision d'un coordinateur (exception pas encore livrée, §11 question 1).
 - **R3 Préparation** : qui prépare choisit plat principal ou accompagnements, un de chaque par soirée.
 - **R4 Récupération** : chaque « préparer chez soi » doit avoir un « récupérer et partager » distinct le même soir (deux repas préparés chez soi demandent deux récupérations) ; sinon, les coordinateurs sont alertés et organisent la remise.
 - **R5 Statut** : une journée est « Complète » (en vert) si tous les minimums des postes de la journée sont couverts, sinon « À compléter » (en orange), avec ou sans inscrits ; la couleur est toujours accompagnée du texte. Les minimums sont ceux de chaque soirée : le petit-déjeuner de la soirée D-1, le reste de la soirée D.
-- **R6 Désinscription** : en autonomie jusqu'à la veille de l'activité à 23 h 59, heure de Paris. L'activité est le soir J pour tous les types, petit-déjeuner du matin J+1 compris : la soirée est l'unité des règles, et un désistement à minuit pour un petit-déjeuner à 7 h ne laisserait pas le temps de trouver quelqu'un. Pour le petit-déjeuner affiché sur la carte du jour D (soirée D-1), la limite tombe donc le jour D-2 à 23 h 59 : l'appli affiche toujours la date limite calculée (« Possible jusqu'au jeu. 7 janv. à 23 h 59 »), jamais une formule. Ensuite, l'appli affiche le téléphone des coordinateurs (configuration du serveur, puis réglages de la saison en S4b). Une désinscription n'efface pas l'inscription : elle la marque annulée, et une inscription annulée ne compte plus dans R1, R2, R3 ni R5 ([ADR-0008](adr/0008-annulation-logique-et-anonymisation.md)).
+- **R6 Désinscription** : en autonomie jusqu'à la veille de l'activité à 23 h 59, heure de Paris. L'activité est le soir J pour tous les types, petit-déjeuner du matin J+1 compris : la soirée est l'unité des règles, et un désistement à minuit pour un petit-déjeuner à 7 h ne laisserait pas le temps de trouver quelqu'un. Pour le petit-déjeuner affiché sur la carte du jour D (soirée D-1), la limite tombe donc le jour D-2 à 23 h 59 : l'appli affiche toujours la date limite calculée (« Possible jusqu'au jeu. 7 janv. à 23 h 59 »), jamais une formule. Ensuite, l'appli affiche le téléphone des coordinateurs : celui des réglages de la saison, sinon celui de la configuration du serveur. Un coordinateur peut encore annuler l'inscription (back-office). Une désinscription n'efface pas l'inscription : elle la marque annulée, et une inscription annulée ne compte plus dans R1, R2, R3 ni R5 ([ADR-0008](adr/0008-annulation-logique-et-anonymisation.md)).
 - **R7 Fenêtre** : inscriptions possibles de l'ouverture à la fin de saison, jamais sur une soirée passée. Une soirée est passée à partir de minuit le lendemain, heure de Paris : on peut encore s'inscrire le jour même. Il n'y a pas de soirée fermée (supprimée en S4, ADR-0009). Le planning n'affiche pas les journées passées : la carte du jour D disparaît à minuit le lendemain ; le petit-déjeuner du jour même y reste affiché, mais n'est plus proposé (sa soirée, celle de la veille, est passée).
 
 ## 6. Parcours
@@ -112,14 +112,18 @@ L'adresse du lieu n'apparaît pas sur la page publique, seulement dans l'e-mail 
 
 **Mon compte** : le bénévole voit ses données (e-mail, nom, prénom, pseudo, téléphone, accord de recontact), modifie son téléphone et son pseudo (mêmes règles qu'au premier profil), donne ou retire son accord de conservation, ou supprime son compte. L'e-mail n'est pas modifiable dans cette version ; nom et prénom se corrigent auprès d'un coordinateur. La suppression, après une page de confirmation, annule toutes ses inscriptions dont la soirée n'est pas passée (y compris après la limite de R6, avec l'alerte éventuelle) et anonymise son historique : plus aucun e-mail, nom, prénom, pseudo ni téléphone en base ; ses inscriptions passées restent comptées sans être rattachables à une personne ; il est déconnecté de tous ses appareils. Une nouvelle connexion avec la même adresse crée un nouveau compte.
 
-**Back-office des coordinateurs** :
+**Back-office des coordinateurs** (`/admin`, livré en S4b) : réservé au rôle coordinateur, vérifié par l'appli sur chaque route, derrière Cloudflare Access (§8). Pensé d'abord pour l'ordinateur, utilisable sur téléphone. Chaque action passe par une page de confirmation (GET sans effet), puis un POST protégé par CSRF, et s'inscrit au journal d'audit.
 
-- Tableau de bord, avec les soirées incomplètes des 14 prochains jours en tête
-- Fiche soirée : inscrits et coordonnées ; inscription par téléphone, même sans e-mail ; annulation ou déplacement
-- Bénévoles : liste, nouveaux bénévoles signalés, suppression sur demande
-- Saison : dates, besoins, horaires, adresse et consignes
-- Export PDF et CSV, pour l'affichage sur place et le plan B
-- Journal d'audit des actions des coordinateurs
+- **Tableau de bord** : les journées à compléter des 14 prochains jours en tête, avec ce qui manque par poste ; les alertes enregistrées non traitées (« Marquer comme traitée ») ; les repas préparés chez soi sans récupération (R4) ; les nouveaux bénévoles à signaler (§2), jusqu'à ce qu'un coordinateur les marque « vus ».
+- **Fiche journée** : les deux soirées de la journée (ADR-0009), le statut de chaque poste et les inscrits avec nom, prénom, pseudo, téléphone et e-mail. Actions :
+  - annuler une inscription, même après la limite de R6, jamais sur une soirée passée ; l'alerte « soirée devenue incomplète » est enregistrée comme pour un bénévole ;
+  - déplacer une inscription vers une autre journée, avec le même type et le même plat : la soirée cible passe par R1 à R4 et R7 (et R2 pour ce bénévole), les deux soirées sont verrouillées ; l'ancienne inscription est annulée, une nouvelle est créée ;
+  - inscrire un bénévole existant, mêmes règles qu'en ligne ;
+  - créer un **bénévole sans e-mail**, inscrit par téléphone : nom, prénom, pseudo et téléphone, mêmes règles qu'au premier profil. Il ne peut pas se connecter et apparaît sur le planning par son pseudo, comme les autres.
+- **Bénévoles** : liste avec recherche (nom, prénom, pseudo, e-mail, téléphone), nouveaux bénévoles signalés, fiche avec ses inscriptions, correction du nom, du prénom et du pseudo (pseudo usurpé, §11 question 8), suppression sur demande du bénévole, par la même anonymisation que « Mon compte » (ADR-0008). Un coordinateur supprime son propre compte depuis « Mon compte », pas depuis le back-office.
+- **Saison** : une seule saison active à la fois. Réglages : nom, première et dernière soirée, ouverture des inscriptions, besoins minimum et maximum et horaires affichés par poste, adresse du lieu, consignes, téléphone des coordinateurs. Les soirées sont générées à partir des dates (ADR-0006) ; un changement de dates qui supprimerait une soirée ayant des inscriptions actives est refusé, avec les dates en cause. Créer la saison remplace la saison d'exemple, seulement si celle-ci n'a aucune inscription active ; sinon l'écran l'indique. L'adresse et les consignes s'affichent dans « Mes inscriptions », jamais sur la page publique.
+- **Exports** : CSV des inscriptions d'une période (séparateur « ; », cellules neutralisées contre l'injection de formule) et page imprimable du planning des 7 prochains jours, que le navigateur enregistre en PDF (CSS d'impression, aucune bibliothèque PDF). Les deux sont des POST audités.
+- **Journal d'audit** : qui (identifiant technique du coordinateur), quand, quelle action, sur quoi (identifiants, période d'un export). Aucun nom, e-mail ni téléphone ; table en ajout seul.
 
 **E-mails automatiques** :
 
@@ -139,8 +143,8 @@ L'offre gratuite de Brevo permet 300 e-mails par jour. Avec une vingtaine de bé
 - **Responsable** : l'association (nom à préciser).
 - **Données** : nom, prénom, pseudo, e-mail, téléphone, inscriptions, accord de conservation, horodatages. Aucun champ libre, pour éviter la saisie de données sensibles, sauf le pseudo, étroitement borné : 3 à 20 caractères, lettres latines (accents compris), chiffres, tiret et souligné. Tous les bénévoles sont majeurs. Rien sur les personnes accueillies.
 - **Suppression à la demande** : depuis « Mon compte », par anonymisation de la ligne du bénévole ([ADR-0008](adr/0008-annulation-logique-et-anonymisation.md)) ; ses liens de connexion en cours et ses sessions sont supprimés. Les sauvegardes antérieures en gardent une copie jusqu'à leur expiration (à préciser dans la notice).
-- **Création du compte** : à la première connexion par lien magique, avec l'e-mail seul (le contrôle de l'adresse est prouvé) ; nom, prénom et téléphone suivent au formulaire de première connexion. Un compte resté sans profil sera supprimé par la purge (S5). Sessions stockées en base pendant 30 jours au plus.
-- **Visibilité** : le public voit les pseudos et les soirées où ils sont inscrits, rien d'autre ; le bénévole voit ses propres données ; les coordinateurs voient tout. Le bénévole est informé du caractère public de son pseudo par l'aide du champ, puis par la notice (S5).
+- **Création du compte** : à la première connexion par lien magique, avec l'e-mail seul (le contrôle de l'adresse est prouvé) ; nom, prénom et téléphone suivent au formulaire de première connexion. Un compte resté sans profil sera supprimé par la purge (S5). Sessions stockées en base pendant 30 jours au plus (8 h pour un coordinateur). Un coordinateur peut aussi créer le compte d'un bénévole qui s'inscrit par téléphone : nom, prénom, pseudo et téléphone, sans e-mail.
+- **Visibilité** : le public voit les pseudos et les soirées où ils sont inscrits, rien d'autre ; le bénévole voit ses propres données ; les coordinateurs voient tout. Les exports CSV et imprimés contiennent des coordonnées : à ne garder que le temps nécessaire, à détruire après usage (rappelé sur l'écran des exports). Le bénévole est informé du caractère public de son pseudo par l'aide du champ, puis par la notice (S5).
 - **Base légale** : intérêt légitime de l'association pour organiser l'accueil (à confirmer). La conservation entre saisons repose sur le consentement, retirable à tout moment.
 - **Durées proposées** : sans accord, suppression un mois après la fin de saison ; avec accord, jusqu'au retrait et au plus 3 ans sans participation ; journaux techniques, 6 mois.
 - **Sous-traitants à citer dans la notice** : Cloudflare (réseau, tunnel, Access, Turnstile) et Brevo (e-mails). Hébergement sur un serveur personnel situé en France.
@@ -154,7 +158,7 @@ L'offre gratuite de Brevo permet 300 e-mails par jour. Avec une vingtaine de bé
 - Lien magique via Spring Security (jeton à usage unique de 15 minutes, validé en POST). Seule l'empreinte SHA-256 du jeton est stockée, et sa consommation est atomique. La réponse est la même que le compte existe ou non ; les demandes sont limitées par e-mail (3 par 15 minutes) et par IP (10 par heure), en mémoire pour une instance unique, en plus de Turnstile.
 - Cookie `__Host-`, HttpOnly, Secure, SameSite=Lax ; nouvel identifiant de session à la connexion ; protection CSRF active
 - Autorisation vérifiée côté serveur sur chaque action, avec des tests d'accès croisé
-- Back-office protégé par le rôle coordinateur et par Cloudflare Access sur `/admin/*`, avec des sessions de 8 h
+- Back-office protégé par le rôle coordinateur (`APP_COORDINATOR_EMAILS`, ADR-0010), vérifié par l'appli sur chaque route `/admin/**`, et par Cloudflare Access sur `/admin/*`, configuré chez Cloudflare (`deploy/README.md`) ; l'appli ne fait pas confiance à Access (défense en profondeur). Session coordinateur de 8 h après la connexion, puis reconnexion ; celle d'un bénévole reste de 30 jours
 - CSP stricte sans script inline (htmx servi localement), `frame-ancestors 'none'`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`
 - Conteneurs non-root, système de fichiers en lecture seule, aucune capability, limites CPU et mémoire, réseau Docker dédié ; base et endpoints de supervision jamais exposés
 - Secrets hors du dépôt, dans un fichier d'environnement sur le serveur, illisibles par Claude Code (règles deny)
@@ -166,7 +170,7 @@ L'offre gratuite de Brevo permet 300 e-mails par jour. Avec une vingtaine de bé
 - Sonde HTTP externe toutes les 5 minutes, avec alerte sur téléphone
 - Sauvegardes quotidiennes chiffrées hors site, restauration testée avant l'ouverture
 - Objectifs : coupure de moins de 4 h (RTO), perte de moins de 24 h de données (RPO)
-- Plan B : récap quotidien et export PDF chez les coordinateurs, Google Form de l'an dernier prêt à être réactivé, runbook « site indisponible »
+- Plan B : récap quotidien et planning imprimable des 7 prochains jours (enregistré en PDF par le navigateur) chez les coordinateurs, Google Form de l'an dernier prêt à être réactivé, runbook « site indisponible »
 
 **Ergonomie et accessibilité** : mobile d'abord, grandes zones tactiles, français simple, objectif WCAG 2.2 AA, pages légères sans framework JavaScript lourd.
 
@@ -191,14 +195,14 @@ Rappels par SMS (payants), export iCal, messagerie relayée entre bénévoles d'
 
 ## 11. Questions ouvertes
 
-1. Une seule inscription par bénévole et par soirée ? Appliqué en S3, garanti par une contrainte en base. Décidé le 25 octobre 2026 : l'exception décidée par un coordinateur fera l'objet d'une migration en S4.
-2. Dates de la saison 2026-2027, adresse et consignes du lieu. En attendant, une saison d'exemple aux dates fictives (4 janv. → 21 mars 2027 au matin) est en place ; elle sera remplacée depuis le back-office (S4b). Le bandeau « Dates d'exemple » a été retiré du planning en S4 ; le marqueur `season.sample` reste en base.
+1. Une seule inscription par bénévole et par soirée ? Appliqué en S3, garanti par une contrainte en base. Décidé le 25 octobre 2026 : l'exception décidée par un coordinateur fera l'objet d'une migration. Non livrée en S4b (dernière priorité de la session) : la désinscription par date, « Mes inscriptions » et le calcul des alertes supposent une inscription par soirée, à revoir avec elle. En attendant, un coordinateur inscrit un second bénévole.
+2. Dates de la saison 2026-2027, adresse et consignes du lieu. Une saison d'exemple aux dates fictives (4 janv. → 21 mars 2027 au matin) est en place. Depuis S4b, un coordinateur la remplace depuis le back-office (« Saison ») en saisissant les vraies dates, l'adresse et les consignes, à condition qu'elle n'ait aucune inscription active. Restent à connaître : les dates, l'adresse et les consignes réelles.
 3. Nom exact de l'association, pour la notice et l'expéditeur des e-mails.
 4. Durées de conservation proposées dans la section RGPD.
 5. Durée de connexion des bénévoles (30 jours, appliquée en S3 et modifiable) et heure du rappel (18 h).
 6. L'adresse du lieu reste-t-elle absente de la page publique ? Par défaut, oui : la page publique (S2) ne l'affiche pas, et le modèle de données ne la stocke pas encore.
 7. La notice d'information (S5) doit mentionner le pseudo public : son affichage sur le planning, visible par tous, sa finalité et la façon d'en changer.
-8. Modification du pseudo : le bénévole la fait dans « Mon compte » depuis S4a. Reste pour S4b : la modification par un coordinateur, pour régler un pseudo usurpé.
+8. Modification du pseudo : le bénévole la fait dans « Mon compte » depuis S4a ; un coordinateur la fait depuis la fiche du bénévole depuis S4b (pseudo usurpé), avec le nom et le prénom, mêmes règles et même unicité.
 9. Désinscription : l'activité de R6 est le soir J pour tous les types, petit-déjeuner compris (décision proposée en S4a, à confirmer avec les coordinateurs). Avec l'affichage par journée (S4), la limite du petit-déjeuner du jour D tombe le jour D-2 à 23 h 59 : à confirmer aussi. La suppression d'un compte annule aussi les inscriptions de la soirée même ou du lendemain, après la limite de R6 : la page de confirmation demande de prévenir les coordinateurs.
 
 ## 12. Méthode de travail avec Claude
