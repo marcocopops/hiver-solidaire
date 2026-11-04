@@ -12,7 +12,12 @@ import com.marcantoinemeunier.hiversolidaire.inscription.RegistrationService.Coo
 import com.marcantoinemeunier.hiversolidaire.inscription.RegistrationService.CoordinatorOutcome;
 import com.marcantoinemeunier.hiversolidaire.inscription.RegistrationService.Registered;
 import com.marcantoinemeunier.hiversolidaire.notification.CoordinatorAlerts;
+import com.marcantoinemeunier.hiversolidaire.planning.season.SeasonForm;
+import com.marcantoinemeunier.hiversolidaire.planning.season.SeasonSettingsService;
+import com.marcantoinemeunier.hiversolidaire.planning.persistence.RegistrationContact;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,14 +34,51 @@ class CoordinatorActions {
     private final VolunteerService volunteers;
     private final RegistrationService registrations;
     private final AccountDeletionService deletion;
+    private final SeasonSettingsService seasons;
+    private final CoordinatorPlanning planning;
 
     CoordinatorActions(AuditLog audit, CoordinatorAlerts alerts, VolunteerService volunteers,
-            RegistrationService registrations, AccountDeletionService deletion) {
+            RegistrationService registrations, AccountDeletionService deletion, SeasonSettingsService seasons,
+            CoordinatorPlanning planning) {
+        this.planning = planning;
         this.audit = audit;
         this.alerts = alerts;
         this.volunteers = volunteers;
         this.registrations = registrations;
         this.deletion = deletion;
+        this.seasons = seasons;
+    }
+
+    /** Export CSV : la période extraite est inscrite au journal, avant la lecture. */
+    @Transactional
+    List<RegistrationContact> exportRegistrations(UUID coordinatorId, LocalDate from, LocalDate to) {
+        audit.record(coordinatorId, Action.REGISTRATIONS_EXPORTED, Target.period(from, to));
+        return planning.load(from, to).map(window -> window.contacts().values().stream()
+                .flatMap(List::stream).toList()).orElse(List.of());
+    }
+
+    /** Page imprimable : la consultation est inscrite au journal (elle contient des coordonnées). */
+    @Transactional
+    Optional<CoordinatorPlanning.Window> printablePlanning(UUID coordinatorId, LocalDate from, LocalDate to) {
+        audit.record(coordinatorId, Action.PRINTABLE_PLANNING_VIEWED, Target.period(from, to));
+        return planning.load(from, to);
+    }
+
+    /** Réglages de la saison et régénération de ses soirées (refus si une soirée supprimée a des inscriptions). */
+    @Transactional
+    void updateSeason(UUID coordinatorId, UUID seasonId, SeasonForm form, String phone) {
+        seasons.update(seasonId, form, phone);
+        audit.record(coordinatorId, Action.SEASON_UPDATED, Target.season(seasonId));
+    }
+
+    /** Nouvelle saison ; la saison d'exemple est supprimée dans la même transaction si elle était la saison courante. */
+    @Transactional
+    void createSeason(UUID coordinatorId, SeasonForm form, String phone) {
+        var created = seasons.create(form, phone);
+        if (created.replacedSampleId() != null) {
+            audit.record(coordinatorId, Action.SAMPLE_SEASON_DELETED, Target.season(created.replacedSampleId()));
+        }
+        audit.record(coordinatorId, Action.SEASON_CREATED, Target.season(created.seasonId()));
     }
 
     /**
