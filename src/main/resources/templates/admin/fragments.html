@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Navigation du back-office : réservé au rôle coordinateur (vérifié par SecurityConfig sur chaque route). -->
+<nav class="nav nav--admin" th:fragment="nav">
+    <a th:href="@{/admin}" th:text="#{admin.nav.dashboard}">Tableau de bord</a>
+    <a th:href="@{/admin/benevoles}" th:text="#{admin.nav.volunteers}">Bénévoles</a>
+    <a th:href="@{/admin/saison}" th:text="#{admin.nav.season}">Saison</a>
+    <a th:href="@{/admin/exports}" th:text="#{admin.nav.exports}">Exports</a>
+    <a th:href="@{/planning}" th:text="#{admin.nav.planning}">Planning public</a>
+    <form class="nav__deconnexion" th:action="@{/deconnexion}" method="post">
+        <button class="lien" type="submit" th:text="#{common.logout}">Me déconnecter</button>
+    </form>
+</nav>
+
+<!-- Message après une action réussie : clé de message seulement, jamais un texte reçu. -->
+<p class="bandeau" role="status" th:fragment="done" th:if="${done != null}" th:text="#{${done}}">Fait.</p>
+</body>
+</html>

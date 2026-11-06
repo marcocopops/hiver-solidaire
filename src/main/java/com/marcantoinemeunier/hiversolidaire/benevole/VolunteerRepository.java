@@ -1,6 +1,7 @@
 package com.marcantoinemeunier.hiversolidaire.benevole;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.Modifying;
@@ -31,6 +32,36 @@ interface VolunteerRepository extends Repository<VolunteerEntity, UUID> {
     /** Pseudo pris par un autre bénévole que celui-ci : on peut garder le sien ou en changer la casse. */
     @Query("select count(v) > 0 from VolunteerEntity v where lower(v.pseudo) = lower(:pseudo) and v.id <> :id")
     boolean pseudoTakenByOther(@Param("pseudo") String pseudo, @Param("id") UUID id);
+
+    /** Nouveaux bénévoles à signaler (§2) : profil rempli, compte actif, pas encore vus par un coordinateur. */
+    @Query("""
+            select v from VolunteerEntity v
+            where v.profileCompletedAt is not null and v.deletedAt is null and v.reviewedAt is null
+            order by v.createdAt asc, v.id asc
+            """)
+    List<VolunteerEntity> findToReview();
+
+    /** Bénévoles actifs au profil rempli, par nom puis prénom : ceux qu'un coordinateur peut inscrire. */
+    @Query("""
+            select v from VolunteerEntity v
+            where v.profileCompletedAt is not null and v.deletedAt is null
+            order by lower(v.lastName) asc, lower(v.firstName) asc, v.id asc
+            """)
+    List<VolunteerEntity> findActiveWithProfile();
+
+    /**
+     * Back-office : comptes actifs dont le nom, le prénom, le pseudo, l'e-mail ou le téléphone contient le motif
+     * (paramètre {@code LIKE} déjà échappé, en minuscules), les plus récents d'abord.
+     */
+    @Query("""
+            select v from VolunteerEntity v
+            where v.deletedAt is null and (
+                lower(v.lastName) like :pattern escape '\\' or lower(v.firstName) like :pattern escape '\\'
+                or lower(v.pseudo) like :pattern escape '\\' or lower(v.email) like :pattern escape '\\'
+                or v.phone like :pattern escape '\\')
+            order by v.createdAt desc, v.id asc
+            """)
+    List<VolunteerEntity> search(@Param("pattern") String pattern);
 
     VolunteerEntity saveAndFlush(VolunteerEntity volunteer);
 }

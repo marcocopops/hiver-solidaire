@@ -419,3 +419,98 @@ a:focus-visible {
         font-size: 2.25rem;
     }
 }
+
+/* Back-office des coordinateurs (S4b) : mêmes styles, pages plus larges, pensées d'abord pour l'ordinateur. */
+.page--large {
+    max-width: 72rem;
+}
+
+.nav--admin {
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--bordure);
+}
+
+.tableau-defilant {
+    overflow-x: auto;
+}
+
+.tableau {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+}
+
+.tableau th,
+.tableau td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--bordure);
+    text-align: left;
+    vertical-align: top;
+}
+
+.tableau th {
+    font-size: 0.9rem;
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.formulaire select,
+.formulaire input[type="date"],
+.formulaire input[type="datetime-local"],
+.formulaire input[type="number"],
+.formulaire input[type="search"],
+.formulaire textarea {
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--bordure);
+    border-radius: 0.375rem;
+    background: #fff;
+    font: inherit;
+}
+
+.formulaire--ligne {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+.formulaire--ligne > div {
+    flex: 1 1 12rem;
+}
+
+/* Consignes du lieu, saisies sur plusieurs lignes par un coordinateur. */
+.consignes {
+    white-space: pre-line;
+}
+
+/* Page imprimable du planning (plan B, §8) : le navigateur l'enregistre en PDF. */
+@media print {
+    body {
+        background: #fff;
+        font-size: 10pt;
+    }
+
+    .page {
+        max-width: none;
+        padding: 0;
+    }
+
+    .nav,
+    .ne-pas-imprimer {
+        display: none;
+    }
+
+    .impression__jour {
+        break-inside: avoid;
+    }
+
+    .tableau th,
+    .tableau td {
+        padding: 0.2rem 0.4rem;
+    }
+}

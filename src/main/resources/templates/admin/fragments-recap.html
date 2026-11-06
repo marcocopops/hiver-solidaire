@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Récapitulatif d'une inscription et de son bénévole, pour les pages de confirmation du back-office. -->
+<dl class="recap" th:fragment="recap(line)">
+    <dt th:text="#{registration.recap.when}">Quand</dt>
+    <dd th:text="${#messages.msg(line.activity.key, line.activity.date)}">Dîner du lun. 4 janv.</dd>
+    <dt th:text="#{admin.col.what}">Inscription</dt>
+    <dd th:text="#{${line.optionKey}}">Passer la nuit</dd>
+    <dt th:text="#{admin.col.name}">Nom et prénom</dt>
+    <dd th:text="${line.lastName} + ' ' + ${line.firstName} + ' (' + ${line.pseudo} + ')'">Martin Anne (AnneM)</dd>
+    <dt th:text="#{admin.col.phone}">Téléphone</dt>
+    <dd><a th:href="'tel:' + ${line.phone}" th:text="${line.phone}">+33600000001</a></dd>
+</dl>
+</body>
+</html>

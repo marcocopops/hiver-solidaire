@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head(#{admin.volunteers.title})}"></head>
+<body>
+<main class="page page--large">
+    <nav th:replace="~{admin/fragments :: nav}"></nav>
+    <h1 th:text="#{admin.volunteers.title}">Bénévoles</h1>
+    <p th:replace="~{admin/fragments :: done}"></p>
+    <form class="formulaire formulaire--ligne" th:action="@{/admin/benevoles}" method="get" role="search">
+        <div>
+            <label for="q" th:text="#{admin.volunteers.search}">Rechercher</label>
+            <input id="q" type="search" name="q" maxlength="100" th:value="${q}">
+        </div>
+        <button class="bouton" type="submit" th:text="#{admin.volunteers.searchSubmit}">Rechercher</button>
+    </form>
+    <p><a th:href="@{/admin/benevoles/nouveau}" th:text="#{admin.volunteers.add}">Nouveau bénévole sans e-mail</a></p>
+    <p th:if="${volunteers.isEmpty()}" th:text="#{admin.volunteers.none}">Aucun bénévole.</p>
+    <div class="tableau-defilant" th:unless="${volunteers.isEmpty()}">
+        <table class="tableau">
+            <thead>
+            <tr>
+                <th scope="col" th:text="#{admin.col.name}">Nom et prénom</th>
+                <th scope="col" th:text="#{admin.col.pseudo}">Pseudo</th>
+                <th scope="col" th:text="#{admin.col.phone}">Téléphone</th>
+                <th scope="col" th:text="#{admin.col.email}">E-mail</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="volunteer : ${volunteers}">
+                <td>
+                    <a th:href="@{/admin/benevoles/{id}(id=${volunteer.id})}"
+                       th:text="${volunteer.lastName == null} ? #{admin.volunteers.noProfile} : ${volunteer.lastName} + ' ' + ${volunteer.firstName}">
+                        Martin Anne</a>
+                    <strong th:if="${!volunteer.reviewed and volunteer.lastName != null}" th:text="#{admin.volunteers.new}">Nouveau</strong>
+                </td>
+                <td th:text="${volunteer.pseudo}">AnneM</td>
+                <td th:text="${volunteer.phone}">+33600000001</td>
+                <td th:text="${volunteer.email != null} ? ${volunteer.email} : #{admin.noEmail}">anne@example.org</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+</body>
+</html>

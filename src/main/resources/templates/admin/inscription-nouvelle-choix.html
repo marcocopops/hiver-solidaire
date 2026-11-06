@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head(#{admin.register.title(${label})})}"></head>
+<body>
+<main class="page page--large">
+    <nav th:replace="~{admin/fragments :: nav}"></nav>
+    <h1 th:text="#{admin.register.title(${label})}">Inscrire un bénévole</h1>
+    <p class="alerte" role="alert" th:if="${refusal != null}" th:text="#{${'admin.refusal.' + refusal}}">Refus.</p>
+    <p class="bandeau" th:text="${volunteer.lastName} + ' ' + ${volunteer.firstName} + ' (' + ${volunteer.pseudo} + ')'">
+        Martin Anne (AnneM)</p>
+    <th:block th:if="${options.isEmpty()}">
+        <p th:text="#{admin.register.none}">Aucune inscription possible.</p>
+        <p class="aide" th:if="${blocking != null}" th:text="#{${'admin.refusal.' + blocking}}">Motif.</p>
+    </th:block>
+    <!-- Choix de l'inscription : GET, sans effet ; la page suivante confirme. -->
+    <form class="formulaire" th:unless="${options.isEmpty()}" th:action="@{/admin/inscriptions/nouvelle}" method="get">
+        <input type="hidden" name="jour" th:value="${date}">
+        <input type="hidden" name="benevole" th:value="${volunteer.id}">
+        <fieldset>
+            <legend th:text="#{admin.register.option}">Inscription</legend>
+            <div class="choix" th:each="option, iter : ${options}">
+                <input type="radio" name="choix" required th:id="'choix-' + ${iter.index}" th:value="${option}"
+                       th:checked="${iter.first}">
+                <label th:for="'choix-' + ${iter.index}" th:text="#{${'registration.option.' + option}}">Option</label>
+            </div>
+        </fieldset>
+        <button class="bouton" type="submit" th:text="#{admin.register.continue}">Continuer</button>
+    </form>
+    <p><a th:href="@{/admin/journee(jour=${date})}" th:text="#{admin.back.day}">Retour à la journée</a></p>
+</main>
+</body>
+</html>
