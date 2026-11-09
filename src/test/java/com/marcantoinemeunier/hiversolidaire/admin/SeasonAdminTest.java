@@ -232,8 +232,7 @@ class SeasonAdminTest {
         var mine = anne.browser().get("/mes-inscriptions").getContentAsString();
 
         assertThat(mine).contains("Pour vous désinscrire, contactez les coordinateurs via")
-                .contains("href=\"tel:0199005678\"").contains("01 99 00 56 78").doesNotContain("01 99 00 12 34")
-                .doesNotContain("Le lieu d’accueil");
+                .contains("href=\"tel:0199005678\"").contains("01 99 00 56 78").doesNotContain("Le lieu d’accueil");
         var publicPage = new Browser(mockMvc).get("/planning").getContentAsString();
         assertThat(publicPage).doesNotContain("01 99 00 56 78").doesNotContain("0199005678");
     }
@@ -260,6 +259,38 @@ class SeasonAdminTest {
         }
         var publicPage = new Browser(mockMvc).get("/planning").getContentAsString();
         assertThat(publicPage).doesNotContain("coordination@example.org");
+    }
+
+    @Test
+    void without_a_season_contact_volunteers_are_told_to_contact_a_coordinator_without_a_link() throws Exception {
+        create(volunteers.coordinator().browser(), "coordinatorsContact", "");
+        var anne = volunteers.volunteer();
+        TestVolunteers.register(anne.browser(), FIRST, "NIGHT_AND_DINNER");
+
+        var mine = anne.browser().get("/mes-inscriptions").getContentAsString();
+        var confirm = anne.browser().get("/mes-inscriptions/annuler?soiree=" + FIRST).getContentAsString();
+
+        for (var page : new String[] {mine, confirm}) {
+            assertThat(page).contains("Contactez un coordinateur.").doesNotContain("href=\"tel:")
+                    .doesNotContain("href=\"mailto:").doesNotContain("contactez les coordinateurs via");
+        }
+    }
+
+    @Test
+    void the_dashboard_reports_a_missing_season_contact_until_it_is_filled_in() throws Exception {
+        var browser = volunteers.coordinator().browser();
+        // La saison d'exemple n'a pas de contact.
+        assertThat(browser.get("/admin").getContentAsString())
+                .contains("Le contact des coordinateurs n’est pas renseigné").contains("href=\"/admin/saison\"");
+
+        create(browser, "coordinatorsContact", "");
+        assertThat(browser.get("/admin").getContentAsString())
+                .contains("Le contact des coordinateurs n’est pas renseigné");
+
+        browser.get("/admin/saison");
+        browser.post("/admin/saison", form(FIRST, LAST, "coordinatorsContact", "coordination@example.org"));
+        assertThat(browser.get("/admin").getContentAsString())
+                .doesNotContain("Le contact des coordinateurs n’est pas renseigné");
     }
 
     @Test

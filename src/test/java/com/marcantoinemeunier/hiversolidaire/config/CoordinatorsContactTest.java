@@ -73,6 +73,13 @@ class CoordinatorsContactTest {
     }
 
     @Test
+    void a_stored_value_is_read_quietly() {
+        assertThat(CoordinatorsContact.readable("01 99 00 12 34")).isPresent();
+        assertThat(CoordinatorsContact.readable(null)).isEmpty();
+        assertThat(CoordinatorsContact.readable("appelez-nous")).isEmpty();
+    }
+
+    @Test
     void the_refusal_never_contains_the_value() {
         assertThatThrownBy(() -> CoordinatorsContact.parse("a?bcc=autre@example.org"))
                 .message().doesNotContain("autre@example.org");

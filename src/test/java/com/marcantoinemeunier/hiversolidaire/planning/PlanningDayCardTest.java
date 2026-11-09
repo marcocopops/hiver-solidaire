@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -49,8 +50,15 @@ class PlanningDayCardTest {
     @Autowired
     MutableClock clock;
 
+    /** Le contact ne vient que des réglages de la saison : celle d'exemple le reçoit le temps du test. */
+    @BeforeEach
+    void seasonContact() {
+        jdbc.update("UPDATE season SET coordinators_contact = ?", "01 99 00 12 34");
+    }
+
     @AfterEach
     void clean() {
+        jdbc.update("UPDATE season SET coordinators_contact = NULL");
         clock.set(TestClockAndMailConfiguration.DURING_SEASON);
         for (var date : new LocalDate[] {DAY.minusDays(1), DAY}) {
             jdbc.update("DELETE FROM coordinator_alert WHERE evening_id = (SELECT id FROM evening WHERE evening_date = ?)",

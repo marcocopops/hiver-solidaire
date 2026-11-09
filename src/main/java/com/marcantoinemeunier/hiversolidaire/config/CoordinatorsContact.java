@@ -6,9 +6,8 @@ import java.util.regex.Pattern;
 
 /**
  * Contact des coordinateurs, affiché quand le bénévole ne peut plus se désinscrire seul (R6) : un numéro de
- * téléphone français ou une adresse e-mail. Il vient des réglages de la saison, sinon de la configuration
- * ({@code APP_COORDINATORS_CONTACT}), jamais du dépôt. Ne jamais journaliser la valeur : une adresse est une
- * donnée personnelle (CLAUDE.md).
+ * téléphone français ou une adresse e-mail. Il vient seulement des réglages de la saison, jamais de la configuration
+ * ni du dépôt. Ne jamais journaliser la valeur : une adresse est une donnée personnelle (CLAUDE.md).
  *
  * @param display valeur affichée : le numéro tel que saisi, ou l'adresse en minuscules
  * @param uri lien {@code tel:} (chiffres et « + » seulement) ou {@code mailto:} (adresse sans caractère réservé)
@@ -51,6 +50,18 @@ public record CoordinatorsContact(Kind kind, String display, String uri) {
             throw invalid();
         }
         return Optional.of(new CoordinatorsContact(Kind.PHONE, stripped, "tel:" + dialable));
+    }
+
+    /**
+     * Contact enregistré, relu à l'affichage : vide s'il n'est pas renseigné ou s'il est illisible (il est validé à la
+     * saisie ; une valeur écrite hors de l'appli ne produit jamais de lien).
+     */
+    public static Optional<CoordinatorsContact> readable(String value) {
+        try {
+            return parse(value);
+        } catch (IllegalArgumentException e) {
+            return Optional.empty();
+        }
     }
 
     private static CoordinatorsContact email(String value) {
