@@ -4,7 +4,6 @@
 <body>
 <header th:replace="~{fragments :: entete(#{admin.move.title}, true)}"></header>
 <main class="page page--large">
-    <nav th:replace="~{admin/fragments :: nav}"></nav>
     <p class="alerte" role="alert" th:if="${refusal != null}" th:text="#{${'admin.refusal.' + refusal}}">Refus.</p>
     <dl th:replace="~{admin/fragments :: recap(${line})}"></dl>
     <p class="bandeau" th:text="#{admin.move.confirm(${#messages.msg(targetActivity.key, targetActivity.date)})}">

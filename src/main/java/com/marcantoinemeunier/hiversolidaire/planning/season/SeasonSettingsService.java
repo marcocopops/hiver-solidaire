@@ -99,12 +99,13 @@ public class SeasonSettingsService {
                 (row, index) -> new NeedSetting(Post.valueOf(row.getString("post")), row.getInt("minimum"),
                         row.getInt("maximum"), row.getString("schedule")), id);
         return jdbc.query("""
-                SELECT id, first_evening, last_evening, registrations_open_at, sample, coordinators_contact
+                SELECT id, first_evening, last_evening, registrations_open_at, sample, coordinators_contact, organizer
                 FROM season WHERE id = ?
                 """, (row, index) -> new SeasonSettings(row.getObject("id", UUID.class),
                 row.getObject("first_evening", LocalDate.class), row.getObject("last_evening", LocalDate.class),
                 LocalDateTime.ofInstant(row.getTimestamp("registrations_open_at").toInstant(), ParisTime.ZONE),
-                row.getBoolean("sample"), needs, row.getString("coordinators_contact")), id).stream().findFirst();
+                row.getBoolean("sample"), needs, row.getString("coordinators_contact"),
+                row.getString("organizer")), id).stream().findFirst();
     }
 
     /**
@@ -139,9 +140,10 @@ public class SeasonSettingsService {
         }
         jdbc.update("""
                 UPDATE season SET first_evening = ?, last_evening = ?, registrations_open_at = ?,
-                    coordinators_contact = ?
+                    coordinators_contact = ?, organizer = ?
                 WHERE id = ?
-                """, form.getFirstEvening(), form.getLastEvening(), opensAt(form), contact, seasonId);
+                """, form.getFirstEvening(), form.getLastEvening(), opensAt(form), contact,
+                SeasonForm.blankToNull(form.getOrganizer()), seasonId);
         writeNeeds(seasonId, form);
         addMissingEvenings(seasonId, form);
     }
@@ -178,9 +180,11 @@ public class SeasonSettingsService {
         }
         var id = UUID.randomUUID();
         jdbc.update("""
-                INSERT INTO season (id, first_evening, last_evening, registrations_open_at, sample, coordinators_contact)
-                VALUES (?, ?, ?, ?, false, ?)
-                """, id, form.getFirstEvening(), form.getLastEvening(), opensAt(form), contact);
+                INSERT INTO season (id, first_evening, last_evening, registrations_open_at, sample, coordinators_contact,
+                    organizer)
+                VALUES (?, ?, ?, ?, false, ?, ?)
+                """, id, form.getFirstEvening(), form.getLastEvening(), opensAt(form), contact,
+                SeasonForm.blankToNull(form.getOrganizer()));
         writeNeeds(id, form);
         addMissingEvenings(id, form);
         return new Created(id, replaced);

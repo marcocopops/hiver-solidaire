@@ -4,7 +4,6 @@
 <body>
 <header th:replace="~{fragments :: entete(#{login.sent.title}, false)}"></header>
 <main class="page">
-    <nav th:replace="~{fragments :: nav}"></nav>
     <p class="lead" th:text="#{login.sent.text}">Si cette adresse est valide, vous allez recevoir un lien.</p>
     <p th:text="#{login.sent.otherDevice}">Vous pouvez ouvrir le lien sur un autre appareil.</p>
     <p th:text="#{login.sent.nothing}">Rien reçu ?</p>

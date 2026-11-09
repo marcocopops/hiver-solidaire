@@ -178,8 +178,10 @@ class FormAccessibilityTest {
             browser.get(sent.getRedirectedUrl()).getContentAsString(),
             browser.get("/login/ott?token=" + token).getContentAsString()}) {
             assertCommonHeader(html);
-            // On est déjà en train de se connecter : pas de bouton « Me connecter » dans l'en-tête.
-            assertThat(html).doesNotContain("class=\"entete__action\"");
+            // On est déjà en train de se connecter : pas d'entrée « Me connecter » dans le menu de l'en-tête.
+            var menu = html.substring(html.indexOf("<details class=\"menu\">"), html.indexOf("</details>"));
+            assertThat(menu).contains("href=\"/planning\"").doesNotContain("Me connecter")
+                    .doesNotContain("href=\"/connexion\"");
         }
     }
 
@@ -187,7 +189,8 @@ class FormAccessibilityTest {
     void the_volunteer_navigation_is_labelled_and_signs_out_with_a_post() throws Exception {
         var html = signedIn().get("/mon-compte").getContentAsString();
 
-        assertThat(html).contains("<nav class=\"nav\" aria-label=\"Mon espace\">")
+        var header = html.substring(html.indexOf("<header"), html.indexOf("</header>"));
+        assertThat(header).contains("<nav class=\"menu__liste\" aria-label=\"Menu principal\">")
                 .contains("href=\"/planning\"").contains("href=\"/mes-inscriptions\"")
                 .contains("action=\"/deconnexion\" method=\"post\"");
     }

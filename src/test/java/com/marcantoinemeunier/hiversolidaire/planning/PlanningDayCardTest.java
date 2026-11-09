@@ -126,8 +126,8 @@ class PlanningDayCardTest {
         var body = signedIn().browser().get("/planning").getContentAsString();
         var header = body.substring(body.indexOf("<header"), body.indexOf("</header>"));
 
-        assertThat(header).contains("href=\"/mes-inscriptions\"").contains("Mon espace")
-                .doesNotContain("Me connecter");
+        assertThat(header).contains("href=\"/mes-inscriptions\"").contains("Mes inscriptions")
+                .contains("href=\"/mon-compte\"").doesNotContain("Me connecter");
     }
 
     @Test

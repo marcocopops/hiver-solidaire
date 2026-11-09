@@ -4,7 +4,6 @@
 <body>
 <header th:replace="~{fragments :: entete(#{admin.season.new.title}, true)}"></header>
 <main class="page page--large">
-    <nav th:replace="~{admin/fragments :: nav}"></nav>
     <p class="alerte" role="alert" th:unless="${creationAllowed}" th:text="#{admin.season.alreadyActive}">Déjà active.</p>
     <th:block th:if="${creationAllowed}">
         <p class="bandeau" th:if="${sample != null}" th:text="#{admin.season.sample}">Saison d'exemple.</p>

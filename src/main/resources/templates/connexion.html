@@ -4,7 +4,6 @@
 <body>
 <header th:replace="~{fragments :: entete(#{login.title}, false)}"></header>
 <main class="page">
-    <nav th:replace="~{fragments :: nav}"></nav>
 
     <p class="alerte" role="alert" th:if="${invalidLink}" th:text="#{login.invalidLink}">Lien plus valable.</p>
     <p class="alerte" role="alert" th:if="${unavailable}" th:text="#{login.unavailable}">Indisponible.</p>

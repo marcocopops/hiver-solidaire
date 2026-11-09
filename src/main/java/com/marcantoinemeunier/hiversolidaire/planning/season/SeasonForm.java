@@ -7,6 +7,7 @@ import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -41,6 +42,13 @@ public class SeasonForm {
     @Size(max = 254, message = "{admin.season.error.contact}")
     private String coordinatorsContact;
 
+    /** Organisateur affiché sur la page d'accueil : une ligne, 100 caractères au plus (colonne {@code organizer}). */
+    @Size(max = ORGANIZER_MAX_LENGTH, message = "{admin.season.error.organizer}")
+    @Pattern(regexp = "[^\\p{Cntrl}]*", message = "{admin.season.error.organizer}")
+    private String organizer;
+
+    static final int ORGANIZER_MAX_LENGTH = 100;
+
     /** Formulaire vide d'une nouvelle saison : besoins de 2025-2026 (§5). */
     public static SeasonForm blank() {
         var form = new SeasonForm();
@@ -64,6 +72,7 @@ public class SeasonForm {
                         .orElseThrow())
                 .toList());
         form.coordinatorsContact = settings.coordinatorsContact();
+        form.organizer = settings.organizer();
         return form;
     }
 
@@ -184,6 +193,14 @@ public class SeasonForm {
 
     public void setCoordinatorsContact(String coordinatorsContact) {
         this.coordinatorsContact = coordinatorsContact;
+    }
+
+    public String getOrganizer() {
+        return organizer;
+    }
+
+    public void setOrganizer(String organizer) {
+        this.organizer = organizer;
     }
 
     /** Texte facultatif : espaces retirés autour, vide devient {@code null}. */

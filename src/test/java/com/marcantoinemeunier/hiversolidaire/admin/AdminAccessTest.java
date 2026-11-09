@@ -127,11 +127,14 @@ class AdminAccessTest {
     }
 
     @Test
-    void the_back_office_link_is_shown_to_coordinators_only() throws Exception {
+    void the_back_office_links_are_shown_to_coordinators_only() throws Exception {
         assertThat(volunteers.coordinator().browser().get("/mes-inscriptions").getContentAsString())
-                .contains("href=\"/admin\"");
-        assertThat(volunteers.volunteer().browser().get("/mes-inscriptions").getContentAsString())
-                .doesNotContain("href=\"/admin\"");
+                .contains("href=\"/admin\"").contains("href=\"/admin/benevoles\"")
+                .contains("href=\"/admin/saison\"").contains("href=\"/admin/exports\"");
+        var volunteer = volunteers.volunteer().browser();
+        for (var path : List.of("/", "/planning", "/mes-inscriptions", "/mon-compte")) {
+            assertThat(volunteer.get(path).getContentAsString()).as(path).doesNotContain("href=\"/admin");
+        }
     }
 
     @Test
