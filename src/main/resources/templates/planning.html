@@ -2,12 +2,8 @@
 <html lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments :: head(#{planning.title})}"></head>
 <body>
+<header th:replace="~{fragments :: entete(#{planning.title}, true)}"></header>
 <main class="page">
-    <p><a th:href="@{/}" th:text="#{planning.back}">Retour à l’accueil</a></p>
-    <p class="nav" th:if="${signedIn}">
-        <a th:href="@{/mes-inscriptions}" th:text="#{common.myRegistrations}">Mes inscriptions</a>
-    </p>
-    <h1 th:text="#{planning.title}">Planning de la saison</h1>
     <p class="saison" th:if="${planning.seasonLabel != null}" th:text="${planning.seasonLabel}">Saison</p>
     <p class="bandeau" th:if="${planning.opensOn != null}" th:text="#{planning.opensOn(${planning.opensOn})}">
         Les inscriptions ouvrent le lundi 14 décembre 2026.</p>
@@ -25,50 +21,59 @@
     <p th:if="${planning.days.isEmpty()}"
        th:text="${planning.anyUpcoming} ? #{planning.noneForFilter} : #{planning.none}">Aucune journée à venir.</p>
 
-    <!-- Une carte par journée (ADR-0009), dépliée si elle est à compléter. -->
+    <!-- Une carte par journée (ADR-0009), dépliée si elle est à compléter. Icônes décoratives : le texte suffit. -->
     <ul class="journees" th:unless="${planning.days.isEmpty()}">
         <li class="journee" th:each="day : ${planning.days}">
             <details th:class="'journee__carte journee--' + ${day.statusKey}" th:open="${day.open}">
                 <summary>
                     <span class="journee__date" th:text="${day.label}">Lun. 4 janv.</span>
-                    <span class="statut" th:text="#{${'planning.status.' + day.statusKey}}">À compléter</span>
+                    <span class="journee__etat">
+                        <span class="statut" th:text="#{${'planning.status.' + day.statusKey}}">À compléter</span>
+                        <svg class="icone journee__chevron" aria-hidden="true" focusable="false"><use th:href="@{/images/icones.svg#chevron}"></use></svg>
+                    </span>
                 </summary>
-                <ul class="postes">
-                    <li th:each="line : ${day.posts}" th:class="'poste poste--' + ${line.post}">
-                        <span class="poste__titre">
-                            <th:block th:text="#{${line.titleKey}}">Nuit</th:block>
-                            <span class="poste__precision" th:if="${line.hintKey != null}"
-                                  th:text="#{${line.hintKey}}">jusqu’au matin</span>
-                        </span>
-                        <span class="poste__inscrits">
-                            <span class="pseudo pseudo--vous" th:if="${line.you}" th:text="#{planning.you}">Vous</span>
-                            <span class="pseudo" th:each="pseudo : ${line.pseudos}" th:text="${pseudo}">MarieD</span>
-                            <th:block th:if="${line.missingSlots > 0}">
-                                <span class="pseudo pseudo--libre"
-                                      th:each="slot : ${#numbers.sequence(1, line.missingSlots)}"
-                                      th:text="#{planning.toFill}">À pourvoir</span>
+                <div class="journee__contenu">
+                    <ul class="postes">
+                        <li th:each="line : ${day.posts}" th:class="'poste poste--' + ${line.post}">
+                            <svg class="icone poste__icone" aria-hidden="true" focusable="false"><use th:href="@{'/images/icones.svg#poste-' + ${line.post}}"></use></svg>
+                            <span class="poste__titre">
+                                <th:block th:text="#{${line.titleKey}}">Nuit</th:block>
+                                <span class="poste__precision" th:if="${line.hintKey != null}"
+                                      th:text="#{${line.hintKey}}">jusqu’au matin</span>
+                            </span>
+                            <span class="poste__inscrits">
+                                <span class="pseudo pseudo--vous" th:if="${line.you}" th:text="#{planning.you}">Vous</span>
+                                <span class="pseudo" th:each="pseudo : ${line.pseudos}" th:text="${pseudo}">MarieD</span>
+                                <th:block th:if="${line.missingSlots > 0}">
+                                    <span class="pseudo pseudo--libre"
+                                          th:each="slot : ${#numbers.sequence(1, line.missingSlots)}"
+                                          th:text="#{planning.toFill}">À pourvoir</span>
+                                </th:block>
+                            </span>
+                        </li>
+                    </ul>
+                    <div class="journee__vous" th:unless="${day.mine.isEmpty()}">
+                        <div class="inscription" th:each="mine : ${day.mine}">
+                            <p class="inscription__quoi">
+                                <svg class="icone" aria-hidden="true" focusable="false"><use th:href="@{/images/icones.svg#coche}"></use></svg>
+                                <span th:text="#{${mine.youKey}}">Vous passez la nuit</span>
+                            </p>
+                            <th:block th:if="${mine.cancellable}">
+                                <a class="bouton bouton--secondaire"
+                                   th:href="@{/mes-inscriptions/annuler(soiree=${mine.eveningDate})}"
+                                   th:text="#{${mine.cancelKey}}">Me désinscrire</a>
+                                <p class="aide" th:text="#{cancellation.deadline(${mine.deadline})}">Possible jusqu’au…</p>
                             </th:block>
-                        </span>
-                    </li>
-                </ul>
-                <div class="journee__vous" th:unless="${day.mine.isEmpty()}">
-                    <div class="inscription" th:each="mine : ${day.mine}">
-                        <p class="inscription__quoi" th:text="#{${mine.youKey}}">Vous passez la nuit</p>
-                        <th:block th:if="${mine.cancellable}">
-                            <a class="bouton bouton--secondaire"
-                               th:href="@{/mes-inscriptions/annuler(soiree=${mine.eveningDate})}"
-                               th:text="#{${mine.cancelKey}}">Me désinscrire</a>
-                            <p class="aide" th:text="#{cancellation.deadline(${mine.deadline})}">Possible jusqu’au…</p>
-                        </th:block>
-                        <th:block th:unless="${mine.cancellable}">
-                            <p th:replace="~{fragments :: coordinators(#{myRegistrations.tooLate})}">Appelez.</p>
-                        </th:block>
+                            <th:block th:unless="${mine.cancellable}">
+                                <p th:replace="~{fragments :: coordinators(#{myRegistrations.tooLate})}">Appelez.</p>
+                            </th:block>
+                        </div>
                     </div>
+                    <p class="journee__action" th:if="${day.registrable}">
+                        <a class="bouton" th:href="@{/inscription(jour=${day.date})}"
+                           th:text="#{planning.register}">Je participe</a>
+                    </p>
                 </div>
-                <p class="journee__action" th:if="${day.registrable}">
-                    <a class="bouton" th:href="@{/inscription(jour=${day.date})}"
-                       th:text="#{planning.register}">Je participe</a>
-                </p>
             </details>
         </li>
     </ul>

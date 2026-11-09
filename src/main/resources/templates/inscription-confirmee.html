@@ -2,9 +2,9 @@
 <html lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments :: head(#{registration.confirmed.title})}"></head>
 <body>
+<header th:replace="~{fragments :: entete(#{registration.confirmed.title}, true)}"></header>
 <main class="page">
     <nav th:replace="~{fragments :: nav}"></nav>
-    <h1 th:text="#{registration.confirmed.title}">Inscription confirmée</h1>
     <dl class="recap">
         <dt th:text="#{registration.recap.when}">Quand</dt>
         <dd th:text="${#messages.msg(activity.key, activity.date)}">Dîner du lun. 4 janv.</dd>

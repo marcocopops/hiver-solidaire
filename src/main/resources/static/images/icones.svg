@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+    <!-- Icônes au trait, décoratives (aria-hidden dans les gabarits) : la couleur suit le texte (currentColor). -->
+    <symbol id="lune" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>
+    </symbol>
+    <symbol id="poste-BREAKFAST" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z"/>
+        <path d="M16 10h2a2 2 0 0 1 0 4h-2"/>
+    </symbol>
+    <symbol id="poste-MAIN_DISH" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 11h16v2a6 6 0 0 1-6 6h-4a6 6 0 0 1-6-6z"/>
+        <path d="M9 7c0-1.5 1-2 1-3M14 7c0-1.5 1-2 1-3"/>
+    </symbol>
+    <symbol id="poste-SIDES" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 10a7 4 0 0 1 14 0v8H5z"/>
+    </symbol>
+    <symbol id="poste-DINNER_PRESENCE" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="9" cy="8" r="3"/>
+        <circle cx="16" cy="9" r="2.5"/>
+        <path d="M3 19c0-3 3-5 6-5s6 2 6 5M14 14.5c3 0 6 1.5 6 4.5"/>
+    </symbol>
+    <symbol id="poste-NIGHT" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>
+    </symbol>
+    <symbol id="coche" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 12l5 5L19 7"/>
+    </symbol>
+    <symbol id="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 9l6 6 6-6"/>
+    </symbol>
+</svg>

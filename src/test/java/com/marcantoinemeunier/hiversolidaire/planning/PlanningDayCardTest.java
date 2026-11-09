@@ -113,6 +113,26 @@ class PlanningDayCardTest {
     }
 
     @Test
+    void the_header_leads_a_volunteer_to_their_space() throws Exception {
+        var body = signedIn().browser().get("/planning").getContentAsString();
+        var header = body.substring(body.indexOf("<header"), body.indexOf("</header>"));
+
+        assertThat(header).contains("href=\"/mes-inscriptions\"").contains("Mon espace")
+                .doesNotContain("Me connecter");
+    }
+
+    @Test
+    void the_card_of_a_day_where_the_volunteer_takes_part_says_it_in_text() throws Exception {
+        var alice = signedIn();
+        join(alice.browser(), DAY, "NIGHT_AND_DINNER");
+
+        var block = dayBlock(alice.browser().get("/planning").getContentAsString(), DAY_LABEL);
+
+        // Le contour ambre de la carte suit le bloc « Vous passez… », lisible sans la couleur.
+        assertThat(block).contains("class=\"journee__vous\"").contains("#coche");
+    }
+
+    @Test
     void one_button_per_registration_with_its_exact_deadline() throws Exception {
         var alice = signedIn();
         join(alice.browser(), DAY, "BREAKFAST");
