@@ -792,14 +792,29 @@ a:hover {
     }
 }
 
-/* Back-office des coordinateurs (S4b) : mêmes styles, pages plus larges, pensées d'abord pour l'ordinateur. */
+/* Back-office des coordinateurs (S4b) : mêmes jetons que les pages bénévoles (design « veillée »), pages plus
+   larges, pensées d'abord pour l'ordinateur. */
 .page--large {
     max-width: 72rem;
 }
 
 .nav--admin {
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--bordure);
+    padding-bottom: var(--esp-2);
+    border-bottom: 1px solid var(--separateur);
+}
+
+.bouton--petit {
+    min-height: 2.75rem;
+    padding: var(--esp-1) var(--esp-4);
+    font-size: 0.95rem;
+}
+
+/* Journée incomplète du tableau de bord. */
+.soiree {
+    padding: var(--esp-4);
+    border-radius: var(--rayon-carte);
+    background: var(--surface);
+    box-shadow: var(--ombre);
 }
 
 .tableau-defilant {
@@ -809,13 +824,13 @@ a:hover {
 .tableau {
     width: 100%;
     border-collapse: collapse;
-    background: #fff;
+    background: var(--surface);
 }
 
 .tableau th,
 .tableau td {
     padding: 0.5rem 0.75rem;
-    border-bottom: 1px solid var(--bordure);
+    border-bottom: 1px solid var(--separateur);
     text-align: left;
     vertical-align: top;
 }
@@ -837,11 +852,12 @@ a:hover {
 .formulaire input[type="search"],
 .formulaire textarea {
     width: 100%;
-    min-height: 2.75rem;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--bordure);
-    border-radius: 0.375rem;
-    background: #fff;
+    min-height: 3rem;
+    padding: var(--esp-2) var(--esp-3);
+    border: 1.5px solid var(--contour);
+    border-radius: var(--rayon-champ);
+    background: var(--surface);
+    color: var(--texte);
     font: inherit;
 }
 
