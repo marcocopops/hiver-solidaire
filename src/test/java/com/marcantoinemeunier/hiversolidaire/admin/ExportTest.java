@@ -57,7 +57,8 @@ class ExportTest {
 
     @AfterEach
     void clean() {
-        for (var date : new LocalDate[] {SOON, WEEKEND, LATER}) {
+        // Un petit-déjeuner inscrit depuis la journée D appartient à la soirée D-1 (ADR-0009) : on nettoie les deux.
+        for (var date : new LocalDate[] {SOON, WEEKEND.minusDays(1), WEEKEND, LATER}) {
             jdbc.update("DELETE FROM coordinator_alert WHERE evening_id = (SELECT id FROM evening WHERE evening_date = ?)",
                     date);
             jdbc.update("DELETE FROM registration WHERE evening_id = (SELECT id FROM evening WHERE evening_date = ?)",
