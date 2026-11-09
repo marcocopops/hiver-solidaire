@@ -2,9 +2,9 @@
 <html lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments :: head(#{admin.register.title(${label})})}"></head>
 <body>
+<header th:replace="~{fragments :: entete(#{admin.register.title(${label})}, true)}"></header>
 <main class="page page--large">
     <nav th:replace="~{admin/fragments :: nav}"></nav>
-    <h1 th:text="#{admin.register.title(${label})}">Inscrire un bénévole</h1>
     <p th:if="${volunteers.isEmpty()}" th:text="#{admin.register.noVolunteer}">Aucun bénévole.</p>
     <!-- Choix du bénévole : GET, sans effet. -->
     <form class="formulaire" th:unless="${volunteers.isEmpty()}" th:action="@{/admin/inscriptions/nouvelle}" method="get">

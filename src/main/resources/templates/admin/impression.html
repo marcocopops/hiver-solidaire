@@ -2,9 +2,9 @@
 <html lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments :: head(#{admin.print.title(${from}, ${to})})}"></head>
 <body>
+<header th:replace="~{fragments :: entete(#{admin.print.title(${from}, ${to})}, true)}"></header>
 <main class="page page--large">
     <nav th:replace="~{admin/fragments :: nav}"></nav>
-    <h1 th:text="#{admin.print.title(${from}, ${to})}">Planning du lun. 4 janv. au dim. 10 janv.</h1>
     <p class="aide ne-pas-imprimer" th:text="#{admin.print.instructions}">Imprimer, puis enregistrer en PDF.</p>
     <p th:if="${days.isEmpty()}" th:text="#{planning.none}">Aucune journée.</p>
     <section class="impression__jour" th:each="day : ${days}">

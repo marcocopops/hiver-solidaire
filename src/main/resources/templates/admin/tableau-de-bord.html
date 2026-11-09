@@ -2,9 +2,9 @@
 <html lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments :: head(#{admin.dashboard.title})}"></head>
 <body>
+<header th:replace="~{fragments :: entete(#{admin.dashboard.title}, true)}"></header>
 <main class="page page--large">
     <nav th:replace="~{admin/fragments :: nav}"></nav>
-    <h1 th:text="#{admin.dashboard.title}">Tableau de bord</h1>
     <p th:replace="~{admin/fragments :: done}"></p>
 
     <section aria-labelledby="incomplete-title">

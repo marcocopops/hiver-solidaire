@@ -2,11 +2,11 @@
 <html lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments :: head(#{admin.move.title})}"></head>
 <body>
+<header th:replace="~{fragments :: entete(#{admin.move.title}, true)}"></header>
 <main class="page page--large">
     <nav th:replace="~{admin/fragments :: nav}"></nav>
-    <h1 th:text="#{admin.move.title}">Déplacer une inscription</h1>
     <p class="alerte" role="alert" th:if="${refusal != null}" th:text="#{${'admin.refusal.' + refusal}}">Refus.</p>
-    <dl th:replace="~{admin/fragments-recap :: recap(${line})}"></dl>
+    <dl th:replace="~{admin/fragments :: recap(${line})}"></dl>
     <!-- Choix de la journée cible : GET, sans effet ; la page suivante confirme. -->
     <form class="formulaire" th:action="@{/admin/inscriptions/deplacer}" method="get">
         <input type="hidden" name="inscription" th:value="${line.registrationId}">

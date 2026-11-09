@@ -889,8 +889,16 @@ a:hover {
     }
 
     .nav,
-    .ne-pas-imprimer {
+    .ne-pas-imprimer,
+    .entete__barre {
         display: none;
+    }
+
+    /* Le titre reste imprimé, sans le bandeau bleu nuit (encre). */
+    .entete {
+        background: none;
+        color: inherit;
+        padding: 0;
     }
 
     .impression__jour {
