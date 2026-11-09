@@ -1,6 +1,6 @@
 package com.marcantoinemeunier.hiversolidaire.admin;
 
-import com.marcantoinemeunier.hiversolidaire.config.CoordinatorsPhone;
+import com.marcantoinemeunier.hiversolidaire.config.CoordinatorsContact;
 import com.marcantoinemeunier.hiversolidaire.planning.DayLabelFormatter;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.Day;
 import com.marcantoinemeunier.hiversolidaire.planning.season.SeasonForm;
@@ -53,12 +53,12 @@ class SeasonController {
             Model model, RedirectAttributes redirect) {
         var current = seasons.current().filter(season -> !season.sample())
                 .orElseThrow(AdminSupport.NotFoundException::new);
-        var phone = phone(form, binding);
+        var contact = contact(form, binding);
         if (binding.hasErrors()) {
             return page(model, "admin/saison");
         }
         try {
-            actions.updateSeason(AdminSupport.coordinatorId(principal), current.id(), form, phone.orElse(null));
+            actions.updateSeason(AdminSupport.coordinatorId(principal), current.id(), form, contact.orElse(null));
         } catch (EveningsWithRegistrationsException e) {
             model.addAttribute("blockingDates", e.dates().stream().map(DayLabelFormatter::inline)
                     .collect(Collectors.joining(", ")));
@@ -79,12 +79,12 @@ class SeasonController {
     @PostMapping("/admin/saison/nouvelle")
     String create(@Valid @ModelAttribute("seasonForm") SeasonForm form, BindingResult binding, Principal principal,
             Model model, RedirectAttributes redirect) {
-        var phone = phone(form, binding);
+        var contact = contact(form, binding);
         if (binding.hasErrors()) {
             return creationPage(model);
         }
         try {
-            actions.createSeason(AdminSupport.coordinatorId(principal), form, phone.orElse(null));
+            actions.createSeason(AdminSupport.coordinatorId(principal), form, contact.orElse(null));
         } catch (SeasonAlreadyActiveException | SampleSeasonInUseException e) {
             return creationPage(model);
         }
@@ -107,12 +107,18 @@ class SeasonController {
         return view;
     }
 
-    /** Téléphone saisi : vide, ou un numéro lisible ({@link CoordinatorsPhone}), sinon erreur de champ. */
-    private static Optional<String> phone(SeasonForm form, BindingResult binding) {
+    /**
+     * Contact saisi : vide, ou un numéro français ou une adresse e-mail ({@link CoordinatorsContact}), enregistré tel
+     * qu'affiché ; sinon erreur de champ.
+     */
+    private static Optional<String> contact(SeasonForm form, BindingResult binding) {
+        if (binding.hasFieldErrors("coordinatorsContact")) {
+            return Optional.empty();
+        }
         try {
-            return CoordinatorsPhone.parse(form.getCoordinatorsPhone()).map(CoordinatorsPhone::display);
-        } catch (IllegalStateException e) {
-            binding.rejectValue("coordinatorsPhone", "admin.season.error.phone");
+            return CoordinatorsContact.parse(form.getCoordinatorsContact()).map(CoordinatorsContact::display);
+        } catch (IllegalArgumentException e) {
+            binding.rejectValue("coordinatorsContact", "admin.season.error.contact");
             return Optional.empty();
         }
     }

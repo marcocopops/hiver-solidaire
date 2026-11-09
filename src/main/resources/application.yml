@@ -39,8 +39,13 @@ app:
   base-url: ${APP_BASE_URL:http://localhost:8080}
   mail:
     from: ${MAIL_FROM:hiver-solidaire@example.org}
-  # Téléphone des coordinateurs, affiché après la limite de désinscription (R6). Vide : message générique.
+  # Contact des coordinateurs (numéro de téléphone français ou adresse e-mail), affiché après la limite de
+  # désinscription (R6) tant que la saison n'en a pas. Vide : message générique. Une valeur invalide empêche le
+  # démarrage.
   coordinators:
+    contact: ${APP_COORDINATORS_CONTACT:}
+    # Ancien nom (lot 2) : lu seulement si APP_COORDINATORS_CONTACT est vide, avec un avertissement au démarrage. À
+    # retirer une fois le .env du serveur mis à jour.
     phone: ${APP_COORDINATORS_PHONE:}
     # Adresses des coordinateurs, séparées par des virgules (ADR-0010) : rôle coordinateur à la connexion. Vide :
     # aucun coordinateur, le back-office reste fermé à tous.

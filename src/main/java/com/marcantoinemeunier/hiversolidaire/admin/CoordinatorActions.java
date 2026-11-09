@@ -66,15 +66,15 @@ class CoordinatorActions {
 
     /** Réglages de la saison et régénération de ses soirées (refus si une soirée supprimée a des inscriptions). */
     @Transactional
-    void updateSeason(UUID coordinatorId, UUID seasonId, SeasonForm form, String phone) {
-        seasons.update(seasonId, form, phone);
+    void updateSeason(UUID coordinatorId, UUID seasonId, SeasonForm form, String contact) {
+        seasons.update(seasonId, form, contact);
         audit.record(coordinatorId, Action.SEASON_UPDATED, Target.season(seasonId));
     }
 
     /** Nouvelle saison ; la saison d'exemple est supprimée dans la même transaction si elle était la saison courante. */
     @Transactional
-    void createSeason(UUID coordinatorId, SeasonForm form, String phone) {
-        var created = seasons.create(form, phone);
+    void createSeason(UUID coordinatorId, SeasonForm form, String contact) {
+        var created = seasons.create(form, contact);
         if (created.replacedSampleId() != null) {
             audit.record(coordinatorId, Action.SAMPLE_SEASON_DELETED, Target.season(created.replacedSampleId()));
         }

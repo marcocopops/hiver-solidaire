@@ -22,15 +22,10 @@
             <p class="aide" th:if="${registration.cancellable}"
                th:text="#{cancellation.deadline(${registration.deadline})}">Possible jusqu’au…</p>
             <th:block th:unless="${registration.cancellable}">
-                <p th:replace="~{fragments :: coordinators(#{myRegistrations.tooLate})}">Trop tard.</p>
+                <p th:replace="~{fragments :: coordinators(true)}">Contactez les coordinateurs.</p>
             </th:block>
         </li>
     </ul>
-    <th:block th:if="${season != null and (season.venueAddress != null or season.instructions != null)}">
-        <h2 th:text="#{myRegistrations.venue}">Le lieu d’accueil</h2>
-        <p th:if="${season.venueAddress != null}" th:text="${season.venueAddress}">Adresse</p>
-        <p class="consignes" th:if="${season.instructions != null}" th:text="${season.instructions}">Consignes</p>
-    </th:block>
 </main>
 </body>
 </html>

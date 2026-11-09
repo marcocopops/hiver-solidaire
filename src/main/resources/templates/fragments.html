@@ -45,14 +45,18 @@
     </th:block>
 </nav>
 
-<!-- R6 : après la limite, le téléphone des coordinateurs (APP_COORDINATORS_PHONE), ou un message générique. -->
-<p class="aide" th:fragment="coordinators(intro)">
-    <th:block th:text="${intro}">Pour vous désinscrire maintenant,</th:block>
-    <th:block th:if="${coordinatorsPhone != null}">
-        <th:block th:text="#{coordinators.call}">appelez un coordinateur :</th:block>
-        <a th:href="${coordinatorsPhone.telUri}" th:text="${coordinatorsPhone.display}">01 99 00 12 34</a>
+<!-- R6 : après la limite, le contact des coordinateurs (réglages de la saison, sinon APP_COORDINATORS_CONTACT), en
+     lien tel: ou mailto:, ou un message générique. « cancelling » : la phrase commence par « Pour vous désinscrire ». -->
+<p class="aide" th:fragment="coordinators(cancelling)">
+    <th:block th:if="${coordinatorsContact != null}">
+        <th:block th:text="${cancelling} ? #{coordinators.cancel.via} : #{coordinators.via}">
+            Pour vous désinscrire, contactez les coordinateurs via</th:block>
+        <a th:href="${coordinatorsContact.uri}" th:text="${coordinatorsContact.display}">01 99 00 12 34</a><th:block
+            th:text="#{coordinators.end}">.</th:block>
     </th:block>
-    <th:block th:if="${coordinatorsPhone == null}" th:text="#{coordinators.contact}">contactez un coordinateur.</th:block>
+    <th:block th:if="${coordinatorsContact == null}"
+              th:text="${cancelling} ? #{coordinators.cancel.none} : #{coordinators.none}">
+        Pour vous désinscrire, contactez les coordinateurs.</th:block>
 </p>
 
 <!-- Champs cachés qui portent le choix fait sur le planning (journée, type, plat) d'une page à l'autre. -->

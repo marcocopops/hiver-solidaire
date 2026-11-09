@@ -155,7 +155,7 @@ class PlanningDayCardTest {
     }
 
     @Test
-    void after_the_deadline_the_button_gives_way_to_the_coordinators_phone() throws Exception {
+    void after_the_deadline_the_button_gives_way_to_the_coordinators_contact() throws Exception {
         var alice = signedIn();
         join(alice.browser(), DAY, "BREAKFAST");
         join(alice.browser(), DAY, "NIGHT_AND_DINNER");
@@ -167,7 +167,8 @@ class PlanningDayCardTest {
         assertThat(block).doesNotContain("href=\"/mes-inscriptions/annuler?soiree=" + DAY.minusDays(1) + "\"")
                 .contains("href=\"/mes-inscriptions/annuler?soiree=" + DAY + "\"")
                 .contains("href=\"tel:0199001234\"").contains(COORDINATORS_PHONE);
-        assertThat(text(block)).containsSubsequence("Vous fournissez le petit-déjeuner", COORDINATORS_PHONE,
+        assertThat(text(block)).containsSubsequence("Vous fournissez le petit-déjeuner",
+                "Pour vous désinscrire, contactez les coordinateurs via", COORDINATORS_PHONE,
                 "Vous passez la nuit", "Me désinscrire de la nuit");
     }
 

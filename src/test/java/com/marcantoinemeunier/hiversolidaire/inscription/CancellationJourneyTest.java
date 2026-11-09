@@ -43,6 +43,7 @@ class CancellationJourneyTest {
     /** Mercredi 17 février 2027 : au-delà de la fenêtre de l'alerte. */
     private static final LocalDate LATER = LocalDate.of(2027, 2, 17);
     private static final String COORDINATORS_PHONE = "01 99 00 12 34";
+    private static final String CONTACT_SENTENCE = "Pour vous désinscrire, contactez les coordinateurs via";
 
     @Autowired
     MockMvc mockMvc;
@@ -189,7 +190,7 @@ class CancellationJourneyTest {
     }
 
     @Test
-    void after_the_deadline_the_button_disappears_and_the_coordinators_phone_is_shown() throws Exception {
+    void after_the_deadline_the_button_disappears_and_the_coordinators_contact_is_shown() throws Exception {
         var alice = signedIn().browser();
         register(alice, SOON, "BREAKFAST");
         alice.get("/mes-inscriptions/annuler?soiree=" + SOON);
@@ -199,9 +200,9 @@ class CancellationJourneyTest {
 
         var mine = alice.get("/mes-inscriptions").getContentAsString();
         assertThat(mine).contains(SOON_LABEL).doesNotContain("/mes-inscriptions/annuler").doesNotContain(SOON_DEADLINE)
-                .contains(COORDINATORS_PHONE).contains("href=\"tel:0199001234\"");
+                .contains(CONTACT_SENTENCE).contains(COORDINATORS_PHONE).contains("href=\"tel:0199001234\"");
         var page = alice.get("/mes-inscriptions/annuler?soiree=" + SOON).getContentAsString();
-        assertThat(page).contains(COORDINATORS_PHONE).doesNotContain("action=\"/mes-inscriptions/annuler\"")
+        assertThat(page).contains(CONTACT_SENTENCE).contains(COORDINATORS_PHONE).doesNotContain("action=\"/mes-inscriptions/annuler\"")
                 .contains("la limite était le jeu. 7 janv. à 23 h 59");
 
         // Un POST forgé est refusé : l'inscription reste.

@@ -220,6 +220,7 @@ class AccountDeletionTest {
         register(alice.browser(), TONIGHT, "BREAKFAST");
 
         assertThat(alice.browser().get("/mon-compte/supprimer").getContentAsString())
+                .contains("Contactez les coordinateurs via").contains("href=\"tel:0199001234\"")
                 .contains("01 99 00 12 34");
     }
 

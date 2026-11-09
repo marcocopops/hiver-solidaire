@@ -5,7 +5,6 @@ import com.marcantoinemeunier.hiversolidaire.planning.ActivityLabel;
 import com.marcantoinemeunier.hiversolidaire.planning.DayLabelFormatter;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.Cancellation;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.CancellationDecision;
-import com.marcantoinemeunier.hiversolidaire.planning.season.SeasonSettingsService;
 import java.security.Principal;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
@@ -28,11 +27,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 class MyRegistrationsController {
 
     private final RegistrationService registrations;
-    private final SeasonSettingsService seasons;
 
-    MyRegistrationsController(RegistrationService registrations, SeasonSettingsService seasons) {
+    MyRegistrationsController(RegistrationService registrations) {
         this.registrations = registrations;
-        this.seasons = seasons;
     }
 
     /** Paramètre de la soirée à annuler : la date du soir J, pas celle de la carte du planning. */
@@ -51,12 +48,10 @@ class MyRegistrationsController {
                         registrations.cancellable(registration.date()), deadline(registration.date())))
                 .toList();
         model.addAttribute("registrations", lines);
-        // Adresse et consignes du lieu : dans l'espace bénévole seulement, jamais sur la page publique (§6).
-        model.addAttribute("season", seasons.current().orElse(null));
         return "mes-inscriptions";
     }
 
-    /** Page de confirmation ; après la limite de R6, elle donne le téléphone des coordinateurs, sans formulaire. */
+    /** Page de confirmation ; après la limite de R6, elle donne le contact des coordinateurs, sans formulaire. */
     @GetMapping("/mes-inscriptions/annuler")
     String confirmCancellation(@RequestParam(name = EVENING_PARAM) String evening,
             Principal principal, Model model) {

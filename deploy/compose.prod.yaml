@@ -16,8 +16,12 @@ services:
       # Origine des liens de connexion envoyés par e-mail.
       APP_BASE_URL: ${APP_BASE_URL:-https://hiver-solidaire.marcantoine-meunier.com}
       # Pas de MAIL_HOST avant S5 (Brevo) : l'appli démarre, la connexion affiche « momentanément indisponible ».
-      # Téléphone des coordinateurs, affiché quand un bénévole ne peut plus se désinscrire seul (R6). Vide : message
-      # générique « contactez un coordinateur ». Valeur réelle dans .env sur le serveur, jamais dans le dépôt.
+      # Contact des coordinateurs (numéro français ou adresse e-mail), affiché quand un bénévole ne peut plus se
+      # désinscrire seul (R6), tant que la saison n'en a pas. Vide : message générique. Valeur réelle dans .env sur le
+      # serveur, jamais dans le dépôt.
+      APP_COORDINATORS_CONTACT: ${APP_COORDINATORS_CONTACT:-}
+      # Ancien nom, lu seulement si APP_COORDINATORS_CONTACT est vide (avertissement au démarrage). À retirer une fois
+      # le .env du serveur mis à jour.
       APP_COORDINATORS_PHONE: ${APP_COORDINATORS_PHONE:-}
       # Adresses des coordinateurs, séparées par des virgules (ADR-0010) : rôle coordinateur à la connexion. Vide :
       # back-office fermé à tous. Valeurs réelles dans .env sur le serveur, jamais dans le dépôt.

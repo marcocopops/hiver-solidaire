@@ -6,7 +6,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
@@ -16,17 +15,13 @@ import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
 
 /**
- * Création ou modification d'une saison par un coordinateur. Validé côté serveur ; les textes (libellé, horaires,
- * adresse, consignes) sont bornés et toujours affichés avec {@code th:text}.
+ * Création ou modification d'une saison par un coordinateur. Validé côté serveur ; les textes (horaires, contact)
+ * sont bornés et toujours affichés avec {@code th:text}. Le contact est vérifié par {@code CoordinatorsContact}.
  */
 public class SeasonForm {
 
     /** Une saison dure au plus ce nombre de soirées (environ 76 en 2025-2026). */
     static final int MAX_EVENINGS = 200;
-
-    @NotBlank(message = "{admin.season.error.label}")
-    @Size(max = 100, message = "{admin.season.error.label}")
-    private String label;
 
     @NotNull(message = "{admin.season.error.dates}")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
@@ -43,14 +38,8 @@ public class SeasonForm {
     @Valid
     private List<NeedForm> needs = new ArrayList<>();
 
-    @Size(max = 300, message = "{admin.season.error.venue}")
-    private String venueAddress;
-
-    @Size(max = 2000, message = "{admin.season.error.instructions}")
-    private String instructions;
-
-    @Size(max = 30, message = "{admin.season.error.phone}")
-    private String coordinatorsPhone;
+    @Size(max = 254, message = "{admin.season.error.contact}")
+    private String coordinatorsContact;
 
     /** Formulaire vide d'une nouvelle saison : besoins de 2025-2026 (§5). */
     public static SeasonForm blank() {
@@ -66,7 +55,6 @@ public class SeasonForm {
 
     public static SeasonForm of(SeasonSettings settings) {
         var form = new SeasonForm();
-        form.label = settings.label();
         form.firstEvening = settings.firstEvening();
         form.lastEvening = settings.lastEvening();
         form.registrationsOpenAt = settings.registrationsOpenAt();
@@ -75,9 +63,7 @@ public class SeasonForm {
                         .map(need -> NeedForm.of(post, need.minimum(), need.maximum(), need.schedule()))
                         .orElseThrow())
                 .toList());
-        form.venueAddress = settings.venueAddress();
-        form.instructions = settings.instructions();
-        form.coordinatorsPhone = settings.coordinatorsPhone();
+        form.coordinatorsContact = settings.coordinatorsContact();
         return form;
     }
 
@@ -160,14 +146,6 @@ public class SeasonForm {
         }
     }
 
-    public String getLabel() {
-        return label;
-    }
-
-    public void setLabel(String label) {
-        this.label = label;
-    }
-
     public LocalDate getFirstEvening() {
         return firstEvening;
     }
@@ -200,28 +178,12 @@ public class SeasonForm {
         this.needs = needs;
     }
 
-    public String getVenueAddress() {
-        return venueAddress;
+    public String getCoordinatorsContact() {
+        return coordinatorsContact;
     }
 
-    public void setVenueAddress(String venueAddress) {
-        this.venueAddress = venueAddress;
-    }
-
-    public String getInstructions() {
-        return instructions;
-    }
-
-    public void setInstructions(String instructions) {
-        this.instructions = instructions;
-    }
-
-    public String getCoordinatorsPhone() {
-        return coordinatorsPhone;
-    }
-
-    public void setCoordinatorsPhone(String coordinatorsPhone) {
-        this.coordinatorsPhone = coordinatorsPhone;
+    public void setCoordinatorsContact(String coordinatorsContact) {
+        this.coordinatorsContact = coordinatorsContact;
     }
 
     /** Texte facultatif : espaces retirés autour, vide devient {@code null}. */
