@@ -110,6 +110,28 @@ class VolunteerAccessTest {
     }
 
     @Test
+    void a_volunteer_cannot_cancel_the_post_of_another_on_an_evening_where_both_are_registered() throws Exception {
+        var alice = signedIn(true);
+        alice.get("/inscription/confirmer?jour=" + DAY + "&choix=BREAKFAST");
+        alice.post("/inscription", "jour", DAY.toString(), "choix", "BREAKFAST");
+        var bob = signedIn(true);
+        bob.get("/inscription/confirmer?jour=" + EVENING + "&choix=NIGHT_AND_DINNER");
+        bob.post("/inscription", "jour", EVENING.toString(), "choix", "NIGHT_AND_DINNER");
+
+        // Bob a sa propre inscription sur la soirée : la désinscription ne cherche que parmi les siennes.
+        assertThat(bob.get("/mes-inscriptions/annuler?soiree=" + EVENING + "&choix=BREAKFAST").getStatus())
+                .isEqualTo(404);
+        bob.get("/mes-inscriptions");
+        assertThat(bob.post("/mes-inscriptions/annuler", "soiree", EVENING.toString(), "choix", "BREAKFAST")
+                .getStatus()).isEqualTo(404);
+
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM registration r JOIN evening e ON e.id = r.evening_id
+                WHERE e.evening_date = ? AND r.cancelled_at IS NULL
+                """, Integer.class, EVENING)).isEqualTo(2);
+    }
+
+    @Test
     void a_volunteer_does_not_see_the_registrations_of_another() throws Exception {
         var alice = signedIn(true);
         alice.get("/inscription/confirmer?jour=" + DAY + "&choix=BREAKFAST");

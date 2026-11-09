@@ -30,7 +30,9 @@ import org.springframework.test.web.servlet.MockMvc;
 /**
  * Fiche journée et actions des coordinateurs (cahier des charges §6 « Fiche soirée ») : coordonnées des inscrits,
  * annulation même après R6, déplacement sous R1 à R4 et R7, inscription d'un bénévole existant ou sans e-mail. Chaque
- * action passe par une page de confirmation (GET sans effet), puis un POST, et écrit une ligne d'audit.
+ * action passe par une page de confirmation (GET sans effet), puis un POST, et écrit une ligne d'audit. Les règles du
+ * lot 3 (un poste par bénévole et par soirée, récupération liée aux préparations chez soi) s'y appliquent comme en
+ * ligne.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -145,9 +147,10 @@ class CoordinatorDayTest {
         var coordinator = volunteers.coordinator();
 
         // Le bénévole ne peut plus se désinscrire seul.
-        anne.browser().get("/mes-inscriptions/annuler?soiree=" + SOON);
-        assertThat(anne.browser().post("/mes-inscriptions/annuler", "soiree", SOON.toString()).getRedirectedUrl())
-                .isEqualTo("/mes-inscriptions/annuler?soiree=" + SOON);
+        anne.browser().get("/mes-inscriptions/annuler?soiree=" + SOON + "&choix=NIGHT_AND_DINNER");
+        assertThat(anne.browser().post("/mes-inscriptions/annuler", "soiree", SOON.toString(), "choix",
+                "NIGHT_AND_DINNER").getRedirectedUrl())
+                .isEqualTo("/mes-inscriptions/annuler?soiree=" + SOON + "&choix=NIGHT_AND_DINNER");
         assertThat(active(anne.id(), SOON)).isEqualTo(1);
 
         // Le coordinateur, si : la page de confirmation n'annule rien.
@@ -248,8 +251,8 @@ class CoordinatorDayTest {
                 .contains("Ce plat est déjà préparé par quelqu’un d’autre.");
         assertThat(active(anne.id(), LATER)).isEqualTo(1);
 
-        // R2 : Anne est déjà inscrite la veille.
-        TestVolunteers.register(anne.browser(), LATER.minusDays(1), "NIGHT_AND_DINNER");
+        // R2 : Anne prépare déjà le plat principal la veille (chez elle) : même poste.
+        TestVolunteers.register(anne.browser(), LATER.minusDays(1), "PREPARE_AT_HOME.MAIN_DISH");
         var alreadyRegistered = browser.post("/admin/inscriptions/deplacer", "inscription", registration.toString(),
                 "jour", LATER.minusDays(1).toString());
         assertThat(alreadyRegistered.getRedirectedUrl()).endsWith("&refus=ALREADY_REGISTERED");
@@ -319,11 +322,149 @@ class CoordinatorDayTest {
                     AND registration_id = ? AND volunteer_id = ?
                 """, Integer.class, coordinator.id(), activeRegistration(anne.id(), LATER), anne.id())).isEqualTo(1);
 
-        // R2 : une seconde inscription sur la même soirée est refusée, sans audit.
+        // R2 : le même poste une seconde fois est refusé, sans audit.
         var again = browser.post("/admin/inscriptions/nouvelle", "jour", LATER.toString(), "benevole",
-                anne.id().toString(), "choix", "PICK_UP_AND_SHARE");
+                anne.id().toString(), "choix", "NIGHT_AND_DINNER");
         assertThat(again.getRedirectedUrl()).endsWith("&refus=ALREADY_REGISTERED");
+        assertThat(browser.get(again.getRedirectedUrl()).getContentAsString())
+                .contains("Ce bénévole a déjà ce poste sur cette soirée.");
         assertThat(audits(coordinator.id(), "REGISTRATION_CREATED")).isEqualTo(1);
+
+        // R2 : un autre poste de la même soirée se cumule.
+        assertThat(browser.get("/admin/inscriptions/nouvelle?jour=" + LATER + "&benevole=" + anne.id())
+                .getContentAsString()).contains("value=\"PREPARE_AND_SHARE.MAIN_DISH\"")
+                .doesNotContain("value=\"NIGHT_AND_DINNER\"");
+        var cumulated = browser.post("/admin/inscriptions/nouvelle", "jour", LATER.toString(), "benevole",
+                anne.id().toString(), "choix", "PREPARE_AND_SHARE.MAIN_DISH");
+        assertThat(cumulated.getRedirectedUrl()).isEqualTo("/admin/journee?jour=" + LATER);
+        assertThat(active(anne.id(), LATER)).isEqualTo(2);
+        assertThat(audits(coordinator.id(), "REGISTRATION_CREATED")).isEqualTo(2);
+    }
+
+    private int pickupWithoutMealAlerts(LocalDate eveningDate) {
+        return jdbc.queryForObject("""
+                SELECT count(*) FROM coordinator_alert a JOIN evening e ON e.id = a.evening_id
+                WHERE e.evening_date = ? AND a.kind = 'PICKUP_WITHOUT_MEAL'
+                """, Integer.class, eveningDate);
+    }
+
+    private UUID activeRegistration(UUID volunteerId, LocalDate eveningDate, String type) {
+        return jdbc.queryForObject("""
+                SELECT r.id FROM registration r JOIN evening e ON e.id = r.evening_id
+                WHERE r.volunteer_id = ? AND e.evening_date = ? AND r.type = ? AND r.cancelled_at IS NULL
+                """, UUID.class, volunteerId, eveningDate, type);
+    }
+
+    @Test
+    void a_phone_registration_offers_and_accepts_a_pickup_only_for_a_meal_prepared_at_home() throws Exception {
+        var anne = volunteers.volunteer();
+        var carol = volunteers.volunteer();
+        var coordinator = volunteers.coordinator();
+        var browser = coordinator.browser();
+        var choices = "/admin/inscriptions/nouvelle?jour=" + LATER + "&benevole=" + anne.id();
+        assertThat(browser.get(choices).getContentAsString()).doesNotContain("value=\"PICK_UP_AND_SHARE\"");
+
+        TestVolunteers.register(volunteers.volunteer().browser(), LATER, "PREPARE_AT_HOME.MAIN_DISH");
+        assertThat(browser.get(choices).getContentAsString()).contains("value=\"PICK_UP_AND_SHARE\"");
+        var accepted = browser.post("/admin/inscriptions/nouvelle", "jour", LATER.toString(), "benevole",
+                anne.id().toString(), "choix", "PICK_UP_AND_SHARE");
+        assertThat(accepted.getRedirectedUrl()).isEqualTo("/admin/journee?jour=" + LATER);
+
+        // Le repas a sa récupération : une deuxième est refusée, sans audit.
+        browser.get("/admin/inscriptions/nouvelle?jour=" + LATER + "&benevole=" + carol.id());
+        var refused = browser.post("/admin/inscriptions/nouvelle", "jour", LATER.toString(), "benevole",
+                carol.id().toString(), "choix", "PICK_UP_AND_SHARE");
+        assertThat(refused.getRedirectedUrl()).endsWith("&refus=NOTHING_TO_PICK_UP");
+        assertThat(browser.get(refused.getRedirectedUrl()).getContentAsString())
+                .contains("Aucun repas préparé chez soi n’attend de récupération sur cette soirée.");
+        assertThat(active(carol.id(), LATER)).isZero();
+        assertThat(audits(coordinator.id(), "REGISTRATION_CREATED")).isEqualTo(1);
+    }
+
+    @Test
+    void a_move_of_a_pickup_needs_a_meal_and_no_other_dinner_post_on_the_target_evening() throws Exception {
+        TestVolunteers.register(volunteers.volunteer().browser(), LATER, "PREPARE_AT_HOME.MAIN_DISH");
+        var anne = volunteers.volunteer();
+        TestVolunteers.register(anne.browser(), LATER, "PICK_UP_AND_SHARE");
+        var registration = activeRegistration(anne.id(), LATER);
+        var browser = volunteers.coordinator().browser();
+        browser.get("/admin/inscriptions/deplacer?inscription=" + registration + "&jour=" + LATER_NEXT);
+
+        // R4 : aucun repas préparé chez soi le lendemain.
+        var nothing = browser.post("/admin/inscriptions/deplacer", "inscription", registration.toString(), "jour",
+                LATER_NEXT.toString());
+        assertThat(nothing.getRedirectedUrl()).endsWith("&refus=NOTHING_TO_PICK_UP");
+
+        // R2 : un repas attend, mais Anne passe déjà la nuit ce soir-là.
+        TestVolunteers.register(volunteers.volunteer().browser(), LATER_NEXT, "PREPARE_AT_HOME.SIDES");
+        TestVolunteers.register(anne.browser(), LATER_NEXT, "NIGHT_AND_DINNER");
+        var notCumulable = browser.post("/admin/inscriptions/deplacer", "inscription", registration.toString(),
+                "jour", LATER_NEXT.toString());
+        assertThat(notCumulable.getRedirectedUrl()).endsWith("&refus=NOT_CUMULABLE");
+        assertThat(browser.get(notCumulable.getRedirectedUrl()).getContentAsString())
+                .contains("« Récupérer le dîner et le partager » ne se cumule qu’avec le petit-déjeuner.");
+        assertThat(active(anne.id(), LATER)).isEqualTo(1);
+    }
+
+    @Test
+    void a_move_to_an_evening_where_the_volunteer_holds_another_post_is_accepted() throws Exception {
+        var anne = volunteers.volunteer();
+        TestVolunteers.register(anne.browser(), LATER, "PREPARE_AND_SHARE.SIDES");
+        TestVolunteers.register(anne.browser(), LATER_NEXT, "NIGHT_AND_DINNER");
+        var registration = activeRegistration(anne.id(), LATER);
+        var browser = volunteers.coordinator().browser();
+        browser.get("/admin/inscriptions/deplacer?inscription=" + registration + "&jour=" + LATER_NEXT);
+
+        var response = browser.post("/admin/inscriptions/deplacer", "inscription", registration.toString(), "jour",
+                LATER_NEXT.toString());
+
+        assertThat(response.getRedirectedUrl()).isEqualTo("/admin/journee?jour=" + LATER_NEXT);
+        assertThat(active(anne.id(), LATER)).isZero();
+        assertThat(active(anne.id(), LATER_NEXT)).isEqualTo(2);
+    }
+
+    @Test
+    void moving_or_cancelling_a_home_preparation_already_picked_up_alerts_the_coordinators() throws Exception {
+        var anne = volunteers.volunteer();
+        TestVolunteers.register(anne.browser(), LATER, "PREPARE_AT_HOME.MAIN_DISH");
+        TestVolunteers.register(volunteers.volunteer().browser(), LATER, "PICK_UP_AND_SHARE");
+        var bob = volunteers.volunteer();
+        TestVolunteers.register(bob.browser(), LATER_NEXT, "PREPARE_AT_HOME.SIDES");
+        TestVolunteers.register(volunteers.volunteer().browser(), LATER_NEXT, "PICK_UP_AND_SHARE");
+        var browser = volunteers.coordinator().browser();
+
+        // Déplacement : la soirée quittée garde sa récupération, sans repas.
+        var moved = activeRegistration(anne.id(), LATER, "PREPARE_AT_HOME");
+        browser.get("/admin/inscriptions/deplacer?inscription=" + moved + "&jour=" + LATER.minusDays(1));
+        assertThat(browser.post("/admin/inscriptions/deplacer", "inscription", moved.toString(), "jour",
+                LATER.minusDays(1).toString()).getRedirectedUrl()).isEqualTo("/admin/journee?jour=" + LATER.minusDays(1));
+        assertThat(pickupWithoutMealAlerts(LATER)).isEqualTo(1);
+
+        // Annulation par un coordinateur : même alerte.
+        var cancelled = activeRegistration(bob.id(), LATER_NEXT, "PREPARE_AT_HOME");
+        browser.get("/admin/inscriptions/annuler?inscription=" + cancelled);
+        browser.post("/admin/inscriptions/annuler", "inscription", cancelled.toString());
+        assertThat(pickupWithoutMealAlerts(LATER_NEXT)).isEqualTo(1);
+
+        assertThat(browser.get("/admin/journee?jour=" + LATER).getContentAsString())
+                .contains("Une récupération n’a plus de repas à récupérer : prévenez la personne inscrite.")
+                .doesNotContain("Un repas préparé chez soi n’a pas de récupération");
+    }
+
+    @Test
+    void the_day_sheet_flags_a_volunteer_counting_for_two_dinner_presences() throws Exception {
+        var anne = volunteers.volunteer();
+        TestVolunteers.register(anne.browser(), LATER, "PREPARE_AND_SHARE.MAIN_DISH");
+        TestVolunteers.register(anne.browser(), LATER, "PREPARE_AND_SHARE.SIDES");
+        var bob = volunteers.volunteer();
+        TestVolunteers.register(bob.browser(), LATER_NEXT, "PREPARE_AND_SHARE.MAIN_DISH");
+
+        var browser = volunteers.coordinator().browser();
+        var sheet = browser.get("/admin/journee?jour=" + LATER).getContentAsString();
+
+        assertThat(sheet).contains(anne.pseudo() + " compte pour 2 présences au dîner : vérifiez qu’ils viennent à deux.");
+        assertThat(browser.get("/admin/journee?jour=" + LATER_NEXT).getContentAsString())
+                .doesNotContain("compte pour 2 présences");
     }
 
     @Test

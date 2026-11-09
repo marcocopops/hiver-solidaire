@@ -22,7 +22,9 @@ public class CoordinatorAlerts {
     /** Valeurs de la contrainte {@code coordinator_alert_kind}. */
     public enum Kind {
         /** Une soirée des 7 prochains jours a perdu un minimum (cahier des charges §6). */
-        EVENING_INCOMPLETE
+        EVENING_INCOMPLETE,
+        /** R4 : une préparation chez soi déjà récupérée a été annulée ; la récupération reste, sans repas (lot 3). */
+        PICKUP_WITHOUT_MEAL
     }
 
     private final JdbcTemplate jdbc;
@@ -65,7 +67,16 @@ public class CoordinatorAlerts {
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void eveningIncomplete(UUID eveningId) {
+        record(Kind.EVENING_INCOMPLETE, eveningId);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void pickupWithoutMeal(UUID eveningId) {
+        record(Kind.PICKUP_WITHOUT_MEAL, eveningId);
+    }
+
+    private void record(Kind kind, UUID eveningId) {
         jdbc.update("INSERT INTO coordinator_alert (id, kind, evening_id, created_at) VALUES (?, ?, ?, ?)",
-                UUID.randomUUID(), Kind.EVENING_INCOMPLETE.name(), eveningId, Timestamp.from(clock.instant()));
+                UUID.randomUUID(), kind.name(), eveningId, Timestamp.from(clock.instant()));
     }
 }

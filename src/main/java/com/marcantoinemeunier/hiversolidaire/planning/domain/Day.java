@@ -3,6 +3,7 @@ package com.marcantoinemeunier.hiversolidaire.planning.domain;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -97,8 +98,8 @@ public final class Day {
     }
 
     /**
-     * Inscriptions actives du bénévole montrées sur cette journée (petit-déjeuner, puis dîner ou nuit) : deux au plus,
-     * une par soirée (R2).
+     * Inscriptions actives du bénévole montrées sur cette journée, dans l'ordre des postes de la journée
+     * ({@link #POSTS}) : une par poste au plus (R2, ADR-0011), le petit-déjeuner venant de la soirée D-1.
      */
     public List<DayRegistration> registrationsOf(UUID volunteerId) {
         var mine = new ArrayList<DayRegistration>();
@@ -113,6 +114,7 @@ public final class Day {
                 }
             }
         }
+        mine.sort(Comparator.comparingInt(entry -> POSTS.indexOf(entry.registration().ownPost())));
         return mine;
     }
 
@@ -128,8 +130,9 @@ public final class Day {
 
     /**
      * « Je participe » : inscriptions encore possibles pour ce bénévole, chacune décidée sur sa soirée par
-     * {@link Evening#decide} (R1 à R4 et R7 par soirée, sans changement). Le petit-déjeuner du jour même n'est plus
-     * proposé : sa soirée est passée.
+     * {@link Evening#decide} (R1 à R4 et R7 par soirée). Un choix refusé pour lui seul (poste déjà pris par lui, non
+     * cumulable, plus de place, plus de repas à récupérer) n'est simplement pas proposé ; seul un motif de R7 bloque la
+     * soirée. Le petit-déjeuner du jour même n'est plus proposé : sa soirée est passée.
      */
     public DayOffer offers(Season season, UUID volunteerId, Instant now) {
         var available = new ArrayList<Offer>();
@@ -144,7 +147,7 @@ public final class Day {
                     Registration.by(volunteerId, option.type(), option.dishChoice()), now);
             if (decision.accepted()) {
                 available.add(new Offer(evening.date(), option.type(), option.dishChoice()));
-            } else if (decision != RegistrationDecision.FULL && decision != RegistrationDecision.DISH_TAKEN) {
+            } else if (decision.blocksTheEvening()) {
                 if (evening == current) {
                     blockingCurrent = decision;
                 } else {

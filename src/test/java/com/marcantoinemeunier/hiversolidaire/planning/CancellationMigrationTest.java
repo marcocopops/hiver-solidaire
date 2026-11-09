@@ -16,13 +16,14 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 
 /**
  * La migration V8 passe sur une base de développement qui contient déjà des bénévoles et des inscriptions : elles
- * restent actives, et R2 et R3 restent garanties. En production, les tables sont vides.
+ * restent actives, et R2 (par poste depuis la V14) et R3 restent garanties. En production, les tables sont vides.
  */
 class CancellationMigrationTest {
 
     private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:17-alpine");
     private static final LocalDate EVENING = LocalDate.of(2027, 1, 4);
     private static final UUID ALICE = UUID.randomUUID();
+    private static final UUID BOB = UUID.randomUUID();
     private static JdbcTemplate jdbc;
     private static DriverManagerDataSource dataSource;
 
@@ -33,11 +34,10 @@ class CancellationMigrationTest {
                 POSTGRES.getPassword());
         jdbc = new JdbcTemplate(dataSource);
         flyway("7").migrate();
-        var bob = UUID.randomUUID();
         jdbc.update("INSERT INTO volunteer (id, email) VALUES (?, 'alice@example.org'), (?, 'bob@example.org')",
-                ALICE, bob);
+                ALICE, BOB);
         register(ALICE, "PREPARE_AT_HOME", "MAIN_DISH");
-        register(bob, "BREAKFAST", null);
+        register(BOB, "BREAKFAST", null);
         flyway(null).migrate();
     }
 
@@ -71,7 +71,7 @@ class CancellationMigrationTest {
 
     @Test
     void existing_registrations_still_block_duplicates() {
-        assertThatThrownBy(() -> register(ALICE, "NIGHT_AND_DINNER", null))
+        assertThatThrownBy(() -> register(BOB, "BREAKFAST", null))
                 .isInstanceOf(DataIntegrityViolationException.class);
         var carol = UUID.randomUUID();
         jdbc.update("INSERT INTO volunteer (id, email) VALUES (?, 'carol@example.org')", carol);

@@ -183,6 +183,34 @@ class AccountDeletionTest {
                 .doesNotContain("Delacourt").doesNotContain("Josiane").doesNotContain("+33600000042");
     }
 
+    private int alerts(LocalDate date, String kind) {
+        return jdbc.queryForObject("""
+                SELECT count(*) FROM coordinator_alert a JOIN evening e ON e.id = a.evening_id
+                WHERE e.evening_date = ? AND a.kind = ?
+                """, Integer.class, date, kind);
+    }
+
+    @Test
+    void deleting_the_account_cancels_every_post_held_on_an_evening() throws Exception {
+        var alice = signedIn(true);
+        register(alice.browser(), SOON, "NIGHT_AND_DINNER");
+        register(alice.browser(), SOON, "PREPARE_AT_HOME.MAIN_DISH");
+        register(alice.browser(), SOON, "BREAKFAST");
+        var bob = signedIn(true);
+        register(bob.browser(), SOON, "PICK_UP_AND_SHARE");
+
+        delete(alice.browser());
+
+        assertThat(jdbc.queryForList("""
+                SELECT r.cancelled_at IS NOT NULL FROM registration r JOIN evening e ON e.id = r.evening_id
+                WHERE r.volunteer_id = ? AND e.evening_date = ?
+                """, Boolean.class, alice.id(), SOON)).hasSize(3).containsOnly(true);
+        assertThat(registrationState(bob.id(), SOON)).isEqualTo("active");
+        // Une alerte par cause, pas une par inscription annulée.
+        assertThat(alerts(SOON, "EVENING_INCOMPLETE")).isEqualTo(1);
+        assertThat(alerts(SOON, "PICKUP_WITHOUT_MEAL")).isEqualTo(1);
+    }
+
     @Test
     void the_deleted_pseudo_can_be_taken_by_someone_else() throws Exception {
         var alice = signedIn(true);

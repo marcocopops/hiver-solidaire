@@ -14,7 +14,10 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Migration V8 : R2 et R3 ne portent que sur les inscriptions actives ; un compte supprimé est anonyme. */
+/**
+ * Migration V8 : R2 et R3 ne portent que sur les inscriptions actives ; un compte supprimé est anonyme. R2 porte sur le
+ * poste depuis la V14 (voir {@code OnePostPerVolunteerSchemaTest}).
+ */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 @Transactional
@@ -66,11 +69,11 @@ class CancellationSchemaTest {
     }
 
     @Test
-    void two_active_registrations_of_the_same_volunteer_are_still_refused() {
+    void two_active_registrations_of_the_same_volunteer_on_the_same_post_are_still_refused() {
         var alice = volunteer();
         register(alice, "BREAKFAST", null);
 
-        assertThatThrownBy(() -> register(alice, "NIGHT_AND_DINNER", null))
+        assertThatThrownBy(() -> register(alice, "BREAKFAST", null))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
@@ -87,7 +90,7 @@ class CancellationSchemaTest {
         var alice = volunteer();
         var cancelled = register(alice, "BREAKFAST", null);
         cancel(cancelled);
-        register(alice, "NIGHT_AND_DINNER", null);
+        register(alice, "BREAKFAST", null);
 
         assertThatThrownBy(() -> jdbc.update("UPDATE registration SET cancelled_at = NULL WHERE id = ?", cancelled))
                 .isInstanceOf(DataIntegrityViolationException.class);

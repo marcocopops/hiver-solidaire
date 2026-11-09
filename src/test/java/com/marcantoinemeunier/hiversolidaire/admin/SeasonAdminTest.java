@@ -151,8 +151,8 @@ class SeasonAdminTest {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM season WHERE sample", Integer.class)).isEqualTo(1);
 
         // Une fois l'inscription annulée, la saison d'exemple est remplacée, et l'inscription annulée part avec elle.
-        anne.browser().get("/mes-inscriptions/annuler?soiree=2027-01-20");
-        anne.browser().post("/mes-inscriptions/annuler", "soiree", "2027-01-20");
+        anne.browser().get("/mes-inscriptions/annuler?soiree=2027-01-20&choix=NIGHT_AND_DINNER");
+        anne.browser().post("/mes-inscriptions/annuler", "soiree", "2027-01-20", "choix", "NIGHT_AND_DINNER");
         assertThat(create(browser).getRedirectedUrl()).isEqualTo("/admin/saison");
         assertThat(jdbc.queryForObject("SELECT count(*) FROM season WHERE sample", Integer.class)).isZero();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM registration", Integer.class)).isZero();
@@ -251,7 +251,8 @@ class SeasonAdminTest {
         TestVolunteers.register(anne.browser(), FIRST, "NIGHT_AND_DINNER");
 
         var mine = anne.browser().get("/mes-inscriptions").getContentAsString();
-        var confirm = anne.browser().get("/mes-inscriptions/annuler?soiree=" + FIRST).getContentAsString();
+        var confirm = anne.browser().get("/mes-inscriptions/annuler?soiree=" + FIRST + "&choix=NIGHT_AND_DINNER")
+                .getContentAsString();
 
         for (var page : new String[] {mine, confirm}) {
             assertThat(page).contains("Pour vous désinscrire, contactez les coordinateurs via")
@@ -268,7 +269,8 @@ class SeasonAdminTest {
         TestVolunteers.register(anne.browser(), FIRST, "NIGHT_AND_DINNER");
 
         var mine = anne.browser().get("/mes-inscriptions").getContentAsString();
-        var confirm = anne.browser().get("/mes-inscriptions/annuler?soiree=" + FIRST).getContentAsString();
+        var confirm = anne.browser().get("/mes-inscriptions/annuler?soiree=" + FIRST + "&choix=NIGHT_AND_DINNER")
+                .getContentAsString();
 
         for (var page : new String[] {mine, confirm}) {
             assertThat(page).contains("Contactez un coordinateur.").doesNotContain("href=\"tel:")

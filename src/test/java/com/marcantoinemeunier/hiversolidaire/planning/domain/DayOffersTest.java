@@ -11,7 +11,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * « Je participe » sur une journée : le petit-déjeuner s'inscrit sur la soirée D-1, le reste sur la soirée D.
- * R1 à R4 et R7 s'appliquent soirée par soirée, sans changement.
+ * R1 à R4 et R7 s'appliquent soirée par soirée ; R2 porte sur le poste (ADR-0011) et « Récupérer » n'est proposé
+ * que pour un repas préparé chez soi qui attend sa récupération (R4).
  */
 class DayOffersTest {
 
@@ -35,6 +36,7 @@ class DayOffersTest {
         return new Offer(evening, type, dish);
     }
 
+    /** Tout ce qu'une journée vide propose : pas de récupération, faute de repas préparé chez soi (R4). */
     private static List<Offer> allOffers(LocalDate day) {
         var previous = day.minusDays(1);
         return List.of(
@@ -43,8 +45,11 @@ class DayOffersTest {
                 offer(day, RegistrationType.PREPARE_AND_SHARE, DishChoice.SIDES),
                 offer(day, RegistrationType.PREPARE_AT_HOME, DishChoice.MAIN_DISH),
                 offer(day, RegistrationType.PREPARE_AT_HOME, DishChoice.SIDES),
-                offer(day, RegistrationType.PICK_UP_AND_SHARE, null),
                 offer(day, RegistrationType.NIGHT_AND_DINNER, null));
+    }
+
+    private static Offer pickupOn(LocalDate day) {
+        return offer(day, RegistrationType.PICK_UP_AND_SHARE, null);
     }
 
     @Test
@@ -58,34 +63,78 @@ class DayOffersTest {
     }
 
     @Test
-    void r2_applies_per_evening_a_dinner_does_not_block_the_same_day_breakfast() {
+    void r2_applies_per_post_the_night_leaves_the_dishes_and_the_breakfast() {
         var day = new Day(DAY, evening(DAY.minusDays(1)),
                 evening(DAY, Registration.by(alice, RegistrationType.NIGHT_AND_DINNER, null)));
 
         var offers = day.offers(SEASON, alice, BEFORE);
 
-        assertThat(offers.available()).containsExactly(offer(DAY.minusDays(1), RegistrationType.BREAKFAST, null));
+        assertThat(offers.available()).containsExactly(
+                offer(DAY.minusDays(1), RegistrationType.BREAKFAST, null),
+                offer(DAY, RegistrationType.PREPARE_AND_SHARE, DishChoice.MAIN_DISH),
+                offer(DAY, RegistrationType.PREPARE_AND_SHARE, DishChoice.SIDES),
+                offer(DAY, RegistrationType.PREPARE_AT_HOME, DishChoice.MAIN_DISH),
+                offer(DAY, RegistrationType.PREPARE_AT_HOME, DishChoice.SIDES));
         assertThat(offers.blocking()).isNull();
     }
 
     @Test
-    void r2_applies_per_evening_a_breakfast_does_not_block_the_same_day_dinner() {
+    void r2_a_breakfast_does_not_block_the_same_day_dinner() {
         var day = new Day(DAY, evening(DAY.minusDays(1), Registration.by(alice, RegistrationType.BREAKFAST, null)),
                 evening(DAY));
 
-        assertThat(day.offers(SEASON, alice, BEFORE).available()).hasSize(6)
+        assertThat(day.offers(SEASON, alice, BEFORE).available()).hasSize(5)
                 .allSatisfy(offer -> assertThat(offer.eveningDate()).isEqualTo(DAY));
     }
 
     @Test
-    void a_volunteer_registered_on_both_evenings_gets_nothing_and_the_reason() {
+    void a_volunteer_who_holds_everything_left_gets_nothing_and_the_day_is_full_for_them() {
         var day = new Day(DAY, evening(DAY.minusDays(1), Registration.by(alice, RegistrationType.BREAKFAST, null)),
-                evening(DAY, Registration.by(alice, RegistrationType.PICK_UP_AND_SHARE, null)));
+                evening(DAY,
+                        Registration.by(alice, RegistrationType.PREPARE_AND_SHARE, DishChoice.MAIN_DISH),
+                        Registration.by(alice, RegistrationType.PREPARE_AND_SHARE, DishChoice.SIDES),
+                        Registration.by(alice, RegistrationType.NIGHT_AND_DINNER, null)));
 
         var offers = day.offers(SEASON, alice, BEFORE);
 
         assertThat(offers.available()).isEmpty();
-        assertThat(offers.blocking()).isEqualTo(RegistrationDecision.ALREADY_REGISTERED);
+        assertThat(offers.blocking()).isEqualTo(RegistrationDecision.FULL);
+    }
+
+    @Test
+    void the_pickup_is_offered_only_while_a_home_preparation_waits_for_it() {
+        var bob = UUID.randomUUID();
+        var atHome = Registration.by(bob, RegistrationType.PREPARE_AT_HOME, DishChoice.MAIN_DISH);
+        var pickedUp = Registration.by(UUID.randomUUID(), RegistrationType.PICK_UP_AND_SHARE, null);
+
+        assertThat(new Day(DAY, evening(DAY.minusDays(1)), evening(DAY)).offers(SEASON, alice, BEFORE).available())
+                .doesNotContain(pickupOn(DAY));
+        assertThat(new Day(DAY, evening(DAY.minusDays(1)), evening(DAY, atHome)).offers(SEASON, alice, BEFORE)
+                .available()).contains(pickupOn(DAY));
+        assertThat(new Day(DAY, evening(DAY.minusDays(1)), evening(DAY, atHome, pickedUp))
+                .offers(SEASON, alice, BEFORE).available()).doesNotContain(pickupOn(DAY));
+    }
+
+    @Test
+    void the_pickup_is_not_offered_to_a_volunteer_with_another_post_of_the_same_dinner() {
+        var atHome = Registration.by(UUID.randomUUID(), RegistrationType.PREPARE_AT_HOME, DishChoice.MAIN_DISH);
+        var day = new Day(DAY, evening(DAY.minusDays(1)),
+                evening(DAY, atHome, Registration.by(alice, RegistrationType.NIGHT_AND_DINNER, null)));
+
+        assertThat(day.offers(SEASON, alice, BEFORE).available()).containsExactly(
+                offer(DAY.minusDays(1), RegistrationType.BREAKFAST, null),
+                offer(DAY, RegistrationType.PREPARE_AND_SHARE, DishChoice.SIDES),
+                offer(DAY, RegistrationType.PREPARE_AT_HOME, DishChoice.SIDES));
+    }
+
+    @Test
+    void a_volunteer_with_a_pickup_is_offered_only_the_breakfast() {
+        var day = new Day(DAY, evening(DAY.minusDays(1)), evening(DAY,
+                Registration.by(UUID.randomUUID(), RegistrationType.PREPARE_AT_HOME, DishChoice.MAIN_DISH),
+                Registration.by(alice, RegistrationType.PICK_UP_AND_SHARE, null)));
+
+        assertThat(day.offers(SEASON, alice, BEFORE).available())
+                .containsExactly(offer(DAY.minusDays(1), RegistrationType.BREAKFAST, null));
     }
 
     @Test
@@ -95,7 +144,7 @@ class DayOffersTest {
 
         var offers = day.offers(SEASON, alice, thatMorning);
 
-        assertThat(offers.available()).hasSize(6).noneMatch(offer -> offer.type() == RegistrationType.BREAKFAST);
+        assertThat(offers.available()).hasSize(5).noneMatch(offer -> offer.type() == RegistrationType.BREAKFAST);
     }
 
     @Test
@@ -113,7 +162,7 @@ class DayOffersTest {
         var afterOpening = paris(LocalDateTime.of(2026, 12, 20, 12, 0));
 
         assertThat(first.offers(SEASON, alice, afterOpening).available())
-                .noneMatch(offer -> offer.type() == RegistrationType.BREAKFAST).hasSize(6);
+                .noneMatch(offer -> offer.type() == RegistrationType.BREAKFAST).hasSize(5);
     }
 
     @Test

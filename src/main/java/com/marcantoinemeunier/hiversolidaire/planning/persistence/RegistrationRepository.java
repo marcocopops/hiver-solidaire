@@ -38,18 +38,22 @@ public interface RegistrationRepository extends Repository<RegistrationEntity, U
     @Query("select r from RegistrationEntity r where r.eveningId = :eveningId and r.cancelledAt is null")
     List<RegistrationEntity> findActiveByEvening(@Param("eveningId") UUID eveningId);
 
-    /** Inscription active d'un bénévole sur une soirée (au plus une : R2). */
+    /** Inscriptions actives d'un bénévole sur une soirée : une par poste au plus (R2, ADR-0011). */
     @Query("""
             select r from RegistrationEntity r
             where r.eveningId = :eveningId and r.volunteerId = :volunteerId and r.cancelledAt is null
             """)
-    Optional<RegistrationEntity> findActive(@Param("eveningId") UUID eveningId,
+    List<RegistrationEntity> findActiveOf(@Param("eveningId") UUID eveningId,
             @Param("volunteerId") UUID volunteerId);
 
-    /** Soirées à venir où le bénévole a une inscription active, dans l'ordre des dates (ordre des verrous). */
+    /**
+     * Soirées à venir où le bénévole a au moins une inscription active, chacune une fois, dans l'ordre des dates
+     * (ordre des verrous).
+     */
     @Query("""
             select e.id from RegistrationEntity r, EveningEntity e
             where r.eveningId = e.id and r.volunteerId = :volunteerId and r.cancelledAt is null and e.date >= :from
+            group by e.id, e.date
             order by e.date asc
             """)
     List<UUID> findActiveEveningIds(@Param("volunteerId") UUID volunteerId, @Param("from") LocalDate from);

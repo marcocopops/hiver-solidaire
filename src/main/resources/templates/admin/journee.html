@@ -27,6 +27,10 @@
             </li>
         </ul>
         <p class="alerte" th:if="${section.pickupAlert}" th:text="#{admin.day.pickupAlert}">Repas sans récupération.</p>
+        <p class="alerte" th:if="${section.pickupWithoutMeal}" th:text="#{admin.day.pickupWithoutMeal}">
+            Récupération sans repas.</p>
+        <p class="bandeau" th:each="pseudo : ${section.doublePresences}"
+           th:text="#{admin.day.doublePresence(${pseudo})}">MarieD compte pour 2 présences.</p>
         <p th:if="${section.lines.isEmpty()}" th:text="#{admin.day.none}">Aucun inscrit.</p>
         <div class="tableau-defilant" th:unless="${section.lines.isEmpty()}">
             <table class="tableau">

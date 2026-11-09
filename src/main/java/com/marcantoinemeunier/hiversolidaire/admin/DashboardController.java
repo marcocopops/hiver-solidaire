@@ -17,8 +17,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
  * Accueil du back-office : le tableau de bord (cahier des charges §6). Les journées à compléter des 14 prochains jours
- * en tête, puis les alertes enregistrées non traitées, les préparations chez soi sans récupération (R4) et les
- * nouveaux bénévoles à signaler (§2). En tête, un avertissement si la saison n'a pas de contact des coordinateurs
+ * en tête, puis les alertes enregistrées non traitées, les préparations chez soi sans récupération et les
+ * récupérations sans repas (R4), et les nouveaux bénévoles à signaler (§2). En tête, un avertissement si la saison n'a pas de contact des coordinateurs
  * (R6). Réservé au rôle coordinateur ({@code SecurityConfig}).
  */
 @Controller
@@ -52,7 +52,11 @@ class DashboardController {
     record AlertLine(String id, String kindKey, String evening, String eveningDate) {
     }
 
-    record PickupLine(String eveningDate, String label, int count) {
+    /**
+     * @param count repas préparés chez soi sans récupération
+     * @param withoutMeal récupérations sans repas à récupérer
+     */
+    record PickupLine(String eveningDate, String label, int count, int withoutMeal) {
     }
 
     @GetMapping("/admin")
@@ -68,9 +72,9 @@ class DashboardController {
                 .map(alert -> new AlertLine(alert.id().toString(), "admin.alert.kind." + alert.kind().name(),
                         DayLabelFormatter.inline(alert.eveningDate()), alert.eveningDate().toString()))
                 .toList());
-        model.addAttribute("pickups", planning.eveningsNeedingPickup().stream()
+        model.addAttribute("pickups", planning.eveningsWithPickupToOrganize().stream()
                 .map(evening -> new PickupLine(evening.date().toString(), DayLabelFormatter.format(evening.date()),
-                        evening.unmatchedHomePreparations()))
+                        evening.unmatchedHomePreparations(), evening.pickupsWithoutMeal()))
                 .toList());
         model.addAttribute("newVolunteers", volunteers.toReview());
         model.addAttribute("daysAhead", DAYS_AHEAD);

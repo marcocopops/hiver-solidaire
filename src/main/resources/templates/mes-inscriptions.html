@@ -16,7 +16,7 @@
                 Dîner du lun. 4 janv.</span>
             <p class="soiree__manque" th:text="#{${'registration.option.' + registration.option}}">Type</p>
             <p class="soiree__action" th:if="${registration.cancellable}">
-                <a class="bouton bouton--secondaire" th:href="@{/mes-inscriptions/annuler(soiree=${registration.date})}"
+                <a class="bouton bouton--secondaire" th:href="@{/mes-inscriptions/annuler(soiree=${registration.date},choix=${registration.option})}"
                    th:text="#{myRegistrations.cancel}">Me désinscrire</a>
             </p>
             <p class="aide" th:if="${registration.cancellable}"

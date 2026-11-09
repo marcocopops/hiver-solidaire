@@ -267,6 +267,51 @@ class SeedDevScriptTest {
     }
 
     @Test
+    void the_one_post_per_volunteer_migration_passes_on_a_seeded_database() {
+        // Base de développement remplie par le lot 1 avant le lot 3 : la V14 (ADR-0011) doit passer sans rien perdre.
+        freshDatabase("13");
+        seed();
+        var before = counts();
+
+        Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").load().migrate();
+
+        assertThat(counts()).isEqualTo(before);
+        assertThat(count("""
+                SELECT count(*) FROM pg_indexes WHERE tablename = 'registration'
+                    AND indexname = 'registration_one_active_post_per_volunteer_and_evening'
+                """)).isEqualTo(1);
+        assertThat(count("""
+                SELECT count(*) FROM pg_indexes WHERE tablename = 'registration'
+                    AND indexname = 'registration_one_active_per_volunteer_and_evening'
+                """)).isZero();
+    }
+
+    @Test
+    void a_second_run_accepts_posts_cumulated_by_hand() {
+        // R2 porte sur le poste (lot 3) : un bénévole inscrit à la main sur la nuit et le plat d'une même soirée ne fait
+        // pas échouer le contrôle final.
+        freshDatabase(null);
+        seed();
+        var own = UUID.randomUUID();
+        jdbc.update("""
+                INSERT INTO volunteer (id, email, first_name, last_name, phone, pseudo, profile_completed_at)
+                VALUES (?, 'cumul@example.org', 'Test', 'Cumul', '+33639980098', 'TestC', now())
+                """, own);
+        for (var type : List.of("NIGHT_AND_DINNER", "BREAKFAST")) {
+            jdbc.update("""
+                    INSERT INTO registration (id, evening_id, type, volunteer_id, created_at)
+                    SELECT gen_random_uuid(), e.id, ?, ?, s.registrations_open_at
+                    FROM evening e JOIN season s ON s.id = e.season_id WHERE e.evening_date = s.first_evening + 40
+                    """, type, own);
+        }
+
+        seed();
+
+        assertThat(count("SELECT count(*) FROM registration WHERE cancelled_at IS NULL"))
+                .isEqualTo(ACTIVE_REGISTRATIONS + 2);
+    }
+
+    @Test
     void refuses_a_database_without_the_expected_schema() {
         freshDatabase("11");
 
@@ -305,5 +350,22 @@ class SeedDevScriptTest {
 
         assertThatThrownBy(SeedDevScriptTest::seed).hasMessageContaining("R1");
         assertThat(count("SELECT count(*) FROM volunteer")).as("tout est annulé").isEqualTo(3);
+    }
+
+    @Test
+    void the_final_check_rejects_a_pickup_cumulated_with_another_dinner_post() {
+        freshDatabase(null);
+        var own = UUID.randomUUID();
+        jdbc.update("INSERT INTO volunteer (id, email) VALUES (?, 'recup-et-nuit@example.org')", own);
+        for (var type : List.of("NIGHT_AND_DINNER", "PICK_UP_AND_SHARE")) {
+            jdbc.update("""
+                    INSERT INTO registration (id, evening_id, type, volunteer_id, created_at)
+                    SELECT gen_random_uuid(), e.id, ?, ?, s.registrations_open_at
+                    FROM evening e JOIN season s ON s.id = e.season_id WHERE e.evening_date = s.first_evening + 40
+                    """, type, own);
+        }
+
+        assertThatThrownBy(SeedDevScriptTest::seed).hasMessageContaining("R2");
+        assertThat(count("SELECT count(*) FROM volunteer")).as("tout est annulé").isEqualTo(1);
     }
 }

@@ -42,8 +42,10 @@
                                       th:text="#{${line.hintKey}}">jusqu’au matin</span>
                             </span>
                             <span class="poste__inscrits">
-                                <span class="pseudo pseudo--vous" th:if="${line.you}" th:text="#{planning.you}">Vous</span>
-                                <span class="pseudo" th:each="pseudo : ${line.pseudos}" th:text="${pseudo}">MarieD</span>
+                                <span class="pseudo pseudo--vous" th:if="${line.you > 0}"
+                                      th:text="${line.you > 1} ? #{planning.you.places(${line.you})} : #{planning.you}">Vous</span>
+                                <span class="pseudo" th:each="taken : ${line.taken}"
+                                      th:text="${taken.places > 1} ? #{planning.pseudo.places(${taken.pseudo}, ${taken.places})} : ${taken.pseudo}">MarieD</span>
                                 <th:block th:if="${line.missingSlots > 0}">
                                     <span class="pseudo pseudo--libre"
                                           th:each="slot : ${#numbers.sequence(1, line.missingSlots)}"
@@ -60,7 +62,7 @@
                             </p>
                             <th:block th:if="${mine.cancellable}">
                                 <a class="bouton bouton--secondaire"
-                                   th:href="@{/mes-inscriptions/annuler(soiree=${mine.eveningDate})}"
+                                   th:href="@{/mes-inscriptions/annuler(soiree=${mine.eveningDate},choix=${mine.option})}"
                                    th:text="#{${mine.cancelKey}}">Me désinscrire</a>
                                 <p class="aide" th:text="#{cancellation.deadline(${mine.deadline})}">Possible jusqu’au…</p>
                             </th:block>

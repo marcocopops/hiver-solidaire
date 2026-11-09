@@ -43,13 +43,16 @@
     </section>
 
     <section aria-labelledby="pickups-title">
-        <h2 id="pickups-title" th:text="#{admin.dashboard.pickups}">Préparations chez soi sans récupération</h2>
+        <h2 id="pickups-title" th:text="#{admin.dashboard.pickups}">Repas préparés chez soi et récupérations</h2>
         <p th:if="${pickups.isEmpty()}" th:text="#{admin.dashboard.pickups.none}">Aucune.</p>
         <ul class="soirees" th:unless="${pickups.isEmpty()}">
             <li class="soiree" th:each="pickup : ${pickups}">
                 <a class="soiree__date" th:href="@{/admin/journee(jour=${pickup.eveningDate})}" th:text="${pickup.label}">
                     Lun. 4 janv.</a>
-                <span class="soiree__manque" th:text="#{admin.dashboard.pickups.count(${pickup.count})}">1 repas</span>
+                <span class="soiree__manque" th:if="${pickup.count > 0}"
+                      th:text="#{admin.dashboard.pickups.count(${pickup.count})}">1 repas</span>
+                <span class="soiree__manque" th:if="${pickup.withoutMeal > 0}"
+                      th:text="#{admin.dashboard.pickups.withoutMeal(${pickup.withoutMeal})}">1 récupération sans repas</span>
             </li>
         </ul>
     </section>

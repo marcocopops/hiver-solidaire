@@ -26,8 +26,9 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
- * R1 et R2 sous concurrence : la base garantit qu'il n'y a jamais deux personnes sur la dernière place, y compris
- * quand une désinscription libère cette place au même instant (R6, même verrou).
+ * R1, R2 et R4 sous concurrence : la base garantit qu'il n'y a jamais deux personnes sur la dernière place, ni deux
+ * récupérations pour un seul repas préparé chez soi, ni deux fois le même poste pour un bénévole, y compris quand une
+ * désinscription libère une place au même instant (R6, même verrou).
  */
 @SpringBootTest
 @Import({TestcontainersConfiguration.class, TestClockAndMailConfiguration.class})
@@ -112,6 +113,9 @@ class RegistrationConcurrencyTest {
 
     @Test
     void many_simultaneous_registrations_on_one_dinner_presence_left_only_one_succeeds() throws Exception {
+        // Deux repas préparés chez soi ouvrent deux récupérations (R4) ; une est déjà prise : il reste une présence.
+        registrations.register(volunteer(), choice(RegistrationType.PREPARE_AT_HOME, DishChoice.MAIN_DISH));
+        registrations.register(volunteer(), choice(RegistrationType.PREPARE_AT_HOME, DishChoice.SIDES));
         registrations.register(volunteer(), choice(RegistrationType.PICK_UP_AND_SHARE, null));
         var attempts = new ArrayList<Callable<RegistrationDecision>>();
         for (int i = 0; i < 6; i++) {
@@ -140,15 +144,45 @@ class RegistrationConcurrencyTest {
     }
 
     @Test
-    void the_same_volunteer_registering_twice_at_once_gets_a_single_registration() throws Exception {
+    void two_simultaneous_pickups_for_a_single_home_preparation_only_one_succeeds() throws Exception {
+        for (int round = 0; round < 5; round++) {
+            clean();
+            registrations.register(volunteer(), choice(RegistrationType.PREPARE_AT_HOME, DishChoice.MAIN_DISH));
+            var alice = volunteer();
+            var bob = volunteer();
+
+            var decisions = simultaneously(List.<Callable<RegistrationDecision>>of(
+                    () -> registrations.register(alice, choice(RegistrationType.PICK_UP_AND_SHARE, null)),
+                    () -> registrations.register(bob, choice(RegistrationType.PICK_UP_AND_SHARE, null))));
+
+            assertThat(decisions).containsExactlyInAnyOrder(
+                    RegistrationDecision.ACCEPTED, RegistrationDecision.NOTHING_TO_PICK_UP);
+            assertThat(count("PICK_UP_AND_SHARE")).isEqualTo(1);
+        }
+    }
+
+    @Test
+    void the_same_volunteer_taking_the_same_post_twice_at_once_gets_a_single_registration() throws Exception {
+        var alice = volunteer();
+
+        var decisions = simultaneously(List.<Callable<RegistrationDecision>>of(
+                () -> registrations.register(alice, choice(RegistrationType.NIGHT_AND_DINNER, null)),
+                () -> registrations.register(alice, choice(RegistrationType.NIGHT_AND_DINNER, null))));
+
+        assertThat(decisions).containsExactlyInAnyOrder(
+                RegistrationDecision.ACCEPTED, RegistrationDecision.ALREADY_REGISTERED);
+        assertThat(count("NIGHT_AND_DINNER")).isEqualTo(1);
+    }
+
+    @Test
+    void the_same_volunteer_taking_two_distinct_posts_at_once_gets_both() throws Exception {
         var alice = volunteer();
 
         var decisions = simultaneously(List.<Callable<RegistrationDecision>>of(
                 () -> registrations.register(alice, choice(RegistrationType.BREAKFAST, null)),
                 () -> registrations.register(alice, choice(RegistrationType.NIGHT_AND_DINNER, null))));
 
-        assertThat(decisions).containsExactlyInAnyOrder(
-                RegistrationDecision.ACCEPTED, RegistrationDecision.ALREADY_REGISTERED);
+        assertThat(decisions).containsOnly(RegistrationDecision.ACCEPTED);
     }
 
     private int activeCount(String dishChoice) {
@@ -168,7 +202,7 @@ class RegistrationConcurrencyTest {
                     .isEqualTo(RegistrationDecision.ACCEPTED);
 
             var results = simultaneously(List.<Callable<Object>>of(
-                    () -> registrations.cancel(alice, EVENING),
+                    () -> registrations.cancel(alice, EVENING, RegistrationType.PREPARE_AT_HOME, DishChoice.MAIN_DISH),
                     () -> registrations.register(bob, choice(RegistrationType.PREPARE_AND_SHARE,
                             DishChoice.MAIN_DISH))));
 
@@ -180,14 +214,14 @@ class RegistrationConcurrencyTest {
     }
 
     @Test
-    void a_volunteer_cancelling_and_registering_again_at_once_keeps_at_most_one_active_registration()
+    void a_volunteer_cancelling_and_taking_the_same_post_again_at_once_keeps_at_most_one_active_registration()
             throws Exception {
         var alice = volunteer();
         registrations.register(alice, choice(RegistrationType.BREAKFAST, null));
 
         var results = simultaneously(List.<Callable<Object>>of(
-                () -> registrations.cancel(alice, EVENING),
-                () -> registrations.register(alice, choice(RegistrationType.NIGHT_AND_DINNER, null))));
+                () -> registrations.cancel(alice, EVENING, RegistrationType.BREAKFAST, null),
+                () -> registrations.register(alice, choice(RegistrationType.BREAKFAST, null))));
 
         assertThat(results.get(0)).isEqualTo(CancellationDecision.ACCEPTED);
         assertThat(jdbc.queryForObject("""
@@ -214,6 +248,35 @@ class RegistrationConcurrencyTest {
             assertThat(results.get(1)).isIn(RegistrationDecision.ACCEPTED, RegistrationDecision.DISH_TAKEN);
             assertThat(activeCount("MAIN_DISH")).isEqualTo(results.get(1) == RegistrationDecision.ACCEPTED ? 1 : 0);
             assertThat(jdbc.queryForObject("SELECT email FROM volunteer WHERE id = ?", String.class, alice)).isNull();
+        }
+    }
+
+    private int pickupWithoutMealAlerts() {
+        return jdbc.queryForObject("""
+                SELECT count(*) FROM coordinator_alert a JOIN evening e ON e.id = a.evening_id
+                WHERE e.evening_date = ? AND a.kind = 'PICKUP_WITHOUT_MEAL'
+                """, Integer.class, EVENING);
+    }
+
+    @Test
+    void a_simultaneous_home_preparation_cancellation_and_pickup_stay_consistent() throws Exception {
+        for (int round = 0; round < 5; round++) {
+            clean();
+            var alice = volunteer();
+            var bob = volunteer();
+            registrations.register(alice, choice(RegistrationType.PREPARE_AT_HOME, DishChoice.MAIN_DISH));
+
+            var results = simultaneously(List.<Callable<Object>>of(
+                    () -> registrations.cancel(alice, EVENING, RegistrationType.PREPARE_AT_HOME, DishChoice.MAIN_DISH),
+                    () -> registrations.register(bob, choice(RegistrationType.PICK_UP_AND_SHARE, null))));
+
+            assertThat(results.get(0)).isEqualTo(CancellationDecision.ACCEPTED);
+            // Selon l'ordre du verrou : Bob récupère le repas avant l'annulation (il reste, sans repas, et les
+            // coordinateurs sont alertés), ou il arrive après et il n'y a plus rien à récupérer.
+            assertThat(results.get(1)).isIn(RegistrationDecision.ACCEPTED, RegistrationDecision.NOTHING_TO_PICK_UP);
+            var accepted = results.get(1) == RegistrationDecision.ACCEPTED;
+            assertThat(count("PICK_UP_AND_SHARE")).isEqualTo(accepted ? 1 : 0);
+            assertThat(pickupWithoutMealAlerts()).isEqualTo(accepted ? 1 : 0);
         }
     }
 }

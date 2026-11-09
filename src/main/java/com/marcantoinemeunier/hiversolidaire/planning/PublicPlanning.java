@@ -41,25 +41,36 @@ record PublicPlanning(boolean sample, String opensOn, PlanningFilter filter, boo
      * @param post nom du poste, pour les classes CSS
      * @param titleKey clé de message du nom du poste
      * @param hintKey clé d'une précision (« jusqu'au matin » pour la nuit), ou {@code null}
-     * @param you le bénévole connecté occupe ce poste : « Vous », à la place de son pseudo
-     * @param pseudos pseudos publics des autres inscrits, par ordre alphabétique (pas l'ordre d'inscription)
+     * @param you places de ce poste tenues par le bénévole connecté : « Vous » à la place de son pseudo, « Vous
+     *     (2 places) » s'il en tient deux (deux « préparer et partager » comptent deux présences au dîner)
+     * @param taken autres inscrits, un par bénévole, par ordre alphabétique des pseudos (pas l'ordre d'inscription)
      * @param missingSlots places à pourvoir jusqu'au minimum (R5)
      */
-    record PostLine(String post, String titleKey, String hintKey, boolean you, List<String> pseudos,
-            int missingSlots) {
+    record PostLine(String post, String titleKey, String hintKey, int you, List<Taken> taken, int missingSlots) {
+    }
+
+    /**
+     * Un autre inscrit sur un poste.
+     *
+     * @param pseudo son pseudo public, la seule donnée partagée
+     * @param places places qu'il tient sur ce poste : « MarieD (2 places) » au-delà d'une
+     */
+    record Taken(String pseudo, int places) {
     }
 
     /**
      * Une inscription du bénévole connecté sur la carte, avec sa désinscription (R6).
      *
      * @param eveningDate date de la soirée qui porte l'inscription (ISO) : paramètre {@code soiree} de la page de
-     *     confirmation de S4a ; la veille de la journée pour un petit-déjeuner
+     *     confirmation ; la veille de la journée pour un petit-déjeuner
+     * @param option valeur du paramètre {@code choix} (type et plat) : avec la soirée, désigne l'inscription (R2)
      * @param youKey clé de la phrase « Vous passez la nuit », etc.
-     * @param cancelKey clé du bouton : « Me désinscrire », ou « … du petit-déjeuner » s'il y en a deux sur la carte
+     * @param cancelKey clé du bouton : « Me désinscrire », ou, si la carte en porte plusieurs, le poste qu'il libère
+     *     (« … du petit-déjeuner », « … du plat principal »)
      * @param cancellable le bénévole peut encore se désinscrire seul
      * @param deadline date limite calculée (« jeu. 7 janv. à 23 h 59 »)
      */
-    record MyRegistration(String eveningDate, String youKey, String cancelKey, boolean cancellable,
+    record MyRegistration(String eveningDate, String option, String youKey, String cancelKey, boolean cancellable,
             String deadline) {
     }
 }

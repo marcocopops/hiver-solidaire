@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
-/** Une inscription annulée ne compte plus : R1, R2, R3 et R5 sont recalculés sans elle. */
+/** Une inscription annulée ne compte plus : R1, R2, R3, R4 et R5 sont recalculés sans elle. */
 class EveningCancellationTest {
 
     private static final LocalDate DATE = LocalDate.of(2027, 1, 12);
@@ -43,18 +43,45 @@ class EveningCancellationTest {
     }
 
     @Test
-    void cancelling_lets_the_same_volunteer_register_again() {
-        var after = evening(Registration.by(alice, RegistrationType.BREAKFAST, null)).without(alice);
+    void cancelling_lets_the_same_volunteer_take_the_same_post_again() {
+        var breakfast = Registration.by(alice, RegistrationType.BREAKFAST, null);
+        var evening = evening(breakfast);
+        assertThat(evening.decide(SEASON, breakfast, BEFORE_DEADLINE))
+                .isEqualTo(RegistrationDecision.ALREADY_REGISTERED);
 
-        assertThat(after.decide(SEASON, Registration.by(alice, RegistrationType.NIGHT_AND_DINNER, null),
-                BEFORE_DEADLINE)).isEqualTo(RegistrationDecision.ACCEPTED);
+        assertThat(evening.without(breakfast).decide(SEASON, breakfast, BEFORE_DEADLINE))
+                .isEqualTo(RegistrationDecision.ACCEPTED);
+    }
+
+    @Test
+    void cancelling_one_post_keeps_the_other_posts_of_the_same_volunteer() {
+        var night = Registration.by(alice, RegistrationType.NIGHT_AND_DINNER, null);
+        var main = Registration.by(alice, RegistrationType.PREPARE_AND_SHARE, DishChoice.MAIN_DISH);
+        var evening = evening(night, main, Registration.by(bob, RegistrationType.BREAKFAST, null));
+
+        var after = evening.without(main);
+
+        assertThat(after.registrations()).containsExactly(night, Registration.by(bob, RegistrationType.BREAKFAST,
+                null));
+        assertThat(after.remaining(Post.MAIN_DISH)).isEqualTo(1);
+        assertThat(after.occupied(Post.NIGHT)).isEqualTo(1);
+    }
+
+    @Test
+    void cancelling_all_posts_of_a_volunteer_removes_each_of_them() {
+        var evening = evening(Registration.by(alice, RegistrationType.NIGHT_AND_DINNER, null),
+                Registration.by(alice, RegistrationType.BREAKFAST, null),
+                Registration.by(bob, RegistrationType.PREPARE_AND_SHARE, DishChoice.SIDES));
+
+        assertThat(evening.without(alice).registrations())
+                .containsExactly(Registration.by(bob, RegistrationType.PREPARE_AND_SHARE, DishChoice.SIDES));
     }
 
     @Test
     void cancelling_frees_the_dish() {
         var evening = evening(Registration.by(alice, RegistrationType.PREPARE_AT_HOME, DishChoice.MAIN_DISH));
 
-        var after = evening.without(alice);
+        var after = evening.without(Registration.by(alice, RegistrationType.PREPARE_AT_HOME, DishChoice.MAIN_DISH));
 
         assertThat(after.decide(SEASON, Registration.by(bob, RegistrationType.PREPARE_AND_SHARE, DishChoice.MAIN_DISH),
                 BEFORE_DEADLINE)).isEqualTo(RegistrationDecision.ACCEPTED);
@@ -85,22 +112,33 @@ class EveningCancellationTest {
 
     @Test
     void cancellation_is_accepted_before_the_deadline() {
-        var evening = evening(Registration.by(alice, RegistrationType.BREAKFAST, null));
+        var breakfast = Registration.by(alice, RegistrationType.BREAKFAST, null);
 
-        assertThat(evening.decideCancellation(alice, BEFORE_DEADLINE)).isEqualTo(CancellationDecision.ACCEPTED);
+        assertThat(evening(breakfast).decideCancellation(breakfast, BEFORE_DEADLINE))
+                .isEqualTo(CancellationDecision.ACCEPTED);
     }
 
     @Test
     void cancellation_is_refused_after_the_deadline() {
-        var evening = evening(Registration.by(alice, RegistrationType.BREAKFAST, null));
+        var breakfast = Registration.by(alice, RegistrationType.BREAKFAST, null);
 
-        assertThat(evening.decideCancellation(alice, AFTER_DEADLINE)).isEqualTo(CancellationDecision.TOO_LATE);
+        assertThat(evening(breakfast).decideCancellation(breakfast, AFTER_DEADLINE))
+                .isEqualTo(CancellationDecision.TOO_LATE);
     }
 
     @Test
     void cancellation_of_another_volunteer_registration_is_refused() {
         var evening = evening(Registration.by(alice, RegistrationType.BREAKFAST, null));
 
-        assertThat(evening.decideCancellation(bob, BEFORE_DEADLINE)).isEqualTo(CancellationDecision.NOT_REGISTERED);
+        assertThat(evening.decideCancellation(Registration.by(bob, RegistrationType.BREAKFAST, null), BEFORE_DEADLINE))
+                .isEqualTo(CancellationDecision.NOT_REGISTERED);
+    }
+
+    @Test
+    void cancellation_of_a_post_the_volunteer_does_not_hold_is_refused() {
+        var evening = evening(Registration.by(alice, RegistrationType.BREAKFAST, null));
+
+        assertThat(evening.decideCancellation(Registration.by(alice, RegistrationType.NIGHT_AND_DINNER, null),
+                BEFORE_DEADLINE)).isEqualTo(CancellationDecision.NOT_REGISTERED);
     }
 }

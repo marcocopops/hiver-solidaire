@@ -117,9 +117,12 @@ class CoordinatorPlanning {
                 .filter(day -> day.status() == DayStatus.INCOMPLETE).toList()).orElse(List.of());
     }
 
-    /** R4 : soirées à venir où au moins une préparation chez soi n'a pas de récupération. */
+    /**
+     * R4 : soirées à venir où la remise d'un repas est à organiser : une préparation chez soi sans récupération, ou une
+     * récupération restée sans repas.
+     */
     @Transactional(readOnly = true)
-    List<Evening> eveningsNeedingPickup() {
+    List<Evening> eveningsWithPickupToOrganize() {
         return currentSeason().map(season -> {
             var needs = season.needs();
             var today = today();
@@ -128,7 +131,7 @@ class CoordinatorPlanning {
                             Collectors.mapping(RegistrationEntity::toDomain, Collectors.toList())));
             return evenings.findFromDate(season.id(), today).stream()
                     .map(evening -> evening.toDomain(needs, byEvening.getOrDefault(evening.id(), List.of())))
-                    .filter(Evening::needsPickupAlert)
+                    .filter(evening -> evening.needsPickupAlert() || evening.pickupsWithoutMeal() > 0)
                     .toList();
         }).orElse(List.of());
     }
