@@ -206,31 +206,103 @@ class RegistrationJourneyTest {
         assertThat(browser.get("/inscription/confirmee").getContentAsString())
                 .contains("Petit-déjeuner du mer. 6 janv.");
 
-        // R2 par soirée : le dîner du même jour est sur une autre soirée, il reste possible.
-        browser.get("/inscription/confirmer?jour=" + DAY + "&choix=PICK_UP_AND_SHARE");
-        assertThat(browser.post("/inscription", "jour", DAY.toString(), "choix", "PICK_UP_AND_SHARE")
+        // Le dîner du même jour est sur une autre soirée : il reste possible.
+        browser.get("/inscription/confirmer?jour=" + DAY + "&choix=NIGHT_AND_DINNER");
+        assertThat(browser.post("/inscription", "jour", DAY.toString(), "choix", "NIGHT_AND_DINNER")
                 .getRedirectedUrl()).isEqualTo("/inscription/confirmee");
 
         assertThat(eveningOf("BREAKFAST")).isEqualTo(DAY.minusDays(1));
-        assertThat(eveningOf("PICK_UP_AND_SHARE")).isEqualTo(DAY);
+        assertThat(eveningOf("NIGHT_AND_DINNER")).isEqualTo(DAY);
         assertThat(browser.get("/mes-inscriptions").getContentAsString())
-                .containsSubsequence("Petit-déjeuner du mer. 6 janv.", "Dîner du mer. 6 janv.");
+                .containsSubsequence("Petit-déjeuner du mer. 6 janv.", "Dîner et nuit du mer. 6 janv.");
+    }
+
+    /** Inscrit le bénévole connecté par le parcours : page de confirmation, puis POST. */
+    private static String register(Browser browser, String choice) throws Exception {
+        browser.get("/inscription/confirmer?jour=" + DAY + "&choix=" + choice);
+        return browser.post("/inscription", "jour", DAY.toString(), "choix", choice).getRedirectedUrl();
+    }
+
+    private int active(LocalDate evening) {
+        return jdbc.queryForObject("""
+                SELECT count(*) FROM registration r JOIN evening e ON e.id = r.evening_id
+                WHERE e.evening_date = ? AND r.cancelled_at IS NULL
+                """, Integer.class, evening);
     }
 
     @Test
-    void a_volunteer_cannot_register_twice_on_the_same_evening() throws Exception {
+    void a_volunteer_cumulates_the_night_the_main_dish_and_the_sides_of_an_evening() throws Exception {
         var browser = signedInWithProfile();
-        browser.get("/inscription/confirmer?jour=" + DAY + "&choix=NIGHT_AND_DINNER");
-        browser.post("/inscription", "jour", DAY.toString(), "choix", "NIGHT_AND_DINNER");
 
-        browser.get("/inscription/confirmer?jour=" + DAY + "&choix=PICK_UP_AND_SHARE");
-        var refused = browser.post("/inscription", "jour", DAY.toString(), "choix", "PICK_UP_AND_SHARE");
+        assertThat(register(browser, "NIGHT_AND_DINNER")).isEqualTo("/inscription/confirmee");
+        var choicePage = browser.get("/inscription?jour=" + DAY).getContentAsString();
+        assertThat(choicePage).contains("value=\"PREPARE_AND_SHARE.MAIN_DISH\"").contains("value=\"BREAKFAST\"")
+                .doesNotContain("value=\"NIGHT_AND_DINNER\"");
+        assertThat(register(browser, "PREPARE_AND_SHARE.MAIN_DISH")).isEqualTo("/inscription/confirmee");
+        assertThat(register(browser, "PREPARE_AND_SHARE.SIDES")).isEqualTo("/inscription/confirmee");
 
-        assertThat(refused.getRedirectedUrl())
-                .isEqualTo("/inscription?jour=" + DAY + "&refus=ALREADY_REGISTERED");
-        var choicePage = browser.get(refused.getRedirectedUrl()).getContentAsString();
-        assertThat(choicePage).contains("Vous avez déjà une inscription sur cette soirée")
-                .contains("value=\"BREAKFAST\"").doesNotContain("value=\"PICK_UP_AND_SHARE\"");
+        assertThat(active(DAY)).isEqualTo(3);
+        assertThat(browser.get("/mes-inscriptions").getContentAsString())
+                .contains("Préparer le plat principal (repas pour 8) et partager le dîner")
+                .contains("Préparer les accompagnements (soupe, pain, fromage, dessert) et partager le dîner")
+                .contains("Passer la nuit et partager le dîner");
+    }
+
+    @Test
+    void a_volunteer_cannot_take_the_same_post_twice_on_the_same_evening() throws Exception {
+        var browser = signedInWithProfile();
+        register(browser, "NIGHT_AND_DINNER");
+
+        var refused = register(browser, "NIGHT_AND_DINNER");
+
+        assertThat(refused).isEqualTo("/inscription?jour=" + DAY + "&refus=ALREADY_REGISTERED");
+        var choicePage = browser.get(refused).getContentAsString();
+        assertThat(choicePage).contains("Vous avez déjà ce poste sur cette soirée")
+                .contains("value=\"BREAKFAST\"").contains("value=\"PREPARE_AT_HOME.MAIN_DISH\"")
+                .doesNotContain("value=\"NIGHT_AND_DINNER\"");
+        assertThat(active(DAY)).isEqualTo(1);
+    }
+
+    @Test
+    void the_pickup_is_offered_only_while_a_meal_prepared_at_home_waits_for_it() throws Exception {
+        var visitor = new Browser(mockMvc);
+        assertThat(visitor.get("/inscription?jour=" + DAY).getContentAsString())
+                .doesNotContain("value=\"PICK_UP_AND_SHARE\"");
+
+        var alice = signedInWithProfile();
+        assertThat(register(alice, "PREPARE_AT_HOME.MAIN_DISH")).isEqualTo("/inscription/confirmee");
+        assertThat(visitor.get("/inscription?jour=" + DAY).getContentAsString())
+                .contains("value=\"PICK_UP_AND_SHARE\"");
+        // Celle qui prépare chez elle ne récupère pas son propre repas.
+        assertThat(alice.get("/inscription?jour=" + DAY).getContentAsString())
+                .doesNotContain("value=\"PICK_UP_AND_SHARE\"");
+
+        var bob = signedInWithProfile();
+        assertThat(register(bob, "PICK_UP_AND_SHARE")).isEqualTo("/inscription/confirmee");
+        assertThat(visitor.get("/inscription?jour=" + DAY).getContentAsString())
+                .doesNotContain("value=\"PICK_UP_AND_SHARE\"");
+
+        // Même contrôle en écriture : une confirmation arrivée trop tard est refusée.
+        var carol = signedInWithProfile();
+        var refused = register(carol, "PICK_UP_AND_SHARE");
+        assertThat(refused).isEqualTo("/inscription?jour=" + DAY + "&refus=NOTHING_TO_PICK_UP");
+        assertThat(carol.get(refused).getContentAsString())
+                .contains("Il n’y a pas de repas préparé chez soi à récupérer");
+        assertThat(active(DAY)).isEqualTo(2);
+    }
+
+    @Test
+    void a_pickup_is_refused_beside_another_post_of_the_same_dinner() throws Exception {
+        register(signedInWithProfile(), "PREPARE_AT_HOME.MAIN_DISH");
+        var alice = signedInWithProfile();
+        register(alice, "NIGHT_AND_DINNER");
+
+        var refused = register(alice, "PICK_UP_AND_SHARE");
+
+        assertThat(refused).isEqualTo("/inscription?jour=" + DAY + "&refus=NOT_CUMULABLE");
+        assertThat(alice.get(refused).getContentAsString())
+                .contains("ne se cumule qu’avec le petit-déjeuner");
+        assertThat(active(DAY)).isEqualTo(2);
     }
 
     @Test

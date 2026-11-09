@@ -52,6 +52,15 @@ public record RegistrationChoice(LocalDate day, RegistrationType type, DishChoic
         }
     }
 
+    /**
+     * Choix d'une inscription désignée par sa soirée ({@code soiree}, date du soir J) et son choix ({@code choix}) :
+     * c'est ainsi qu'une désinscription désigne l'inscription, unique pour un bénévole grâce à R2 (ADR-0011). Vide si
+     * un paramètre manque ou ne correspond à rien de connu.
+     */
+    public static Optional<RegistrationChoice> parseOnEvening(String eveningDate, String choice) {
+        return parse(eveningDate, choice).map(parsed -> onEvening(parsed.day(), parsed.type(), parsed.dishChoice()));
+    }
+
     /** Soirée qui portera l'inscription : celle de la veille pour un petit-déjeuner, celle du jour sinon. */
     public LocalDate eveningDate() {
         return type.eveningDate(day);

@@ -118,8 +118,27 @@ class DashboardTest {
 
         var page = volunteers.coordinator().browser().get("/admin").getContentAsString();
 
-        var pickups = page.substring(page.indexOf("Repas préparés chez soi sans récupération"));
-        assertThat(pickups).contains("Mar. 12 janv.").contains("1 repas à faire récupérer");
+        var pickups = page.substring(page.indexOf("Repas préparés chez soi et récupérations"));
+        assertThat(pickups).contains("Mar. 12 janv.").contains("1 repas à faire récupérer")
+                .doesNotContain("sans repas");
+    }
+
+    @Test
+    void a_pickup_left_without_meal_is_alerted_and_listed() throws Exception {
+        var anne = volunteers.volunteer();
+        TestVolunteers.register(anne.browser(), SOON, "PREPARE_AT_HOME.MAIN_DISH");
+        var bob = volunteers.volunteer();
+        TestVolunteers.register(bob.browser(), SOON, "PICK_UP_AND_SHARE");
+        anne.browser().get("/mes-inscriptions/annuler?soiree=" + SOON + "&choix=PREPARE_AT_HOME.MAIN_DISH");
+        anne.browser().post("/mes-inscriptions/annuler", "soiree", SOON.toString(), "choix",
+                "PREPARE_AT_HOME.MAIN_DISH");
+
+        var page = volunteers.coordinator().browser().get("/admin").getContentAsString();
+
+        assertThat(page).contains("Soirée du mar. 12 janv. : une récupération n’a plus de repas à récupérer");
+        var pickups = page.substring(page.indexOf("Repas préparés chez soi et récupérations"));
+        assertThat(pickups).contains("Mar. 12 janv.").contains("1 récupération sans repas à récupérer")
+                .doesNotContain("repas à faire récupérer");
     }
 
     @Test

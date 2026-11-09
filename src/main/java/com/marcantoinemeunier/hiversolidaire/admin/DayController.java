@@ -20,9 +20,11 @@ import java.security.Principal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -70,8 +72,16 @@ class DayController {
             String lastName, String firstName, String phone, String email, boolean changeable, boolean afterDeadline) {
     }
 
-    /** Une des deux soirées de la journée, limitée aux postes affichés ce jour-là. */
-    record Section(String titleKey, String eveningLabel, List<PostStatus> posts, List<Line> lines, boolean pickupAlert) {
+    /**
+     * Une des deux soirées de la journée, limitée aux postes affichés ce jour-là.
+     *
+     * @param pickupAlert R4 : un repas préparé chez soi n'a pas de récupération
+     * @param pickupWithoutMeal R4 : une récupération n'a plus de repas (préparation chez soi annulée ou déplacée)
+     * @param doublePresences pseudos des bénévoles qui comptent pour deux présences au dîner (deux « préparer et
+     *     partager ») : les coordinateurs vérifient qu'ils viennent à deux
+     */
+    record Section(String titleKey, String eveningLabel, List<PostStatus> posts, List<Line> lines, boolean pickupAlert,
+            boolean pickupWithoutMeal, List<String> doublePresences) {
     }
 
     @GetMapping("/admin/journee")
@@ -101,9 +111,24 @@ class DayController {
         var statuses = posts.stream()
                 .map(post -> new PostStatus("planning.post." + post.name(), evening.occupied(post), day.missing(post)))
                 .toList();
-        var lines = contacts.stream().filter(shown).map(this::line).toList();
+        var shownContacts = contacts.stream().filter(shown).toList();
+        var lines = shownContacts.stream().map(this::line).toList();
+        var dinner = posts.contains(Post.MAIN_DISH);
         return new Section(titleKey, DayLabelFormatter.inline(evening.date()), statuses, lines,
-                posts.contains(Post.MAIN_DISH) && evening.needsPickupAlert());
+                dinner && evening.needsPickupAlert(), dinner && evening.pickupsWithoutMeal() > 0,
+                dinner ? doublePresences(shownContacts) : List.of());
+    }
+
+    /** Bénévoles qui tiennent plusieurs présences au dîner de la soirée (décision 2 du lot 3), par pseudo. */
+    private static List<String> doublePresences(List<RegistrationContact> contacts) {
+        return contacts.stream()
+                .filter(contact -> contact.type().coveredPosts(contact.dishChoice()).contains(Post.DINNER_PRESENCE))
+                .collect(Collectors.groupingBy(RegistrationContact::volunteerId, LinkedHashMap::new,
+                        Collectors.toList()))
+                .values().stream()
+                .filter(same -> same.size() > 1 && same.getFirst().pseudo() != null)
+                .map(same -> same.getFirst().pseudo())
+                .toList();
     }
 
     private Line line(RegistrationContact contact) {

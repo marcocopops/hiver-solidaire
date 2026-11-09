@@ -24,7 +24,8 @@ import org.springframework.test.web.servlet.MockMvc;
 /**
  * Carte d'une journée vue par un bénévole connecté (§6) : « Vous » à la place de son pseudo, ce qu'il fait, un
  * bouton de désinscription par inscription active avec la date limite exacte (R6), le filtre « Les miennes ». Rien
- * sur les inscriptions des autres.
+ * sur les inscriptions des autres. Un bénévole peut tenir plusieurs postes d'une soirée (R2, ADR-0011) : chaque bouton
+ * nomme alors son poste, et deux présences au dîner s'affichent « (2 places) ».
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -149,16 +150,18 @@ class PlanningDayCardTest {
         var block = dayBlock(alice.browser().get("/planning").getContentAsString(), DAY_LABEL);
 
         assertThat(count(block, "href=\"/mes-inscriptions/annuler?soiree=")).isEqualTo(2);
-        assertThat(block).contains("href=\"/mes-inscriptions/annuler?soiree=" + DAY.minusDays(1) + "\"")
-                .contains("href=\"/mes-inscriptions/annuler?soiree=" + DAY + "\"");
+        assertThat(block)
+                .contains("href=\"/mes-inscriptions/annuler?soiree=" + DAY.minusDays(1) + "&amp;choix=BREAKFAST\"")
+                .contains("href=\"/mes-inscriptions/annuler?soiree=" + DAY + "&amp;choix=PREPARE_AND_SHARE.MAIN_DISH\"");
         assertThat(text(block))
                 .contains("Petit-déjeuner Vous")
                 .contains("Plat principal Vous")
                 .contains("Dîner Vous")
+                .doesNotContain("places")
                 .containsSubsequence(
                         "Vous fournissez le petit-déjeuner", "Me désinscrire du petit-déjeuner",
                         "Possible jusqu’au jeu. 7 janv. à 23 h 59",
-                        "Vous préparez le plat principal et partagez le dîner", "Me désinscrire du dîner",
+                        "Vous préparez le plat principal et partagez le dîner", "Me désinscrire du plat principal",
                         "Possible jusqu’au ven. 8 janv. à 23 h 59");
     }
 
@@ -172,8 +175,8 @@ class PlanningDayCardTest {
 
         var block = dayBlock(alice.browser().get("/planning").getContentAsString(), DAY_LABEL);
 
-        assertThat(block).doesNotContain("href=\"/mes-inscriptions/annuler?soiree=" + DAY.minusDays(1) + "\"")
-                .contains("href=\"/mes-inscriptions/annuler?soiree=" + DAY + "\"")
+        assertThat(block).doesNotContain("href=\"/mes-inscriptions/annuler?soiree=" + DAY.minusDays(1))
+                .contains("href=\"/mes-inscriptions/annuler?soiree=" + DAY + "&amp;choix=NIGHT_AND_DINNER\"")
                 .contains("href=\"tel:0199001234\"").contains(COORDINATORS_PHONE);
         assertThat(text(block)).containsSubsequence("Vous fournissez le petit-déjeuner",
                 "Pour vous désinscrire, contactez les coordinateurs via", COORDINATORS_PHONE,
@@ -185,7 +188,7 @@ class PlanningDayCardTest {
         var alice = signedIn();
         join(alice.browser(), DAY, "BREAKFAST");
 
-        var confirm = alice.browser().get("/mes-inscriptions/annuler?soiree=" + DAY.minusDays(1));
+        var confirm = alice.browser().get("/mes-inscriptions/annuler?soiree=" + DAY.minusDays(1) + "&choix=BREAKFAST");
 
         assertThat(confirm.getStatus()).isEqualTo(200);
         assertThat(confirm.getContentAsString()).contains("Petit-déjeuner du sam. 9 janv.")
@@ -193,6 +196,39 @@ class PlanningDayCardTest {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM registration r JOIN evening e ON e.id = r.evening_id "
                 + "WHERE e.evening_date = ? AND r.cancelled_at IS NULL", Integer.class, DAY.minusDays(1)))
                 .isEqualTo(1);
+    }
+
+    @Test
+    void several_posts_of_one_evening_get_one_named_button_each() throws Exception {
+        var alice = signedIn();
+        join(alice.browser(), DAY, "NIGHT_AND_DINNER");
+        join(alice.browser(), DAY, "PREPARE_AT_HOME.MAIN_DISH");
+        join(alice.browser(), DAY, "PREPARE_AND_SHARE.SIDES");
+
+        var block = dayBlock(alice.browser().get("/planning").getContentAsString(), DAY_LABEL);
+
+        assertThat(count(block, "href=\"/mes-inscriptions/annuler?soiree=")).isEqualTo(3);
+        assertThat(text(block)).containsSubsequence(
+                "Vous préparez le plat principal chez vous", "Me désinscrire du plat principal",
+                "Vous préparez les accompagnements et partagez le dîner", "Me désinscrire des accompagnements",
+                "Vous passez la nuit", "Me désinscrire de la nuit");
+    }
+
+    @Test
+    void two_dinner_presences_of_the_same_volunteer_show_as_two_places() throws Exception {
+        var alice = signedIn();
+        join(alice.browser(), DAY, "PREPARE_AND_SHARE.MAIN_DISH");
+        join(alice.browser(), DAY, "PREPARE_AND_SHARE.SIDES");
+        var bob = signedIn();
+
+        var mine = text(dayBlock(alice.browser().get("/planning").getContentAsString(), DAY_LABEL));
+        var theirs = text(dayBlock(bob.browser().get("/planning").getContentAsString(), DAY_LABEL));
+        var visitor = text(dayBlock(new Browser(mockMvc).get("/planning").getContentAsString(), DAY_LABEL));
+
+        assertThat(mine).contains("Dîner Vous (2 places)").doesNotContain("Dîner Vous (2 places) À pourvoir");
+        assertThat(theirs).contains("Dîner " + alice.pseudo() + " (2 places)");
+        assertThat(visitor).contains("Dîner " + alice.pseudo() + " (2 places)")
+                .doesNotContain(alice.pseudo() + " " + alice.pseudo());
     }
 
     @Test

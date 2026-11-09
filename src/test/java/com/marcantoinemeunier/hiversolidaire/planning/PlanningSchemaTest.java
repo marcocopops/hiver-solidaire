@@ -86,11 +86,12 @@ class PlanningSchemaTest {
     }
 
     @Test
-    void a_volunteer_registers_only_once_per_evening() {
+    void a_volunteer_takes_a_post_only_once_per_evening() {
+        // R2 par poste depuis la V14 (ADR-0011) : voir aussi OnePostPerVolunteerSchemaTest.
         var alice = volunteer("alice@example.org");
         register(alice, "BREAKFAST", null);
 
-        assertThatThrownBy(() -> register(alice, "NIGHT_AND_DINNER", null))
+        assertThatThrownBy(() -> register(alice, "BREAKFAST", null))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 

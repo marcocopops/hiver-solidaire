@@ -151,6 +151,20 @@ class DayTest {
     }
 
     @Test
+    void a_volunteer_can_hold_several_posts_shown_in_the_order_of_the_day() {
+        var night = Registration.by(alice, RegistrationType.NIGHT_AND_DINNER, null);
+        var sides = Registration.by(alice, RegistrationType.PREPARE_AND_SHARE, DishChoice.SIDES);
+        var main = Registration.by(alice, RegistrationType.PREPARE_AT_HOME, DishChoice.MAIN_DISH);
+        var day = new Day(SECOND, evening(FIRST, breakfast(alice)), evening(SECOND, night, sides, main));
+
+        assertThat(day.registrationsOf(alice)).containsExactly(
+                new DayRegistration(FIRST, breakfast(alice)),
+                new DayRegistration(SECOND, main),
+                new DayRegistration(SECOND, sides),
+                new DayRegistration(SECOND, night));
+    }
+
+    @Test
     void a_day_is_past_from_midnight_the_next_day() {
         var day = new Day(SECOND, evening(FIRST), evening(SECOND));
 

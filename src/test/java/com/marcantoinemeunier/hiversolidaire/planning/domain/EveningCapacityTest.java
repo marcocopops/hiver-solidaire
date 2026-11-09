@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 /** R1 Capacité (calcul en lecture) et R3 « un plat de chaque par soirée ». */
@@ -38,6 +39,20 @@ class EveningCapacityTest {
         assertThat(evening.remaining(Post.MAIN_DISH)).isZero();
         assertThat(evening.remaining(Post.DINNER_PRESENCE)).isZero();
         assertThat(evening.remaining(Post.SIDES)).isEqualTo(1);
+    }
+
+    @Test
+    void each_prepare_and_share_counts_a_dinner_presence_even_for_the_same_volunteer() {
+        // Plat et accompagnements préparés et partagés par la même personne : deux présences (en pratique, un couple
+        // qui vient ; les coordinateurs vérifient).
+        var alice = UUID.randomUUID();
+        var evening = evening(
+                Registration.by(alice, RegistrationType.PREPARE_AND_SHARE, DishChoice.MAIN_DISH),
+                Registration.by(alice, RegistrationType.PREPARE_AND_SHARE, DishChoice.SIDES));
+
+        assertThat(evening.occupied(Post.DINNER_PRESENCE)).isEqualTo(2);
+        assertThat(evening.missing(Post.DINNER_PRESENCE)).isZero();
+        assertThat(evening.remaining(Post.DINNER_PRESENCE)).isZero();
     }
 
     @Test

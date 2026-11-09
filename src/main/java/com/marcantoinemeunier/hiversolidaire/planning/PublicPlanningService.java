@@ -3,6 +3,7 @@ package com.marcantoinemeunier.hiversolidaire.planning;
 import com.marcantoinemeunier.hiversolidaire.planning.PublicPlanning.MyRegistration;
 import com.marcantoinemeunier.hiversolidaire.planning.PublicPlanning.PostLine;
 import com.marcantoinemeunier.hiversolidaire.planning.PublicPlanning.PublicDay;
+import com.marcantoinemeunier.hiversolidaire.planning.PublicPlanning.Taken;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.Cancellation;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.Day;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.DayRegistration;
@@ -10,7 +11,6 @@ import com.marcantoinemeunier.hiversolidaire.planning.domain.DayStatus;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.ParisTime;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.Post;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.Registration;
-import com.marcantoinemeunier.hiversolidaire.planning.domain.RegistrationType;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.Season;
 import com.marcantoinemeunier.hiversolidaire.planning.persistence.EveningEntity;
 import com.marcantoinemeunier.hiversolidaire.planning.persistence.EveningRepository;
@@ -23,6 +23,8 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -113,38 +115,40 @@ class PublicPlanningService {
                 status.name().toLowerCase(Locale.ROOT), status == DayStatus.INCOMPLETE, registrable, posts, mine);
     }
 
-    /** Pseudos d'un poste : ceux des inscrits de la soirée qui porte ce poste, le sien remplacé par « Vous ». */
+    /**
+     * Inscrits d'un poste : ceux de la soirée qui porte ce poste, un par bénévole avec le nombre de places qu'il tient
+     * (deux « préparer et partager » font deux présences au dîner), le bénévole connecté remplacé par « Vous ».
+     */
     private static PostLine postLine(Day day, Post post, List<RegistrantPseudo> pseudos, Optional<UUID> volunteerId) {
         var covering = pseudos.stream().filter(registrant -> registrant.coveredPosts().contains(post)).toList();
-        var you = volunteerId.map(id -> covering.stream().anyMatch(registrant -> id.equals(registrant.volunteerId())))
-                .orElse(false);
+        var you = volunteerId.map(id -> (int) covering.stream()
+                .filter(registrant -> id.equals(registrant.volunteerId())).count()).orElse(0);
         var others = covering.stream()
                 .filter(registrant -> volunteerId.map(id -> !id.equals(registrant.volunteerId())).orElse(true))
-                .map(RegistrantPseudo::pseudo)
-                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .collect(Collectors.groupingBy(RegistrantPseudo::volunteerId, LinkedHashMap::new, Collectors.toList()))
+                .values().stream()
+                .map(same -> new Taken(same.getFirst().pseudo(), same.size()))
+                .sorted(Comparator.comparing(Taken::pseudo, String.CASE_INSENSITIVE_ORDER))
                 .toList();
         return new PostLine(post.name(), "planning.post." + post.name(),
                 post == Post.NIGHT ? "planning.post.NIGHT.hint" : null, you, others, day.missing(post));
     }
 
-    /** Une ligne par inscription ; le bouton ne précise le repas que si la carte en porte deux. */
+    /**
+     * Une ligne par inscription ; si la carte en porte plusieurs, chaque bouton nomme le poste qu'il libère (unique
+     * sur la carte : un poste par bénévole et par soirée, R2).
+     */
     private static List<MyRegistration> myRegistrations(List<DayRegistration> mine, Instant now) {
         return mine.stream().map(entry -> {
             var registration = entry.registration();
-            var cancelKey = mine.size() == 1 ? "planning.cancel" : "planning.cancel." + meal(registration.type());
+            var cancelKey = mine.size() == 1 ? "planning.cancel" : "planning.cancel." + registration.ownPost().name();
             return new MyRegistration(entry.eveningDate().toString(),
+                    choiceParam(registration),
                     "planning.you." + choiceParam(registration),
                     cancelKey,
                     Cancellation.allowed(entry.eveningDate(), now),
                     DayLabelFormatter.deadline(Cancellation.deadline(entry.eveningDate())));
         }).toList();
-    }
-
-    private static String meal(RegistrationType type) {
-        return switch (type) {
-            case BREAKFAST, NIGHT_AND_DINNER -> type.name();
-            case PREPARE_AND_SHARE, PREPARE_AT_HOME, PICK_UP_AND_SHARE -> "DINNER";
-        };
     }
 
     private static String choiceParam(Registration registration) {

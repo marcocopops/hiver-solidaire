@@ -54,8 +54,10 @@ public final class Evening {
     }
 
     /**
-     * Contrôle d'une nouvelle inscription (R7, puis R2, R3 et R1). R4 n'empêche jamais une inscription : une
-     * préparation chez soi sans récupération est acceptée, et {@link #needsPickupAlert()} le signale.
+     * Contrôle d'une nouvelle inscription : R7, puis R2 (un poste par bénévole, « Récupérer » seulement avec le
+     * petit-déjeuner), R3, R4 et R1. Pour R4, une récupération n'est acceptée que si un repas préparé chez soi attend
+     * encore la sienne ; une préparation chez soi sans récupération reste acceptée, et {@link #needsPickupAlert()} le
+     * signale.
      */
     public RegistrationDecision decide(Season season, Registration candidate, Instant now) {
         if (candidate.volunteerId() == null) {
@@ -70,11 +72,20 @@ public final class Evening {
         if (isPast(ParisTime.today(now))) {
             return RegistrationDecision.PAST;
         }
-        if (registrations.stream().anyMatch(existing -> candidate.volunteerId().equals(existing.volunteerId()))) {
+        var mine = registrations.stream()
+                .filter(existing -> candidate.volunteerId().equals(existing.volunteerId()))
+                .toList();
+        if (mine.stream().anyMatch(existing -> existing.ownPost() == candidate.ownPost())) {
             return RegistrationDecision.ALREADY_REGISTERED;
+        }
+        if (mine.stream().anyMatch(candidate::conflictsWith)) {
+            return RegistrationDecision.NOT_CUMULABLE;
         }
         if (candidate.dishChoice() != null && remaining(candidate.dishChoice().post()) == 0) {
             return RegistrationDecision.DISH_TAKEN;
+        }
+        if (candidate.type() == RegistrationType.PICK_UP_AND_SHARE && unmatchedHomePreparations() == 0) {
+            return RegistrationDecision.NOTHING_TO_PICK_UP;
         }
         if (!isAvailable(candidate.type(), candidate.dishChoice())) {
             return RegistrationDecision.FULL;
@@ -82,9 +93,11 @@ public final class Evening {
         return RegistrationDecision.ACCEPTED;
     }
 
-    /** R6 : contrôle de la désinscription d'un bénévole. */
-    public CancellationDecision decideCancellation(UUID volunteerId, Instant now) {
-        if (registrations.stream().noneMatch(registration -> volunteerId.equals(registration.volunteerId()))) {
+    /**
+     * R6 : contrôle de la désinscription d'une inscription d'un bénévole ({@code registration} porte son identifiant).
+     */
+    public CancellationDecision decideCancellation(Registration registration, Instant now) {
+        if (registration.volunteerId() == null || !registrations.contains(registration)) {
             return CancellationDecision.NOT_REGISTERED;
         }
         if (!Cancellation.allowed(date, now)) {
@@ -93,11 +106,24 @@ public final class Evening {
         return CancellationDecision.ACCEPTED;
     }
 
-    /** La même soirée sans l'inscription du bénévole : R1, R2, R3 et R5 sont recalculés sans elle. */
+    /**
+     * La même soirée sans aucune inscription du bénévole (suppression de son compte) : R1 à R5 sont recalculés sans
+     * elles.
+     */
     public Evening without(UUID volunteerId) {
         return new Evening(date, needs, registrations.stream()
                 .filter(registration -> !volunteerId.equals(registration.volunteerId()))
                 .toList());
+    }
+
+    /**
+     * La même soirée sans cette inscription (désinscription d'un poste) : les autres postes du même bénévole restent.
+     * Deux inscriptions actives égales n'existent pas (R2), une seule est donc retirée.
+     */
+    public Evening without(Registration registration) {
+        var remaining = new ArrayList<>(registrations);
+        remaining.remove(registration);
+        return new Evening(date, needs, remaining);
     }
 
     /** Postes qui couvraient leur minimum ici et ne le couvrent plus dans {@code after}. */
@@ -120,6 +146,15 @@ public final class Evening {
     /** R4 : les coordinateurs doivent organiser la remise d'un repas. */
     public boolean needsPickupAlert() {
         return unmatchedHomePreparations() > 0;
+    }
+
+    /**
+     * R4 : récupérations sans repas préparé chez soi à récupérer. Une récupération n'est acceptée que pour un repas qui
+     * l'attend ; il n'en reste sans repas qu'après la désinscription (ou le déplacement) d'une préparation chez soi déjà
+     * récupérée, et les coordinateurs en sont alertés ({@link PickupWithoutMealAlert}).
+     */
+    public int pickupsWithoutMeal() {
+        return Math.max(0, count(RegistrationType.PICK_UP_AND_SHARE) - count(RegistrationType.PREPARE_AT_HOME));
     }
 
     /** R5 : places manquantes sur un poste pour atteindre son minimum. */

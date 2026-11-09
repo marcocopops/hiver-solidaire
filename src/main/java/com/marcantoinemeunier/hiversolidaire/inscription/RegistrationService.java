@@ -4,11 +4,14 @@ import com.marcantoinemeunier.hiversolidaire.notification.CoordinatorAlerts;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.Cancellation;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.CancellationDecision;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.Day;
+import com.marcantoinemeunier.hiversolidaire.planning.domain.DishChoice;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.Evening;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.IncompleteEveningAlert;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.ParisTime;
+import com.marcantoinemeunier.hiversolidaire.planning.domain.PickupWithoutMealAlert;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.Registration;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.RegistrationDecision;
+import com.marcantoinemeunier.hiversolidaire.planning.domain.RegistrationType;
 import com.marcantoinemeunier.hiversolidaire.planning.persistence.EveningEntity;
 import com.marcantoinemeunier.hiversolidaire.planning.persistence.EveningRepository;
 import com.marcantoinemeunier.hiversolidaire.planning.persistence.RegistrationEntity;
@@ -49,7 +52,8 @@ public class RegistrationService {
 
     /**
      * Ce qu'il faut pour afficher le choix d'une journée : les options encore disponibles, chacune sur sa soirée
-     * (R1, R3, et R2 pour un bénévole connecté), ou le motif qui bloque tout (R7, R2, R1).
+     * (R1, R3, R4, et R2 pour un bénévole connecté), ou le motif qui bloque tout (R7, ou R1 quand plus rien n'est
+     * possible).
      */
     public record DayChoice(LocalDate day, RegistrationDecision blocking, List<String> available) {
     }
@@ -155,8 +159,8 @@ public class RegistrationService {
      * Déplacement par un coordinateur vers une autre soirée de la saison courante, avec le même type et le même plat :
      * la soirée cible passe par les mêmes contrôles qu'une inscription (R1 à R4 et R7, R2 pour ce bénévole). Les deux
      * soirées sont verrouillées dans l'ordre des dates (pas d'interblocage avec un autre déplacement). L'inscription
-     * d'origine est annulée et une nouvelle est créée : l'historique reste, et l'alerte « soirée devenue incomplète »
-     * vaut pour la soirée quittée.
+     * d'origine est annulée et une nouvelle est créée : l'historique reste, et les alertes « soirée devenue incomplète »
+     * et « récupération sans repas » valent pour la soirée quittée.
      */
     @Transactional
     public CoordinatorChange moveByCoordinator(UUID registrationId, LocalDate targetEveningDate) {
@@ -201,58 +205,75 @@ public class RegistrationService {
                 created.id());
     }
 
-    /** Annule une inscription dont la soirée est déjà verrouillée, avec l'alerte éventuelle. */
+    /**
+     * Annule une inscription dont la soirée est déjà verrouillée, avec les alertes éventuelles. Seule cette inscription
+     * est retirée du calcul : les autres postes du même bénévole restent (R2, ADR-0011).
+     */
     private void cancelLocked(EveningEntity evening, RegistrationEntity registration, Instant now) {
         var season = seasons.findById(evening.seasonId()).orElseThrow(UnknownEveningException::new);
         var before = toDomain(season, evening);
         registration.cancel(now);
         registrations.saveAndFlush(registration);
-        if (IncompleteEveningAlert.triggeredBy(before, before.without(registration.volunteerId()),
-                ParisTime.today(now))) {
-            alerts.eveningIncomplete(evening.id());
+        recordAlerts(evening.id(), before, before.without(registration.toDomain()), now);
+    }
+
+    /**
+     * Alertes aux coordinateurs après une annulation, dans la même transaction : soirée des 7 prochains jours devenue
+     * incomplète (§6), récupération restée sans repas (R4).
+     */
+    private void recordAlerts(UUID eveningId, Evening before, Evening after, Instant now) {
+        if (IncompleteEveningAlert.triggeredBy(before, after, ParisTime.today(now))) {
+            alerts.eveningIncomplete(eveningId);
+        }
+        if (PickupWithoutMealAlert.triggeredBy(before, after)) {
+            alerts.pickupWithoutMeal(eveningId);
         }
     }
 
     /**
-     * Désinscription (R6) sous le même verrou que l'inscription (R1) : une annulation et une inscription simultanées
-     * sur la même soirée s'exécutent l'une après l'autre. Le bénévole est celui de la session : il n'annule que sa
-     * propre inscription.
+     * Désinscription (R6) d'un poste, sous le même verrou que l'inscription (R1) : une annulation et une inscription
+     * simultanées sur la même soirée s'exécutent l'une après l'autre. Le bénévole est celui de la session : il n'annule
+     * que sa propre inscription, désignée par sa soirée et son choix (type et plat), unique pour lui grâce à R2. Une
+     * préparation chez soi déjà récupérée s'annule aussi : la récupération reste et les coordinateurs sont alertés.
      */
     @Transactional
-    public CancellationDecision cancel(UUID volunteerId, LocalDate eveningDate) {
+    public CancellationDecision cancel(UUID volunteerId, LocalDate eveningDate, RegistrationType type,
+            DishChoice dishChoice) {
         var season = currentSeason().orElseThrow(UnknownEveningException::new);
         var eveningId = evenings.findIdBySeasonAndDate(season.id(), eveningDate)
                 .orElseThrow(UnknownEveningException::new);
-        return cancelUnderLock(volunteerId, eveningId, true);
+        var evening = evenings.lockById(eveningId).orElseThrow(UnknownEveningException::new);
+        var now = clock.instant();
+        var before = toDomain(season, evening);
+        var target = Registration.by(volunteerId, type, dishChoice);
+        var decision = before.decideCancellation(target, now);
+        if (!decision.accepted()) {
+            return decision;
+        }
+        registrations.findActiveOf(eveningId, volunteerId).stream()
+                .filter(registration -> registration.toDomain().equals(target))
+                .findFirst().orElseThrow()
+                .cancel(now);
+        recordAlerts(eveningId, before, before.without(target), now);
+        return CancellationDecision.ACCEPTED;
     }
 
     /**
-     * Suppression du compte : annule toutes les inscriptions actives dont la soirée n'est pas passée, y compris
-     * après la limite de R6. Les soirées sont verrouillées dans l'ordre des dates : pas d'interblocage avec une
-     * inscription concurrente, qui n'en verrouille qu'une.
+     * Suppression du compte : annule toutes les inscriptions actives dont la soirée n'est pas passée, tous postes
+     * confondus, y compris après la limite de R6. Les soirées sont verrouillées dans l'ordre des dates : pas
+     * d'interblocage avec une inscription concurrente, qui n'en verrouille qu'une. Une alerte par cause et par soirée,
+     * pas une par inscription.
      */
     @Transactional
     public void cancelAllUpcoming(UUID volunteerId) {
-        for (var eveningId : registrations.findActiveEveningIds(volunteerId, ParisTime.today(clock.instant()))) {
-            cancelUnderLock(volunteerId, eveningId, false);
-        }
-    }
-
-    private CancellationDecision cancelUnderLock(UUID volunteerId, UUID eveningId, boolean enforceDeadline) {
-        var evening = evenings.lockById(eveningId).orElseThrow(UnknownEveningException::new);
-        var season = seasons.findById(evening.seasonId()).orElseThrow(UnknownEveningException::new);
         var now = clock.instant();
-        var before = toDomain(season, evening);
-        var decision = before.decideCancellation(volunteerId, now);
-        if (decision == CancellationDecision.NOT_REGISTERED
-                || (decision == CancellationDecision.TOO_LATE && enforceDeadline)) {
-            return decision;
+        for (var eveningId : registrations.findActiveEveningIds(volunteerId, ParisTime.today(now))) {
+            var evening = evenings.lockById(eveningId).orElseThrow(UnknownEveningException::new);
+            var season = seasons.findById(evening.seasonId()).orElseThrow(UnknownEveningException::new);
+            var before = toDomain(season, evening);
+            registrations.findActiveOf(eveningId, volunteerId).forEach(registration -> registration.cancel(now));
+            recordAlerts(eveningId, before, before.without(volunteerId), now);
         }
-        registrations.findActive(eveningId, volunteerId).orElseThrow().cancel(now);
-        if (IncompleteEveningAlert.triggeredBy(before, before.without(volunteerId), ParisTime.today(now))) {
-            alerts.eveningIncomplete(eveningId);
-        }
-        return CancellationDecision.ACCEPTED;
     }
 
     /** R6 : le bénévole peut encore se désinscrire seul de cette soirée. */
@@ -284,19 +305,44 @@ public class RegistrationService {
         });
     }
 
-    /** Inscriptions à venir du bénévole, et seulement les siennes, dans l'ordre des jours d'activité. */
+    /**
+     * Inscriptions à venir du bénévole, et seulement les siennes, dans l'ordre des jours d'activité, puis des postes de
+     * la journée ({@link Day#POSTS}).
+     */
     @Transactional(readOnly = true)
     public List<UpcomingRegistration> upcoming(UUID volunteerId) {
         return registrations.findUpcoming(volunteerId, ParisTime.today(clock.instant())).stream()
-                .sorted(Comparator.comparing(registration -> registration.type().activityDate(registration.date())))
+                .sorted(Comparator.comparing((UpcomingRegistration registration) ->
+                                registration.type().activityDate(registration.date()))
+                        .thenComparingInt(registration -> Day.POSTS.indexOf(
+                                Registration.of(registration.type(), registration.dishChoice()).ownPost())))
                 .toList();
     }
 
-    /** Inscription active à venir du bénévole sur cette soirée, et seulement la sienne. */
+    /** Inscription active à venir du bénévole sur cette soirée, pour ce choix, et seulement la sienne. */
     @Transactional(readOnly = true)
-    public Optional<UpcomingRegistration> upcoming(UUID volunteerId, LocalDate eveningDate) {
-        return upcoming(volunteerId).stream().filter(registration -> registration.date().equals(eveningDate))
+    public Optional<UpcomingRegistration> upcoming(UUID volunteerId, LocalDate eveningDate, RegistrationType type,
+            DishChoice dishChoice) {
+        return upcoming(volunteerId).stream()
+                .filter(registration -> registration.date().equals(eveningDate) && registration.type() == type
+                        && registration.dishChoice() == dishChoice)
                 .findFirst();
+    }
+
+    /**
+     * R4 : désinscrire cette inscription laisserait une récupération sans repas (avertissement de la page de
+     * confirmation). Lecture sans verrou, à titre indicatif : l'alerte est décidée sous le verrou, à l'annulation.
+     */
+    @Transactional(readOnly = true)
+    public boolean leavesPickupWithoutMeal(UUID volunteerId, LocalDate eveningDate, RegistrationType type,
+            DishChoice dishChoice) {
+        var target = Registration.by(volunteerId, type, dishChoice);
+        return currentSeason()
+                .flatMap(season -> evenings.findBySeasonAndDate(season.id(), eveningDate)
+                        .map(evening -> toDomain(season, evening)))
+                .filter(evening -> evening.registrations().contains(target))
+                .map(evening -> PickupWithoutMealAlert.triggeredBy(evening, evening.without(target)))
+                .orElse(false);
     }
 
     private Optional<SeasonEntity> currentSeason() {

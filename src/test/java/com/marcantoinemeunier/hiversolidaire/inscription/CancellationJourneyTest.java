@@ -21,12 +21,14 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
  * Parcours « Se désinscrire » (cahier des charges §6, R6) : depuis « Mes inscriptions », page de confirmation puis
  * POST, jusqu'à la veille à 23 h 59 ; ensuite, le téléphone des coordinateurs. Un bénévole n'annule que ses propres
- * inscriptions (M9).
+ * inscriptions (M9). L'inscription est désignée par sa soirée et son choix ({@code soiree}, {@code choix}) : un
+ * bénévole peut tenir plusieurs postes d'une soirée (R2, ADR-0011).
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -116,10 +118,24 @@ class CancellationJourneyTest {
     }
 
     private int alerts(LocalDate date) {
+        return alerts(date, "EVENING_INCOMPLETE");
+    }
+
+    private int alerts(LocalDate date, String kind) {
         return jdbc.queryForObject("""
                 SELECT count(*) FROM coordinator_alert a JOIN evening e ON e.id = a.evening_id
-                WHERE e.evening_date = ? AND a.kind = 'EVENING_INCOMPLETE' AND a.sent_at IS NULL
-                """, Integer.class, date);
+                WHERE e.evening_date = ? AND a.kind = ? AND a.sent_at IS NULL
+                """, Integer.class, date, kind);
+    }
+
+    private static String cancelUrl(LocalDate date, String choice) {
+        return "/mes-inscriptions/annuler?soiree=" + date + "&choix=" + choice;
+    }
+
+    /** Page de confirmation, puis POST : ce que fait le bouton « Me désinscrire ». */
+    private static MockHttpServletResponse cancel(Browser browser, LocalDate date, String choice) throws Exception {
+        browser.get(cancelUrl(date, choice));
+        return browser.post("/mes-inscriptions/annuler", "soiree", date.toString(), "choix", choice);
     }
 
     @Test
@@ -133,18 +149,21 @@ class CancellationJourneyTest {
 
         // 1. « Mes inscriptions » propose de se désinscrire.
         var mine = browser.get("/mes-inscriptions").getContentAsString();
-        assertThat(mine).contains(SOON_LABEL).contains("href=\"/mes-inscriptions/annuler?soiree=" + SOON + "\"")
+        assertThat(mine).contains(SOON_LABEL)
+                .contains("href=\"/mes-inscriptions/annuler?soiree=" + SOON + "&amp;choix=BREAKFAST\"")
                 .contains(SOON_DEADLINE);
 
         // 2. Le lien ouvre une page de confirmation : un GET n'annule rien.
-        var confirm = browser.get("/mes-inscriptions/annuler?soiree=" + SOON);
+        var confirm = browser.get(cancelUrl(SOON, "BREAKFAST"));
         assertThat(confirm.getStatus()).isEqualTo(200);
         assertThat(confirm.getContentAsString()).contains(SOON_LABEL).contains(SOON_DEADLINE)
-                .contains("action=\"/mes-inscriptions/annuler\"").contains("name=\"soiree\" value=\"" + SOON + "\"");
+                .contains("action=\"/mes-inscriptions/annuler\"").contains("name=\"soiree\" value=\"" + SOON + "\"")
+                .contains("name=\"choix\" value=\"BREAKFAST\"")
+                .doesNotContain("récupérer ce repas");
         assertThat(active(SOON)).isEqualTo(1);
 
         // 3. Le POST annule : l'inscription reste en base, marquée annulée.
-        var post = browser.post("/mes-inscriptions/annuler", "soiree", SOON.toString());
+        var post = browser.post("/mes-inscriptions/annuler", "soiree", SOON.toString(), "choix", "BREAKFAST");
         assertThat(post.getRedirectedUrl()).isEqualTo("/mes-inscriptions");
         assertThat(active(SOON)).isZero();
         assertThat(cancelled(SOON)).isEqualTo(1);
@@ -166,8 +185,7 @@ class CancellationJourneyTest {
     void the_freed_place_is_taken_by_another_volunteer() throws Exception {
         var alice = signedIn().browser();
         register(alice, SOON, "PREPARE_AT_HOME.MAIN_DISH");
-        alice.get("/mes-inscriptions/annuler?soiree=" + SOON);
-        alice.post("/mes-inscriptions/annuler", "soiree", SOON.toString());
+        cancel(alice, SOON, "PREPARE_AT_HOME.MAIN_DISH");
 
         register(signedIn().browser(), SOON, "PREPARE_AND_SHARE.MAIN_DISH");
 
@@ -179,8 +197,7 @@ class CancellationJourneyTest {
         var alice = signedIn().browser();
         register(alice, SOON, "BREAKFAST");
 
-        alice.get("/mes-inscriptions/annuler?soiree=" + SOON);
-        alice.post("/mes-inscriptions/annuler", "soiree", SOON.toString());
+        cancel(alice, SOON, "BREAKFAST");
 
         assertThat(alerts(SOON)).isEqualTo(1);
     }
@@ -190,8 +207,7 @@ class CancellationJourneyTest {
         var alice = signedIn().browser();
         register(alice, LATER, "BREAKFAST");
 
-        alice.get("/mes-inscriptions/annuler?soiree=" + LATER);
-        alice.post("/mes-inscriptions/annuler", "soiree", LATER.toString());
+        cancel(alice, LATER, "BREAKFAST");
 
         assertThat(active(LATER)).isZero();
         assertThat(alerts(LATER)).isZero();
@@ -201,7 +217,7 @@ class CancellationJourneyTest {
     void after_the_deadline_the_button_disappears_and_the_coordinators_contact_is_shown() throws Exception {
         var alice = signedIn().browser();
         register(alice, SOON, "BREAKFAST");
-        alice.get("/mes-inscriptions/annuler?soiree=" + SOON);
+        alice.get(cancelUrl(SOON, "BREAKFAST"));
 
         // Le jour même à 0 h, heure de Paris : trop tard.
         clock.set(LocalDateTime.of(2027, 1, 8, 0, 0).atZone(ParisTime.ZONE).toInstant());
@@ -209,13 +225,13 @@ class CancellationJourneyTest {
         var mine = alice.get("/mes-inscriptions").getContentAsString();
         assertThat(mine).contains(SOON_LABEL).doesNotContain("/mes-inscriptions/annuler").doesNotContain(SOON_DEADLINE)
                 .contains(CONTACT_SENTENCE).contains(COORDINATORS_PHONE).contains("href=\"tel:0199001234\"");
-        var page = alice.get("/mes-inscriptions/annuler?soiree=" + SOON).getContentAsString();
+        var page = alice.get(cancelUrl(SOON, "BREAKFAST")).getContentAsString();
         assertThat(page).contains(CONTACT_SENTENCE).contains(COORDINATORS_PHONE).doesNotContain("action=\"/mes-inscriptions/annuler\"")
                 .contains("la limite était le jeu. 7 janv. à 23 h 59");
 
         // Un POST forgé est refusé : l'inscription reste.
-        var post = alice.post("/mes-inscriptions/annuler", "soiree", SOON.toString());
-        assertThat(post.getRedirectedUrl()).isEqualTo("/mes-inscriptions/annuler?soiree=" + SOON);
+        var post = alice.post("/mes-inscriptions/annuler", "soiree", SOON.toString(), "choix", "BREAKFAST");
+        assertThat(post.getRedirectedUrl()).isEqualTo(cancelUrl(SOON, "BREAKFAST"));
         assertThat(active(SOON)).isEqualTo(1);
     }
 
@@ -225,8 +241,7 @@ class CancellationJourneyTest {
         register(alice, SOON, "BREAKFAST");
         clock.set(LocalDateTime.of(2027, 1, 7, 23, 59).atZone(ParisTime.ZONE).toInstant());
 
-        alice.get("/mes-inscriptions/annuler?soiree=" + SOON);
-        alice.post("/mes-inscriptions/annuler", "soiree", SOON.toString());
+        cancel(alice, SOON, "BREAKFAST");
 
         assertThat(active(SOON)).isZero();
     }
@@ -237,9 +252,10 @@ class CancellationJourneyTest {
         register(alice, SOON, "BREAKFAST");
         var bob = signedIn().browser();
 
-        assertThat(bob.get("/mes-inscriptions/annuler?soiree=" + SOON).getStatus()).isEqualTo(404);
+        assertThat(bob.get(cancelUrl(SOON, "BREAKFAST")).getStatus()).isEqualTo(404);
         bob.get("/mes-inscriptions");
-        assertThat(bob.post("/mes-inscriptions/annuler", "soiree", SOON.toString()).getStatus()).isEqualTo(404);
+        assertThat(bob.post("/mes-inscriptions/annuler", "soiree", SOON.toString(), "choix", "BREAKFAST").getStatus())
+                .isEqualTo(404);
         assertThat(active(SOON)).isEqualTo(1);
     }
 
@@ -248,8 +264,8 @@ class CancellationJourneyTest {
         var alice = signedIn().browser();
         register(alice, SOON, "BREAKFAST");
 
-        assertThat(alice.postWithoutCsrf("/mes-inscriptions/annuler", "soiree", SOON.toString()).getStatus())
-                .isEqualTo(403);
+        assertThat(alice.postWithoutCsrf("/mes-inscriptions/annuler", "soiree", SOON.toString(), "choix", "BREAKFAST")
+                .getStatus()).isEqualTo(403);
         assertThat(active(SOON)).isEqualTo(1);
     }
 
@@ -259,10 +275,11 @@ class CancellationJourneyTest {
         register(alice, SOON, "BREAKFAST");
         var anonymous = new Browser(mockMvc);
 
-        var page = anonymous.get("/mes-inscriptions/annuler?soiree=" + SOON);
+        var page = anonymous.get(cancelUrl(SOON, "BREAKFAST"));
         assertThat(page.getRedirectedUrl()).endsWith("/connexion");
         anonymous.get("/connexion");
-        assertThat(anonymous.post("/mes-inscriptions/annuler", "soiree", SOON.toString()).getStatus()).isEqualTo(403);
+        assertThat(anonymous.post("/mes-inscriptions/annuler", "soiree", SOON.toString(), "choix", "BREAKFAST")
+                .getStatus()).isEqualTo(403);
         assertThat(active(SOON)).isEqualTo(1);
     }
 
@@ -270,7 +287,80 @@ class CancellationJourneyTest {
     void an_unknown_or_malformed_evening_is_not_found() throws Exception {
         var alice = signedIn().browser();
 
-        assertThat(alice.get("/mes-inscriptions/annuler?soiree=2027-13-01").getStatus()).isEqualTo(404);
+        assertThat(alice.get(cancelUrl(LocalDate.of(2027, 1, 1), "BREAKFAST").replace("2027-01-01", "2027-13-01"))
+                .getStatus()).isEqualTo(404);
+        assertThat(alice.get(cancelUrl(SOON, "BREAKFAST")).getStatus()).isEqualTo(404);
+    }
+
+    @Test
+    void a_missing_unknown_or_unheld_choice_is_not_found() throws Exception {
+        var alice = signedIn().browser();
+        register(alice, SOON, "BREAKFAST");
+
         assertThat(alice.get("/mes-inscriptions/annuler?soiree=" + SOON).getStatus()).isEqualTo(404);
+        assertThat(alice.get(cancelUrl(SOON, "INCONNU")).getStatus()).isEqualTo(404);
+        assertThat(alice.get(cancelUrl(SOON, "BREAKFAST.MAIN_DISH")).getStatus()).isEqualTo(404);
+        assertThat(alice.get(cancelUrl(SOON, "NIGHT_AND_DINNER")).getStatus()).isEqualTo(404);
+        alice.get("/mes-inscriptions");
+        assertThat(alice.post("/mes-inscriptions/annuler", "soiree", SOON.toString()).getStatus()).isEqualTo(404);
+        assertThat(alice.post("/mes-inscriptions/annuler", "soiree", SOON.toString(), "choix", "NIGHT_AND_DINNER")
+                .getStatus()).isEqualTo(404);
+        assertThat(active(SOON)).isEqualTo(1);
+    }
+
+    @Test
+    void a_volunteer_cancels_one_post_and_keeps_the_others_of_the_same_evening() throws Exception {
+        var alice = signedIn().browser();
+        register(alice, LATER, "NIGHT_AND_DINNER");
+        register(alice, LATER, "PREPARE_AND_SHARE.MAIN_DISH");
+        register(alice, LATER, "BREAKFAST");
+        var mine = alice.get("/mes-inscriptions").getContentAsString();
+        assertThat(mine).contains("soiree=" + LATER + "&amp;choix=NIGHT_AND_DINNER")
+                .contains("soiree=" + LATER + "&amp;choix=PREPARE_AND_SHARE.MAIN_DISH")
+                .contains("soiree=" + LATER + "&amp;choix=BREAKFAST");
+
+        var post = cancel(alice, LATER, "PREPARE_AND_SHARE.MAIN_DISH");
+
+        assertThat(post.getRedirectedUrl()).isEqualTo("/mes-inscriptions");
+        assertThat(active(LATER)).isEqualTo(2);
+        var after = alice.get("/mes-inscriptions").getContentAsString();
+        assertThat(after).contains("Désinscription enregistrée").contains("choix=NIGHT_AND_DINNER")
+                .contains("choix=BREAKFAST").doesNotContain("choix=PREPARE_AND_SHARE.MAIN_DISH");
+        assertThat(jdbc.queryForList("""
+                SELECT r.type FROM registration r JOIN evening e ON e.id = r.evening_id
+                WHERE e.evening_date = ? AND r.cancelled_at IS NOT NULL
+                """, String.class, LATER)).containsExactly("PREPARE_AND_SHARE");
+    }
+
+    @Test
+    void cancelling_a_home_preparation_already_picked_up_warns_and_alerts_the_coordinators() throws Exception {
+        var alice = signedIn().browser();
+        register(alice, LATER, "PREPARE_AT_HOME.MAIN_DISH");
+        var bob = signedIn().browser();
+        register(bob, LATER, "PICK_UP_AND_SHARE");
+
+        var confirm = alice.get(cancelUrl(LATER, "PREPARE_AT_HOME.MAIN_DISH")).getContentAsString();
+        assertThat(confirm).contains("Une personne doit venir récupérer ce repas");
+        var post = alice.post("/mes-inscriptions/annuler", "soiree", LATER.toString(), "choix",
+                "PREPARE_AT_HOME.MAIN_DISH");
+
+        // Acceptée (R6 inchangée) ; la récupération reste et les coordinateurs sont alertés, même au-delà de 7 jours.
+        assertThat(post.getRedirectedUrl()).isEqualTo("/mes-inscriptions");
+        assertThat(active(LATER)).isEqualTo(1);
+        assertThat(alerts(LATER, "PICKUP_WITHOUT_MEAL")).isEqualTo(1);
+        assertThat(alerts(LATER)).isZero();
+    }
+
+    @Test
+    void cancelling_a_home_preparation_nobody_picks_up_neither_warns_nor_alerts() throws Exception {
+        var alice = signedIn().browser();
+        register(alice, LATER, "PREPARE_AT_HOME.MAIN_DISH");
+
+        assertThat(alice.get(cancelUrl(LATER, "PREPARE_AT_HOME.MAIN_DISH")).getContentAsString())
+                .doesNotContain("Une personne doit venir récupérer ce repas");
+        cancel(alice, LATER, "PREPARE_AT_HOME.MAIN_DISH");
+
+        assertThat(active(LATER)).isZero();
+        assertThat(alerts(LATER, "PICKUP_WITHOUT_MEAL")).isZero();
     }
 }

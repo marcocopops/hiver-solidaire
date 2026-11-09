@@ -161,7 +161,9 @@ CROSS JOIN season s
 JOIN evening e ON e.season_id = s.id AND e.evening_date = s.first_evening + p.idx;
 
 -- R2 par construction : sur une soirée, le rang (0 à 4) donne des bénévoles tous distincts parmi les 20 avec e-mail ;
--- le bénévole sans e-mail (n° 21) remplace celui du rang qui lui est attribué.
+-- le bénévole sans e-mail (n° 21) remplace celui du rang qui lui est attribué. Le script ne cumule aucun poste : il
+-- reste compatible avec une base en V13 (une inscription par bénévole et par soirée), ce qui permet de tester la
+-- migration V14 sur une base remplie (SeedDevScriptTest).
 -- R7 par construction : créée après l'ouverture, au plus tard le jour de la soirée à midi.
 CREATE TEMP TABLE seed_registration ON COMMIT DROP AS
 SELECT ('5eed5eed-0001-4000-8000-' || lpad((e.idx * 10 + t.rank)::text, 12, '0'))::uuid AS id,
@@ -199,7 +201,8 @@ WHERE r.cancel = 'LATE'
 ON CONFLICT DO NOTHING;
 
 -- Contrôle final, sur toutes les inscriptions (celles du script et celles faites à la main) : une violation annule
--- toute la transaction. R4 ne refuse jamais une inscription (il alerte) : son contrôle ne porte que sur ce script.
+-- toute la transaction. Le contrôle de R4 ne porte que sur ce script : la désinscription d'une préparation chez soi
+-- déjà récupérée est acceptée (lot 3) et laisse légitimement une récupération sans repas.
 DO $$
 DECLARE
     violations integer;
@@ -225,12 +228,18 @@ BEGIN
         RAISE EXCEPTION 'seed-dev : contrôle R1 (capacité) en échec, % poste(s) au-delà du maximum ; rien n''a été écrit', violations;
     END IF;
 
-    -- R2 : une inscription active par bénévole et par soirée.
+    -- R2 (lot 3, ADR-0011) : un poste par bénévole et par soirée (le plat pour qui prépare, le type sinon), et
+    -- « Récupérer » seulement avec le petit-déjeuner, jamais avec un autre poste du même dîner.
     SELECT count(*) INTO violations
     FROM (SELECT 1 FROM registration WHERE cancelled_at IS NULL
-          GROUP BY evening_id, volunteer_id HAVING count(*) > 1) d;
+          GROUP BY evening_id, volunteer_id, COALESCE(dish_choice, type) HAVING count(*) > 1) d;
+    SELECT violations + count(*) INTO violations
+    FROM (SELECT 1 FROM registration WHERE cancelled_at IS NULL
+          GROUP BY evening_id, volunteer_id
+          HAVING count(*) FILTER (WHERE type = 'PICK_UP_AND_SHARE') > 0
+             AND count(*) FILTER (WHERE type NOT IN ('PICK_UP_AND_SHARE', 'BREAKFAST')) > 0) d;
     IF violations > 0 THEN
-        RAISE EXCEPTION 'seed-dev : contrôle R2 (unicité) en échec, % doublon(s) ; rien n''a été écrit', violations;
+        RAISE EXCEPTION 'seed-dev : contrôle R2 (un poste par bénévole et par soirée) en échec, % violation(s) ; rien n''a été écrit', violations;
     END IF;
 
     -- R3 : qui prépare choisit un plat, les autres non ; un plat principal et un accompagnement au plus par soirée.

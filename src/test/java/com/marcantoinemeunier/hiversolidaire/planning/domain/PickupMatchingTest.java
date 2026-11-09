@@ -7,7 +7,10 @@ import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-/** R4 Récupération : chaque « préparer chez soi » est couvert par un « récupérer et partager » distinct. */
+/**
+ * R4 Récupération : chaque « préparer chez soi » est couvert par un « récupérer et partager » distinct, et une
+ * récupération sans repas préparé chez soi (après une désinscription) est comptée à part.
+ */
 class PickupMatchingTest {
 
     private static Evening evening(Registration... registrations) {
@@ -53,6 +56,34 @@ class PickupMatchingTest {
     void extra_pickups_do_not_produce_a_negative_count() {
         var evening = evening(of(RegistrationType.PICK_UP_AND_SHARE), of(RegistrationType.PICK_UP_AND_SHARE));
 
+        assertThat(evening.unmatchedHomePreparations()).isZero();
+    }
+
+    @Test
+    void a_pickup_without_home_preparation_is_a_pickup_without_meal() {
+        var evening = evening(of(RegistrationType.PICK_UP_AND_SHARE));
+
+        assertThat(evening.pickupsWithoutMeal()).isEqualTo(1);
+        assertThat(evening.needsPickupAlert()).isFalse();
+    }
+
+    @Test
+    void matched_pickups_are_not_without_meal() {
+        var evening = evening(
+                of(RegistrationType.PREPARE_AT_HOME, DishChoice.MAIN_DISH),
+                of(RegistrationType.PICK_UP_AND_SHARE));
+
+        assertThat(evening.pickupsWithoutMeal()).isZero();
+    }
+
+    @Test
+    void only_the_pickups_beyond_the_home_preparations_are_without_meal() {
+        var evening = evening(
+                of(RegistrationType.PREPARE_AT_HOME, DishChoice.MAIN_DISH),
+                of(RegistrationType.PICK_UP_AND_SHARE),
+                of(RegistrationType.PICK_UP_AND_SHARE));
+
+        assertThat(evening.pickupsWithoutMeal()).isEqualTo(1);
         assertThat(evening.unmatchedHomePreparations()).isZero();
     }
 }

@@ -87,7 +87,8 @@ class PageLayoutTest {
         assertCommonHeader(mine, "Mes inscriptions");
         assertThat(mine).contains("class=\"bouton bouton--secondaire\" href=\"/mes-inscriptions/annuler?soiree=");
 
-        var cancel = browser.get("/mes-inscriptions/annuler?soiree=" + EVENING).getContentAsString();
+        var cancel = browser.get("/mes-inscriptions/annuler?soiree=" + EVENING + "&choix=NIGHT_AND_DINNER")
+                .getContentAsString();
         assertCommonHeader(cancel, "Me désinscrire");
         assertThat(cancel).contains("<button class=\"bouton\" type=\"submit\">")
                 .contains("<a class=\"bouton bouton--secondaire\" href=\"/mes-inscriptions\">");
