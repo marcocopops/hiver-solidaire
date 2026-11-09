@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head(#{admin.move.title})}"></head>
+<body>
+<header th:replace="~{fragments :: entete(#{admin.move.title}, true)}"></header>
+<main class="page page--large">
+    <nav th:replace="~{admin/fragments :: nav}"></nav>
+    <p class="alerte" role="alert" th:if="${refusal != null}" th:text="#{${'admin.refusal.' + refusal}}">Refus.</p>
+    <dl th:replace="~{admin/fragments :: recap(${line})}"></dl>
+    <!-- Choix de la journée cible : GET, sans effet ; la page suivante confirme. -->
+    <form class="formulaire" th:action="@{/admin/inscriptions/deplacer}" method="get">
+        <input type="hidden" name="inscription" th:value="${line.registrationId}">
+        <label for="jour" th:text="#{admin.move.target}">Nouvelle journée</label>
+        <input id="jour" type="date" name="jour" required aria-describedby="jour-hint">
+        <p class="aide" id="jour-hint" th:text="#{admin.move.hint}">Même inscription, un autre jour.</p>
+        <button class="bouton" type="submit" th:text="#{admin.move.continue}">Continuer</button>
+    </form>
+    <p><a th:href="@{/admin/journee(jour=${day})}" th:text="#{admin.back.day}">Retour à la journée</a></p>
+</main>
+</body>
+</html>

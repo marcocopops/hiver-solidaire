@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head(#{admin.register.title(${label})})}"></head>
+<body>
+<header th:replace="~{fragments :: entete(#{admin.register.title(${label})}, true)}"></header>
+<main class="page page--large">
+    <nav th:replace="~{admin/fragments :: nav}"></nav>
+    <p th:if="${volunteers.isEmpty()}" th:text="#{admin.register.noVolunteer}">Aucun bénévole.</p>
+    <!-- Choix du bénévole : GET, sans effet. -->
+    <form class="formulaire" th:unless="${volunteers.isEmpty()}" th:action="@{/admin/inscriptions/nouvelle}" method="get">
+        <input type="hidden" name="jour" th:value="${date}">
+        <label for="benevole" th:text="#{admin.register.volunteer}">Bénévole</label>
+        <select id="benevole" name="benevole" required>
+            <option th:each="volunteer : ${volunteers}" th:value="${volunteer.id}"
+                    th:text="${volunteer.lastName} + ' ' + ${volunteer.firstName} + ' (' + ${volunteer.pseudo} + ')'">
+                Martin Anne (AnneM)</option>
+        </select>
+        <button class="bouton" type="submit" th:text="#{admin.register.continue}">Continuer</button>
+    </form>
+    <p><a th:href="@{/admin/benevoles/nouveau(jour=${date})}" th:text="#{admin.day.newVolunteer}">Nouveau bénévole</a></p>
+    <p><a th:href="@{/admin/journee(jour=${date})}" th:text="#{admin.back.day}">Retour à la journée</a></p>
+</main>
+</body>
+</html>

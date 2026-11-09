@@ -38,6 +38,7 @@
     <th:block th:if="${signedIn}">
         <a th:href="@{/mes-inscriptions}" th:text="#{common.myRegistrations}">Mes inscriptions</a>
         <a th:href="@{/mon-compte}" th:text="#{common.myAccount}">Mon compte</a>
+        <a th:if="${signedInCoordinator}" th:href="@{/admin}" th:text="#{common.backOffice}">Back-office</a>
         <form class="nav__deconnexion" th:action="@{/deconnexion}" method="post">
             <button class="lien" type="submit" th:text="#{common.logout}">Me déconnecter</button>
         </form>

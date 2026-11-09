@@ -1,6 +1,7 @@
 package com.marcantoinemeunier.hiversolidaire.benevole;
 
 import java.time.Clock;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -117,6 +118,86 @@ public class VolunteerService {
             candidate = Pseudo.variant(pseudo, n);
         }
         return candidate;
+    }
+
+    /** Nouveaux bénévoles à signaler aux coordinateurs (§2), les plus anciens d'abord. */
+    @Transactional(readOnly = true)
+    public List<VolunteerContact> toReview() {
+        return volunteers.findToReview().stream().map(VolunteerEntity::toContact).toList();
+    }
+
+    /**
+     * Un coordinateur a vu ce bénévole : il n'est plus signalé comme nouveau.
+     *
+     * @return faux si le bénévole n'existe pas ou que son compte est supprimé
+     */
+    @Transactional
+    public boolean markReviewed(UUID id) {
+        var volunteer = volunteers.findById(id).filter(v -> !v.deleted());
+        volunteer.ifPresent(v -> v.markReviewed(clock.instant()));
+        return volunteer.isPresent();
+    }
+
+    /** Coordonnées d'un bénévole actif (back-office), vide s'il n'existe pas ou que son compte est supprimé. */
+    @Transactional(readOnly = true)
+    public Optional<VolunteerContact> contact(UUID id) {
+        return volunteers.findById(id).filter(v -> !v.deleted()).map(VolunteerEntity::toContact);
+    }
+
+    /**
+     * Recherche du back-office sur le nom, le prénom, le pseudo, l'e-mail et le téléphone, sans tenir compte de la
+     * casse. Les caractères spéciaux de {@code LIKE} sont échappés : « % » cherche un « % ». Vide : tous les comptes
+     * actifs.
+     */
+    @Transactional(readOnly = true)
+    public List<VolunteerContact> search(String query) {
+        var text = query == null ? "" : query.strip().toLowerCase(java.util.Locale.ROOT);
+        if (text.length() > 100) {
+            text = text.substring(0, 100);
+        }
+        var escaped = text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+        return volunteers.search("%" + escaped + "%").stream().map(VolunteerEntity::toContact).toList();
+    }
+
+    /** Bénévoles actifs au profil rempli, par nom : ceux qu'un coordinateur peut inscrire. */
+    @Transactional(readOnly = true)
+    public List<VolunteerContact> activeWithProfile() {
+        return volunteers.findActiveWithProfile().stream().map(VolunteerEntity::toContact).toList();
+    }
+
+    /**
+     * Bénévole inscrit par téléphone par un coordinateur, sans e-mail (§6 « Fiche soirée ») : mêmes règles de nom, de
+     * prénom, de pseudo et de téléphone qu'au premier profil. Il ne peut pas se connecter.
+     *
+     * @param pseudo pseudo déjà normalisé par {@link Pseudo#normalize(String)}
+     * @throws PseudoTakenException si le pseudo est déjà pris
+     */
+    @Transactional
+    public UUID createWithoutEmail(ProfileForm form, String pseudo) {
+        if (volunteers.pseudoTaken(pseudo)) {
+            throw new PseudoTakenException();
+        }
+        var volunteer = VolunteerEntity.withoutEmail(form.normalizedLastName(), form.normalizedFirstName(), pseudo,
+                form.normalizedPhone(), clock.instant());
+        saveCheckingPseudo(volunteer);
+        return volunteer.id();
+    }
+
+    /**
+     * Correction du nom, du prénom et du pseudo par un coordinateur (pseudo usurpé, §11 question 8) : mêmes règles et
+     * même unicité que pour le bénévole.
+     *
+     * @param pseudo pseudo déjà normalisé par {@link Pseudo#normalize(String)}
+     * @throws PseudoTakenException si un autre bénévole a déjà ce pseudo
+     */
+    @Transactional
+    public void correctIdentity(UUID id, IdentityForm form, String pseudo) {
+        if (volunteers.pseudoTakenByOther(pseudo, id)) {
+            throw new PseudoTakenException();
+        }
+        var volunteer = volunteers.findById(id).filter(v -> !v.deleted()).orElseThrow();
+        volunteer.correctIdentity(form.normalizedLastName(), form.normalizedFirstName(), pseudo, clock.instant());
+        saveCheckingPseudo(volunteer);
     }
 
     /** Le pseudo vient d'être pris par un autre bénévole. */

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head(#{admin.volunteer.title})}"></head>
+<body>
+<header th:replace="~{fragments :: entete(#{admin.volunteer.title}, true)}"></header>
+<main class="page page--large">
+    <nav th:replace="~{admin/fragments :: nav}"></nav>
+    <p th:replace="~{admin/fragments :: done}"></p>
+    <dl class="recap">
+        <dt th:text="#{profile.lastName}">Nom</dt>
+        <dd th:text="${volunteer.lastName}">Martin</dd>
+        <dt th:text="#{profile.firstName}">Prénom</dt>
+        <dd th:text="${volunteer.firstName}">Anne</dd>
+        <dt th:text="#{profile.pseudo}">Pseudo</dt>
+        <dd th:text="${volunteer.pseudo}">AnneM</dd>
+        <dt th:text="#{profile.phone}">Téléphone</dt>
+        <dd><a th:if="${volunteer.phone != null}" th:href="'tel:' + ${volunteer.phone}" th:text="${volunteer.phone}">+33600000001</a></dd>
+        <dt th:text="#{account.email}">Adresse e-mail</dt>
+        <dd th:text="${volunteer.email != null} ? ${volunteer.email} : #{admin.noEmail}">anne@example.org</dd>
+    </dl>
+    <th:block th:if="${!volunteer.reviewed and profileCompleted}">
+        <p class="bandeau" th:text="#{admin.volunteer.isNew}">Nouveau bénévole.</p>
+        <form th:action="@{/admin/benevoles/vu}" method="post">
+            <input type="hidden" name="benevole" th:value="${volunteer.id}">
+            <input type="hidden" name="retour" value="fiche">
+            <button class="bouton bouton--petit" type="submit" th:text="#{admin.volunteer.review}">Vu</button>
+        </form>
+    </th:block>
+
+    <h2 th:text="#{admin.volunteer.registrations}">Inscriptions</h2>
+    <p th:if="${registrations.isEmpty()}" th:text="#{admin.volunteer.registrations.none}">Aucune inscription.</p>
+    <ul th:unless="${registrations.isEmpty()}">
+        <li th:each="registration : ${registrations}">
+            <a th:href="@{/admin/journee(jour=${registration.day})}"
+               th:text="${#messages.msg(registration.activity.key, registration.activity.date)}">Dîner du lun. 4 janv.</a>
+            — <th:block th:text="#{${registration.optionKey}}">Option</th:block>
+            <th:block th:if="${registration.past}" th:text="'(' + #{admin.volunteer.past} + ')'">(passée)</th:block>
+        </li>
+    </ul>
+
+    <th:block th:if="${profileCompleted}">
+        <h2 th:text="#{admin.volunteer.identity}">Corriger</h2>
+        <p class="aide" th:text="#{admin.volunteer.identity.hint}">Pseudo usurpé.</p>
+        <form class="formulaire" th:action="@{/admin/benevoles/{id}/identite(id=${volunteer.id})}" th:object="${identityForm}"
+              method="post" novalidate>
+            <label for="lastName" th:text="#{profile.lastName}">Nom</label>
+            <input id="lastName" type="text" required maxlength="100" th:field="*{lastName}"
+                   th:attr="aria-invalid=${#fields.hasErrors('lastName')} ? 'true' : 'false'">
+            <p class="erreur" th:if="${#fields.hasErrors('lastName')}" th:text="#{profile.error.lastName}">Nom.</p>
+            <label for="firstName" th:text="#{profile.firstName}">Prénom</label>
+            <input id="firstName" type="text" required maxlength="100" th:field="*{firstName}"
+                   th:attr="aria-invalid=${#fields.hasErrors('firstName')} ? 'true' : 'false'">
+            <p class="erreur" th:if="${#fields.hasErrors('firstName')}" th:text="#{profile.error.firstName}">Prénom.</p>
+            <label for="pseudo" th:text="#{profile.pseudo}">Pseudo</label>
+            <input id="pseudo" type="text" required minlength="3" maxlength="20" spellcheck="false" autocapitalize="off"
+                   th:field="*{pseudo}"
+                   th:attr="aria-invalid=${#fields.hasErrors('pseudo') or pseudoTaken != null} ? 'true' : 'false'">
+            <p class="erreur" th:if="${#fields.hasErrors('pseudo')}" th:text="#{profile.error.pseudo}">Pseudo.</p>
+            <p class="erreur" th:if="${pseudoTaken != null}" th:text="#{profile.error.pseudoTaken(${pseudoTaken})}">Pris.</p>
+            <button class="bouton" type="submit" th:text="#{admin.volunteer.identity.submit}">Enregistrer</button>
+        </form>
+    </th:block>
+
+    <h2 th:text="#{admin.volunteer.delete}">Supprimer ce bénévole</h2>
+    <p><a class="bouton bouton--danger" th:href="@{/admin/benevoles/{id}/supprimer(id=${volunteer.id})}"
+          th:text="#{admin.volunteer.delete}">Supprimer</a></p>
+</main>
+</body>
+</html>

@@ -55,6 +55,10 @@ public class RegistrationEntity {
         this.createdAt = createdAt;
     }
 
+    public UUID id() {
+        return id;
+    }
+
     public UUID eveningId() {
         return eveningId;
     }
@@ -66,6 +70,10 @@ public class RegistrationEntity {
     /** Annulation logique (R6). À n'appeler que sous le verrou de la soirée. */
     public void cancel(Instant now) {
         this.cancelledAt = now;
+    }
+
+    public boolean active() {
+        return cancelledAt == null;
     }
 
     public Registration toDomain() {

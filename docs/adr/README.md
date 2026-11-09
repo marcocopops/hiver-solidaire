@@ -13,3 +13,4 @@ Chaque décision structurante est consignée ici, au format du [modèle](templat
 | [0007](0007-session-jdbc-plutot-que-se-souvenir-de-moi.md) | Session de 30 jours en base plutôt que « se souvenir de moi » | Accepté |
 | [0008](0008-annulation-logique-et-anonymisation.md) | Annulation logique et anonymisation plutôt que suppression | Proposé |
 | [0009](0009-affichage-par-journee-donnees-par-soiree.md) | Affichage par journée, données par soirée | Proposé |
+| [0010](0010-coordinateurs-par-variable-d-environnement.md) | Coordinateurs désignés par variable d'environnement | Proposé |

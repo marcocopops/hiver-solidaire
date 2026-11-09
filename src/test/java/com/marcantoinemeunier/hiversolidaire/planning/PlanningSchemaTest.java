@@ -169,8 +169,11 @@ class PlanningSchemaTest {
         pseudo(volunteer("alice@example.org"), "Elodie");
         pseudo(volunteer("bob@example.org"), "Élodie");
 
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM volunteer WHERE pseudo IS NOT NULL", Integer.class))
-                .isEqualTo(2);
+        // Seulement les deux comptes de ce test : d'autres classes laissent des bénévoles dans la base partagée.
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM volunteer
+                WHERE pseudo IS NOT NULL AND email IN ('alice@example.org', 'bob@example.org')
+                """, Integer.class)).isEqualTo(2);
     }
 
     @Test

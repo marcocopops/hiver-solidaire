@@ -8,7 +8,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 
 /**
- * Horloge réglable, placée pendant la saison d'exemple (inscriptions ouvertes), et double de l'envoi de lien.
+ * Horloge réglable, placée pendant la saison d'exemple (inscriptions ouvertes), double de l'envoi de lien et liste
+ * des coordinateurs modifiable.
  * Chaque test qui touche à l'horloge la remet à {@link #DURING_SEASON}.
  */
 @TestConfiguration(proxyBeanMethods = false)
@@ -27,5 +28,12 @@ public class TestClockAndMailConfiguration {
     @Primary
     public RecordingMagicLinkSender recordingMagicLinkSender() {
         return new RecordingMagicLinkSender();
+    }
+
+    /** Liste des coordinateurs modifiable : chaque test y ajoute ses propres adresses factices. */
+    @Bean
+    @Primary
+    public TestCoordinatorEmails testCoordinatorEmails() {
+        return new TestCoordinatorEmails();
     }
 }

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head(#{admin.exports.title})}"></head>
+<body>
+<header th:replace="~{fragments :: entete(#{admin.exports.title}, true)}"></header>
+<main class="page page--large">
+    <nav th:replace="~{admin/fragments :: nav}"></nav>
+
+    <h2 th:text="#{admin.exports.csv}">Inscriptions au format CSV</h2>
+    <p class="aide" th:text="#{admin.exports.csv.hint(${maxDays})}">Contient des coordonnées.</p>
+    <form class="formulaire formulaire--ligne" th:action="@{/admin/exports/inscriptions.csv}" method="post">
+        <div>
+            <label for="du" th:text="#{admin.exports.from}">Du</label>
+            <input id="du" type="date" name="du" required th:value="${from}">
+        </div>
+        <div>
+            <label for="au" th:text="#{admin.exports.to}">Au</label>
+            <input id="au" type="date" name="au" required th:value="${to}">
+        </div>
+        <button class="bouton" type="submit" th:text="#{admin.exports.csv.submit}">Télécharger le CSV</button>
+    </form>
+
+    <h2 th:text="#{admin.exports.print}">Planning imprimable</h2>
+    <p class="aide" th:text="#{admin.exports.print.hint}">Plan B.</p>
+    <form class="formulaire" th:action="@{/admin/exports/impression}" method="post">
+        <button class="bouton" type="submit" th:text="#{admin.exports.print.submit}">Ouvrir la page imprimable</button>
+    </form>
+</main>
+</body>
+</html>
