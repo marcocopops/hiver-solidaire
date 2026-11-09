@@ -278,8 +278,8 @@ class SeedDevScriptTest {
     void refuses_a_database_with_more_than_one_season() {
         freshDatabase(null);
         jdbc.update("""
-                INSERT INTO season (id, label, first_evening, last_evening, registrations_open_at)
-                VALUES (gen_random_uuid(), 'Autre', DATE '2028-01-03', DATE '2028-03-19', TIMESTAMPTZ '2027-12-13 00:00:00 Europe/Paris')
+                INSERT INTO season (id, first_evening, last_evening, registrations_open_at)
+                VALUES (gen_random_uuid(), DATE '2028-01-03', DATE '2028-03-19', TIMESTAMPTZ '2027-12-13 00:00:00 Europe/Paris')
                 """);
 
         assertThatThrownBy(SeedDevScriptTest::seed).hasMessageContaining("une seule saison");
