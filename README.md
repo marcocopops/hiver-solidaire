@@ -56,6 +56,25 @@ set -a; . ./.env; set +a         # charge DB_*, MAIL_*, APP_BASE_URL dans le she
 - Le cookie de session est `Secure` (préfixe `__Host-`) : utiliser `http://localhost`, que les navigateurs traitent comme sûr, et pas `http://127.0.0.1` ni l'adresse IP de la machine.
 - Sans `MAIL_HOST`, l'appli démarre mais la page de connexion affiche « momentanément indisponible ».
 
+## Données de test
+
+Pour tester à la main le planning, le back-office et les exports sans s'inscrire vingt fois, un script remplit la base de **développement** avec des données factices :
+
+```bash
+scripts/seed-dev.sh              # ajoute les données ; relancé, il ne double rien
+scripts/seed-dev.sh --reset      # vide d'abord inscriptions, alertes, journal d'audit et bénévoles factices
+```
+
+- **Prérequis** : `docker compose up -d` et une base migrée (démarrer l'appli une fois : Flyway crée le schéma).
+- **Contenu** : 21 bénévoles factices (`prenom.nom@example.org`, numéros de la plage réservée à la fiction, pseudos « CamilleM »), dont un inscrit par téléphone sans e-mail et 4 nouveaux non « vus » ; environ 60 % des soirées des 4 premières semaines de la saison remplies : journées complètes, journées incomplètes à divers degrés, un plat préparé chez soi avec sa récupération et un sans (R4), des inscriptions annulées et une alerte « soirée devenue incomplète ». Les dates suivent la première soirée de la saison.
+- **Règles** : les inscriptions respectent R1 à R4 et R7 par construction, et une requête de contrôle le vérifie à la fin ; une violation annule tout (une seule transaction). Une soirée qui porte déjà une inscription faite à la main est laissée telle quelle.
+- **Garde-fous** : le script refuse de tourner si le conteneur `db` n'appartient pas au projet Compose `hiver-solidaire-dev`, ou si la base n'a pas le schéma attendu. Il ne lit jamais `.env` : `psql` tourne dans le conteneur avec ses propres variables. Rien de tout cela n'existe dans l'appli.
+- **Voir les soirées comme à venir** : le script affiche le décalage d'horloge à utiliser, par exemple `APP_CLOCK_OFFSET=P53D ./mvnw spring-boot:run` (horloge 3 jours avant la première soirée, inscriptions ouvertes).
+- **Se connecter** : comme coordinateur avec une adresse de `APP_COORDINATOR_EMAILS` (back-office sur http://localhost:8080/admin), ou comme un bénévole factice (`camille.martin@example.org`…) pour voir « Vous » sur le planning ; le lien arrive dans Mailpit.
+- Le journal d'audit est en ajout seul, mais son déclencheur ne bloque pas `TRUNCATE`, que `--reset` utilise. Si un jour il le bloque, repartir d'une base vide : `docker compose down -v`, `docker compose up -d`, démarrer l'appli une fois, puis `scripts/seed-dev.sh`.
+
+## Tests et exploitation
+
 - Tests (JUnit + Testcontainers, sur un vrai PostgreSQL) : `./mvnw verify`.
 - Santé : `http://localhost:8081/actuator/health` (port de management, jamais exposé en production).
 - Image Docker : `docker build -t hiver-solidaire .`
