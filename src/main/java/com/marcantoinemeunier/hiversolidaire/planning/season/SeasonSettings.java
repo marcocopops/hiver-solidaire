@@ -11,12 +11,11 @@ import java.util.UUID;
  *
  * @param registrationsOpenAt ouverture des inscriptions, heure de Paris
  * @param needs besoins et horaires, dans l'ordre d'affichage d'une journée
- * @param venueAddress adresse du lieu : jamais sur la page publique (§6)
- * @param coordinatorsPhone téléphone des coordinateurs saisi pour la saison, ou {@code null}
+ * @param coordinatorsContact contact des coordinateurs saisi pour la saison (téléphone ou adresse e-mail), ou
+ *     {@code null}
  */
-public record SeasonSettings(UUID id, String label, LocalDate firstEvening, LocalDate lastEvening,
-        LocalDateTime registrationsOpenAt, boolean sample, List<NeedSetting> needs, String venueAddress,
-        String instructions, String coordinatorsPhone) {
+public record SeasonSettings(UUID id, LocalDate firstEvening, LocalDate lastEvening,
+        LocalDateTime registrationsOpenAt, boolean sample, List<NeedSetting> needs, String coordinatorsContact) {
 
     public record NeedSetting(Post post, int minimum, int maximum, String schedule) {
     }

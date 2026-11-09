@@ -11,7 +11,7 @@
         Vos inscriptions à venir seront annulées.</p>
     <th:block th:if="${pastDeadline}">
         <p class="alerte" role="alert" th:text="#{account.delete.pastDeadline}">Une soirée est imminente.</p>
-        <p th:replace="~{fragments :: coordinators(#{account.delete.warn})}">Prévenez un coordinateur.</p>
+        <p th:replace="~{fragments :: coordinators(false)}">Contactez les coordinateurs.</p>
     </th:block>
     <p class="bandeau" th:text="#{account.delete.irreversible}">Cette action est définitive.</p>
     <form class="formulaire" th:action="@{/mon-compte/supprimer}" method="post">

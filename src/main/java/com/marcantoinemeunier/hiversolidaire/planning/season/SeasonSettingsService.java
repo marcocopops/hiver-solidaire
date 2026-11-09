@@ -99,14 +99,12 @@ public class SeasonSettingsService {
                 (row, index) -> new NeedSetting(Post.valueOf(row.getString("post")), row.getInt("minimum"),
                         row.getInt("maximum"), row.getString("schedule")), id);
         return jdbc.query("""
-                SELECT id, label, first_evening, last_evening, registrations_open_at, sample, venue_address,
-                    instructions, coordinators_phone
+                SELECT id, first_evening, last_evening, registrations_open_at, sample, coordinators_contact
                 FROM season WHERE id = ?
-                """, (row, index) -> new SeasonSettings(row.getObject("id", UUID.class), row.getString("label"),
+                """, (row, index) -> new SeasonSettings(row.getObject("id", UUID.class),
                 row.getObject("first_evening", LocalDate.class), row.getObject("last_evening", LocalDate.class),
                 LocalDateTime.ofInstant(row.getTimestamp("registrations_open_at").toInstant(), ParisTime.ZONE),
-                row.getBoolean("sample"), needs, row.getString("venue_address"), row.getString("instructions"),
-                row.getString("coordinators_phone")), id).stream().findFirst();
+                row.getBoolean("sample"), needs, row.getString("coordinators_contact")), id).stream().findFirst();
     }
 
     /**
@@ -115,11 +113,11 @@ public class SeasonSettingsService {
      * Les soirées à supprimer sont verrouillées d'abord, dans l'ordre des dates (même verrou que l'inscription, R1) :
      * aucune inscription ne peut s'y glisser entre le contrôle et la suppression.
      *
-     * @param phone téléphone des coordinateurs déjà validé, ou {@code null}
+     * @param contact contact des coordinateurs déjà validé et mis en forme, ou {@code null}
      * @throws EveningsWithRegistrationsException si une soirée à supprimer a des inscriptions actives
      */
     @Transactional
-    public void update(UUID seasonId, SeasonForm form, String phone) {
+    public void update(UUID seasonId, SeasonForm form, String contact) {
         jdbc.queryForList("SELECT id FROM season WHERE id = ? FOR UPDATE", UUID.class, seasonId).stream().findFirst()
                 .orElseThrow(IllegalArgumentException::new);
         var removed = jdbc.queryForList("""
@@ -140,12 +138,10 @@ public class SeasonSettingsService {
             }
         }
         jdbc.update("""
-                UPDATE season SET label = ?, first_evening = ?, last_evening = ?, registrations_open_at = ?,
-                    venue_address = ?, instructions = ?, coordinators_phone = ?
+                UPDATE season SET first_evening = ?, last_evening = ?, registrations_open_at = ?,
+                    coordinators_contact = ?
                 WHERE id = ?
-                """, form.getLabel().strip(), form.getFirstEvening(), form.getLastEvening(), opensAt(form),
-                SeasonForm.blankToNull(form.getVenueAddress()), SeasonForm.blankToNull(form.getInstructions()), phone,
-                seasonId);
+                """, form.getFirstEvening(), form.getLastEvening(), opensAt(form), contact, seasonId);
         writeNeeds(seasonId, form);
         addMissingEvenings(seasonId, form);
     }
@@ -154,11 +150,12 @@ public class SeasonSettingsService {
      * Crée la saison (une seule active à la fois). Si la saison courante est la saison d'exemple, elle est supprimée
      * dans la même transaction, seulement si elle n'a aucune inscription active.
      *
+     * @param contact contact des coordinateurs déjà validé et mis en forme, ou {@code null}
      * @throws SeasonAlreadyActiveException si une vraie saison est en cours ou à venir
      * @throws SampleSeasonInUseException si la saison d'exemple a des inscriptions actives
      */
     @Transactional
-    public Created create(SeasonForm form, String phone) {
+    public Created create(SeasonForm form, String contact) {
         // Verrou sur toutes les saisons : deux créations simultanées s'exécutent l'une après l'autre.
         jdbc.queryForList("SELECT id FROM season ORDER BY id FOR UPDATE", UUID.class);
         if (!creationAllowed()) {
@@ -181,11 +178,9 @@ public class SeasonSettingsService {
         }
         var id = UUID.randomUUID();
         jdbc.update("""
-                INSERT INTO season (id, label, first_evening, last_evening, registrations_open_at, sample,
-                    venue_address, instructions, coordinators_phone)
-                VALUES (?, ?, ?, ?, ?, false, ?, ?, ?)
-                """, id, form.getLabel().strip(), form.getFirstEvening(), form.getLastEvening(), opensAt(form),
-                SeasonForm.blankToNull(form.getVenueAddress()), SeasonForm.blankToNull(form.getInstructions()), phone);
+                INSERT INTO season (id, first_evening, last_evening, registrations_open_at, sample, coordinators_contact)
+                VALUES (?, ?, ?, ?, false, ?)
+                """, id, form.getFirstEvening(), form.getLastEvening(), opensAt(form), contact);
         writeNeeds(id, form);
         addMissingEvenings(id, form);
         return new Created(id, replaced);

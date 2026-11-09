@@ -32,10 +32,6 @@
 <th:block th:fragment="seasonFields">
     <p class="erreur" th:if="${#fields.hasGlobalErrors()}" th:each="error : ${#fields.globalErrors()}" th:text="${error}">Erreur.</p>
 
-    <label for="label" th:text="#{admin.season.label}">Nom de la saison</label>
-    <input id="label" type="text" required maxlength="100" th:field="*{label}">
-    <p class="erreur" th:if="${#fields.hasErrors('label')}" th:text="#{admin.season.error.label}">Nom.</p>
-
     <div class="formulaire formulaire--ligne">
         <div>
             <label for="firstEvening" th:text="#{admin.season.firstEvening}">Première soirée</label>
@@ -86,19 +82,11 @@
     </fieldset>
     <p class="erreur" th:if="${#fields.hasErrors('needs*') or #fields.hasErrors('needsComplete')}" th:text="#{admin.season.error.need}">Besoins.</p>
 
-    <label for="venueAddress" th:text="#{admin.season.venue}">Adresse du lieu</label>
-    <input id="venueAddress" type="text" maxlength="300" th:field="*{venueAddress}" aria-describedby="venue-hint">
-    <p class="aide" id="venue-hint" th:text="#{admin.season.venue.hint}">Jamais publique.</p>
-    <p class="erreur" th:if="${#fields.hasErrors('venueAddress')}" th:text="#{admin.season.error.venue}">Adresse.</p>
-
-    <label for="instructions" th:text="#{admin.season.instructions}">Consignes</label>
-    <textarea id="instructions" rows="6" maxlength="2000" th:field="*{instructions}"></textarea>
-    <p class="erreur" th:if="${#fields.hasErrors('instructions')}" th:text="#{admin.season.error.instructions}">Consignes.</p>
-
-    <label for="coordinatorsPhone" th:text="#{admin.season.phone}">Téléphone des coordinateurs</label>
-    <input id="coordinatorsPhone" type="tel" maxlength="30" th:field="*{coordinatorsPhone}" aria-describedby="phone-hint">
-    <p class="aide" id="phone-hint" th:text="#{admin.season.phone.hint}">Vide : configuration.</p>
-    <p class="erreur" th:if="${#fields.hasErrors('coordinatorsPhone')}" th:text="#{admin.season.error.phone}">Téléphone.</p>
+    <label for="coordinatorsContact" th:text="#{admin.season.contact}">Contact des coordinateurs</label>
+    <input id="coordinatorsContact" type="text" maxlength="254" autocomplete="off" th:field="*{coordinatorsContact}"
+           aria-describedby="contact-hint">
+    <p class="aide" id="contact-hint" th:text="#{admin.season.contact.hint}">Téléphone ou e-mail. Vide : configuration.</p>
+    <p class="erreur" th:if="${#fields.hasErrors('coordinatorsContact')}" th:text="#{admin.season.error.contact}">Contact.</p>
 </th:block>
 </body>
 </html>

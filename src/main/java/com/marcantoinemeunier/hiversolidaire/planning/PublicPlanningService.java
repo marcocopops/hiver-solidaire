@@ -94,7 +94,7 @@ class PublicPlanningService {
         var opensOn = now.isBefore(domainSeason.registrationsOpenAt())
                 ? OPENING.format(domainSeason.registrationsOpenAt().atZone(ParisTime.ZONE))
                 : null;
-        return new PublicPlanning(season.label(), opensOn, filter, volunteerId.isPresent(), !upcoming.isEmpty(),
+        return new PublicPlanning(season.sample(), opensOn, filter, volunteerId.isPresent(), !upcoming.isEmpty(),
                 days);
     }
 

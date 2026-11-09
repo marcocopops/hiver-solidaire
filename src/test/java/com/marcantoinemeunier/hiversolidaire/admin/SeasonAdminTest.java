@@ -73,13 +73,10 @@ class SeasonAdminTest {
     /** Champs du formulaire de saison, besoins de 2025-2026 dans l'ordre d'une journée. */
     private static String[] form(LocalDate first, LocalDate last, String... overrides) {
         var params = new ArrayList<>(List.of(
-                "label", "Saison 2026-2027",
                 "firstEvening", first.toString(),
                 "lastEvening", last.toString(),
                 "registrationsOpenAt", "2026-12-14T00:00",
-                "venueAddress", "1 rue de l’Exemple, 00000 Ville-Fictive",
-                "instructions", "Sonner deux fois.\nClé chez le voisin fictif.",
-                "coordinatorsPhone", ""));
+                "coordinatorsContact", ""));
         String[][] needs = {{"BREAKFAST", "1", "1", "7 h"}, {"MAIN_DISH", "1", "1", "19 h"}, {"SIDES", "1", "1", "19 h"},
             {"DINNER_PRESENCE", "2", "2", "19 h → 21 h"}, {"NIGHT", "1", "2", "Jusqu’au matin"}};
         for (int i = 0; i < needs.length; i++) {
@@ -131,10 +128,11 @@ class SeasonAdminTest {
                 .isEqualTo("Jusqu’au matin");
         assertThat(audits(coordinator.id(), "SAMPLE_SEASON_DELETED")).isEqualTo(1);
         assertThat(audits(coordinator.id(), "SEASON_CREATED")).isEqualTo(1);
-        assertThat(browser.get("/admin/saison").getContentAsString()).contains("value=\"Saison 2026-2027\"");
+        assertThat(browser.get("/admin/saison").getContentAsString()).contains("value=\"2027-01-04\"")
+                .doesNotContain("Nom de la saison").doesNotContain("Adresse du lieu").doesNotContain("Consignes");
 
         // Une seule saison active à la fois : une seconde création est refusée.
-        var again = create(browser, "label", "Autre saison");
+        var again = create(browser, "lastEvening", LAST.plusDays(1).toString());
         assertThat(again.getContentAsString()).contains("Une saison est déjà en cours ou à venir");
         assertThat(jdbc.queryForObject("SELECT count(*) FROM season", Integer.class)).isEqualTo(1);
     }
@@ -169,17 +167,17 @@ class SeasonAdminTest {
         TestVolunteers.register(anne.browser(), LAST, "NIGHT_AND_DINNER");
         browser.get("/admin/saison");
 
-        var refused = browser.post("/admin/saison", form(FIRST, LAST.minusDays(7), "label", "Raccourcie"));
+        var refused = browser.post("/admin/saison", form(FIRST, LAST.minusDays(7)));
 
         assertThat(refused.getStatus()).isEqualTo(200);
         assertThat(refused.getContentAsString()).contains("Ces dates ne peuvent pas sortir de la saison")
                 .contains("dim. 28 mars");
         assertThat(evenings()).isEqualTo(84);
-        assertThat(jdbc.queryForObject("SELECT label FROM season", String.class)).isEqualTo("Saison 2026-2027");
+        assertThat(jdbc.queryForObject("SELECT last_evening FROM season", LocalDate.class)).isEqualTo(LAST);
         assertThat(audits(coordinator.id(), "SEASON_UPDATED")).isZero();
 
         // Sans inscription, les soirées sortantes sont supprimées et les nouvelles créées.
-        var updated = browser.post("/admin/saison", form(FIRST.plusDays(3), LAST.plusDays(2), "label", "Décalée"));
+        var updated = browser.post("/admin/saison", form(FIRST.plusDays(3), LAST.plusDays(2)));
         assertThat(updated.getRedirectedUrl()).isEqualTo("/admin/saison");
         assertThat(evenings()).isEqualTo(84 - 3 + 2);
         assertThat(jdbc.queryForObject("SELECT min(evening_date) FROM evening", LocalDate.class))
@@ -195,28 +193,115 @@ class SeasonAdminTest {
         var browser = coordinator.browser();
 
         var response = create(browser, "lastEvening", "2026-12-01", "needs[4].minimum", "3",
-                "coordinatorsPhone", "appelez-nous", "label", "");
+                "coordinatorsContact", "appelez-nous");
 
         assertThat(response.getStatus()).isEqualTo(200);
         assertThat(response.getContentAsString()).contains("Indiquez une première et une dernière soirée")
-                .contains("le maximum au moins égal au minimum").contains("Indiquez un numéro de téléphone")
-                .contains("Indiquez le nom de la saison");
+                .contains("le maximum au moins égal au minimum")
+                .contains("Indiquez un numéro de téléphone français ou une adresse e-mail");
         assertThat(jdbc.queryForObject("SELECT count(*) FROM season WHERE sample", Integer.class)).isEqualTo(1);
         assertThat(audits(coordinator.id(), "SEASON_CREATED")).isZero();
     }
 
     @Test
-    void the_venue_and_the_season_phone_reach_volunteers_but_never_the_public_planning() throws Exception {
-        create(volunteers.coordinator().browser(), "coordinatorsPhone", "01 99 00 56 78");
+    void a_contact_that_is_neither_a_french_number_nor_an_email_address_is_refused() throws Exception {
+        var coordinator = volunteers.coordinator();
+        var browser = coordinator.browser();
+        create(browser, "coordinatorsContact", "01 99 00 56 78");
+        browser.get("/admin/saison");
+
+        for (var invalid : new String[] {"+44 20 7946 0000", "a?bcc=autre@example.org", "x".repeat(255)}) {
+            var refused = browser.post("/admin/saison", form(FIRST, LAST, "coordinatorsContact", invalid));
+            assertThat(refused.getStatus()).isEqualTo(200);
+            assertThat(refused.getContentAsString())
+                    .contains("Indiquez un numéro de téléphone français ou une adresse e-mail");
+        }
+
+        assertThat(jdbc.queryForObject("SELECT coordinators_contact FROM season", String.class))
+                .isEqualTo("01 99 00 56 78");
+        assertThat(audits(coordinator.id(), "SEASON_UPDATED")).isZero();
+    }
+
+    @Test
+    void the_season_phone_reaches_volunteers_but_never_the_public_planning() throws Exception {
+        create(volunteers.coordinator().browser(), "coordinatorsContact", "01 99 00 56 78");
         var anne = volunteers.volunteer();
-        // Soirée du jour même : la limite de R6 est passée, le téléphone des coordinateurs s'affiche.
+        // Soirée du jour même : la limite de R6 est passée, le contact des coordinateurs s'affiche.
         TestVolunteers.register(anne.browser(), FIRST, "NIGHT_AND_DINNER");
 
         var mine = anne.browser().get("/mes-inscriptions").getContentAsString();
 
-        assertThat(mine).contains("1 rue de l’Exemple").contains("Sonner deux fois.").contains("01 99 00 56 78")
-                .doesNotContain("01 99 00 12 34");
+        assertThat(mine).contains("Pour vous désinscrire, contactez les coordinateurs via")
+                .contains("href=\"tel:0199005678\"").contains("01 99 00 56 78").doesNotContain("Le lieu d’accueil");
         var publicPage = new Browser(mockMvc).get("/planning").getContentAsString();
-        assertThat(publicPage).doesNotContain("rue de l’Exemple").doesNotContain("Sonner");
+        assertThat(publicPage).doesNotContain("01 99 00 56 78").doesNotContain("0199005678");
+    }
+
+    @Test
+    void an_email_address_as_contact_gets_a_mailto_link() throws Exception {
+        var browser = volunteers.coordinator().browser();
+        create(browser, "coordinatorsContact", "01 99 00 56 78");
+        browser.get("/admin/saison");
+        var updated = browser.post("/admin/saison",
+                form(FIRST, LAST, "coordinatorsContact", " Coordination@Example.org "));
+        assertThat(updated.getRedirectedUrl()).isEqualTo("/admin/saison");
+        assertThat(jdbc.queryForObject("SELECT coordinators_contact FROM season", String.class))
+                .isEqualTo("coordination@example.org");
+        var anne = volunteers.volunteer();
+        TestVolunteers.register(anne.browser(), FIRST, "NIGHT_AND_DINNER");
+
+        var mine = anne.browser().get("/mes-inscriptions").getContentAsString();
+        var confirm = anne.browser().get("/mes-inscriptions/annuler?soiree=" + FIRST).getContentAsString();
+
+        for (var page : new String[] {mine, confirm}) {
+            assertThat(page).contains("Pour vous désinscrire, contactez les coordinateurs via")
+                    .contains("href=\"mailto:coordination@example.org\"").doesNotContain("tel:");
+        }
+        var publicPage = new Browser(mockMvc).get("/planning").getContentAsString();
+        assertThat(publicPage).doesNotContain("coordination@example.org");
+    }
+
+    @Test
+    void without_a_season_contact_volunteers_are_told_to_contact_a_coordinator_without_a_link() throws Exception {
+        create(volunteers.coordinator().browser(), "coordinatorsContact", "");
+        var anne = volunteers.volunteer();
+        TestVolunteers.register(anne.browser(), FIRST, "NIGHT_AND_DINNER");
+
+        var mine = anne.browser().get("/mes-inscriptions").getContentAsString();
+        var confirm = anne.browser().get("/mes-inscriptions/annuler?soiree=" + FIRST).getContentAsString();
+
+        for (var page : new String[] {mine, confirm}) {
+            assertThat(page).contains("Contactez un coordinateur.").doesNotContain("href=\"tel:")
+                    .doesNotContain("href=\"mailto:").doesNotContain("contactez les coordinateurs via");
+        }
+    }
+
+    @Test
+    void the_dashboard_reports_a_missing_season_contact_until_it_is_filled_in() throws Exception {
+        var browser = volunteers.coordinator().browser();
+        // La saison d'exemple n'a pas de contact.
+        assertThat(browser.get("/admin").getContentAsString())
+                .contains("Le contact des coordinateurs n’est pas renseigné").contains("href=\"/admin/saison\"");
+
+        create(browser, "coordinatorsContact", "");
+        assertThat(browser.get("/admin").getContentAsString())
+                .contains("Le contact des coordinateurs n’est pas renseigné");
+
+        browser.get("/admin/saison");
+        browser.post("/admin/saison", form(FIRST, LAST, "coordinatorsContact", "coordination@example.org"));
+        assertThat(browser.get("/admin").getContentAsString())
+                .doesNotContain("Le contact des coordinateurs n’est pas renseigné");
+    }
+
+    @Test
+    void the_planning_shows_no_season_name_only_a_notice_for_the_sample_season() throws Exception {
+        var before = new Browser(mockMvc).get("/planning").getContentAsString();
+        assertThat(before).contains("Saison d’exemple : les dates sont à confirmer.")
+                .doesNotContain("(dates à confirmer)");
+
+        create(volunteers.coordinator().browser());
+
+        var after = new Browser(mockMvc).get("/planning").getContentAsString();
+        assertThat(after).doesNotContain("Saison d’exemple").doesNotContain("class=\"saison\"");
     }
 }

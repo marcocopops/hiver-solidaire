@@ -1,8 +1,11 @@
 package com.marcantoinemeunier.hiversolidaire.admin;
 
 import com.marcantoinemeunier.hiversolidaire.benevole.VolunteerService;
+import com.marcantoinemeunier.hiversolidaire.config.CoordinatorsContact;
 import com.marcantoinemeunier.hiversolidaire.notification.CoordinatorAlerts;
 import com.marcantoinemeunier.hiversolidaire.planning.DayLabelFormatter;
+import com.marcantoinemeunier.hiversolidaire.planning.season.SeasonSettings;
+import com.marcantoinemeunier.hiversolidaire.planning.season.SeasonSettingsService;
 import java.security.Principal;
 import java.util.List;
 import org.springframework.stereotype.Controller;
@@ -15,7 +18,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 /**
  * Accueil du back-office : le tableau de bord (cahier des charges §6). Les journées à compléter des 14 prochains jours
  * en tête, puis les alertes enregistrées non traitées, les préparations chez soi sans récupération (R4) et les
- * nouveaux bénévoles à signaler (§2). Réservé au rôle coordinateur ({@code SecurityConfig}).
+ * nouveaux bénévoles à signaler (§2). En tête, un avertissement si la saison n'a pas de contact des coordinateurs
+ * (R6). Réservé au rôle coordinateur ({@code SecurityConfig}).
  */
 @Controller
 class DashboardController {
@@ -27,13 +31,15 @@ class DashboardController {
     private final CoordinatorAlerts alerts;
     private final VolunteerService volunteers;
     private final CoordinatorActions actions;
+    private final SeasonSettingsService seasons;
 
     DashboardController(CoordinatorPlanning planning, CoordinatorAlerts alerts, VolunteerService volunteers,
-            CoordinatorActions actions) {
+            CoordinatorActions actions, SeasonSettingsService seasons) {
         this.planning = planning;
         this.alerts = alerts;
         this.volunteers = volunteers;
         this.actions = actions;
+        this.seasons = seasons;
     }
 
     record Missing(String postKey, int count) {
@@ -68,6 +74,8 @@ class DashboardController {
                 .toList());
         model.addAttribute("newVolunteers", volunteers.toReview());
         model.addAttribute("daysAhead", DAYS_AHEAD);
+        model.addAttribute("contactMissing", seasons.current().map(SeasonSettings::coordinatorsContact)
+                .flatMap(CoordinatorsContact::readable).isEmpty());
         return "admin/tableau-de-bord";
     }
 

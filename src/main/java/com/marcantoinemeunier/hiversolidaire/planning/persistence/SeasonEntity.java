@@ -22,9 +22,6 @@ public class SeasonEntity {
     @Id
     private UUID id;
 
-    @Column(name = "label", nullable = false)
-    private String label;
-
     @Column(name = "first_evening", nullable = false)
     private LocalDate firstEvening;
 
@@ -46,10 +43,6 @@ public class SeasonEntity {
 
     public UUID id() {
         return id;
-    }
-
-    public String label() {
-        return label;
     }
 
     /** Saison d'exemple, à signaler comme telle à l'affichage. */

@@ -11,6 +11,7 @@ import com.marcantoinemeunier.hiversolidaire.planning.domain.ParisTime;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +44,7 @@ class CancellationJourneyTest {
     /** Mercredi 17 février 2027 : au-delà de la fenêtre de l'alerte. */
     private static final LocalDate LATER = LocalDate.of(2027, 2, 17);
     private static final String COORDINATORS_PHONE = "01 99 00 12 34";
+    private static final String CONTACT_SENTENCE = "Pour vous désinscrire, contactez les coordinateurs via";
 
     @Autowired
     MockMvc mockMvc;
@@ -56,8 +58,15 @@ class CancellationJourneyTest {
     @Autowired
     MutableClock clock;
 
+    /** Le contact ne vient que des réglages de la saison : celle d'exemple le reçoit le temps du test. */
+    @BeforeEach
+    void seasonContact() {
+        jdbc.update("UPDATE season SET coordinators_contact = ?", "01 99 00 12 34");
+    }
+
     @AfterEach
     void clean() {
+        jdbc.update("UPDATE season SET coordinators_contact = NULL");
         clock.set(TestClockAndMailConfiguration.DURING_SEASON);
         for (var date : new LocalDate[] {SOON, LATER}) {
             jdbc.update("DELETE FROM coordinator_alert WHERE evening_id = (SELECT id FROM evening WHERE evening_date = ?)",
@@ -189,7 +198,7 @@ class CancellationJourneyTest {
     }
 
     @Test
-    void after_the_deadline_the_button_disappears_and_the_coordinators_phone_is_shown() throws Exception {
+    void after_the_deadline_the_button_disappears_and_the_coordinators_contact_is_shown() throws Exception {
         var alice = signedIn().browser();
         register(alice, SOON, "BREAKFAST");
         alice.get("/mes-inscriptions/annuler?soiree=" + SOON);
@@ -199,9 +208,9 @@ class CancellationJourneyTest {
 
         var mine = alice.get("/mes-inscriptions").getContentAsString();
         assertThat(mine).contains(SOON_LABEL).doesNotContain("/mes-inscriptions/annuler").doesNotContain(SOON_DEADLINE)
-                .contains(COORDINATORS_PHONE).contains("href=\"tel:0199001234\"");
+                .contains(CONTACT_SENTENCE).contains(COORDINATORS_PHONE).contains("href=\"tel:0199001234\"");
         var page = alice.get("/mes-inscriptions/annuler?soiree=" + SOON).getContentAsString();
-        assertThat(page).contains(COORDINATORS_PHONE).doesNotContain("action=\"/mes-inscriptions/annuler\"")
+        assertThat(page).contains(CONTACT_SENTENCE).contains(COORDINATORS_PHONE).doesNotContain("action=\"/mes-inscriptions/annuler\"")
                 .contains("la limite était le jeu. 7 janv. à 23 h 59");
 
         // Un POST forgé est refusé : l'inscription reste.

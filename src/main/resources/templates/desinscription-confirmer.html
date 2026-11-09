@@ -21,7 +21,7 @@
     </th:block>
     <th:block th:unless="${cancellable}">
         <p class="bandeau" th:text="#{cancellation.tooLate(${deadline})}">Trop tard.</p>
-        <p th:replace="~{fragments :: coordinators(#{myRegistrations.tooLate})}">Appelez.</p>
+        <p th:replace="~{fragments :: coordinators(true)}">Contactez les coordinateurs.</p>
     </th:block>
     <p><a class="bouton bouton--secondaire" th:href="@{/mes-inscriptions}" th:text="#{cancellation.confirm.back}">
         Garder mon inscription</a></p>

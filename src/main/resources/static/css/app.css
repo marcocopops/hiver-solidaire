@@ -383,11 +383,6 @@ a:hover {
 }
 
 /* 6. Planning par journée (ADR-0009) */
-.saison {
-    margin: 0 0 var(--esp-3);
-    color: var(--texte-secondaire);
-}
-
 /* Filtres : pilules de 44 px, le filtre actif plein (aria-current). */
 .filtres {
     display: flex;
@@ -869,11 +864,6 @@ a:hover {
 
 .formulaire--ligne > div {
     flex: 1 1 12rem;
-}
-
-/* Consignes du lieu, saisies sur plusieurs lignes par un coordinateur. */
-.consignes {
-    white-space: pre-line;
 }
 
 /* Page imprimable du planning (plan B, §8) : le navigateur l'enregistre en PDF. */

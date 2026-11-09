@@ -4,7 +4,7 @@
 <body>
 <header th:replace="~{fragments :: entete(#{planning.title}, true)}"></header>
 <main class="page">
-    <p class="saison" th:if="${planning.seasonLabel != null}" th:text="${planning.seasonLabel}">Saison</p>
+    <p class="bandeau" th:if="${planning.sample}" th:text="#{planning.sample}">Saison d’exemple : dates à confirmer.</p>
     <p class="bandeau" th:if="${planning.opensOn != null}" th:text="#{planning.opensOn(${planning.opensOn})}">
         Les inscriptions ouvrent le lundi 14 décembre 2026.</p>
 
@@ -65,7 +65,7 @@
                                 <p class="aide" th:text="#{cancellation.deadline(${mine.deadline})}">Possible jusqu’au…</p>
                             </th:block>
                             <th:block th:unless="${mine.cancellable}">
-                                <p th:replace="~{fragments :: coordinators(#{myRegistrations.tooLate})}">Appelez.</p>
+                                <p th:replace="~{fragments :: coordinators(true)}">Contactez les coordinateurs.</p>
                             </th:block>
                         </div>
                     </div>

@@ -7,17 +7,18 @@ import java.util.List;
  * pseudos publics des inscrits. Aucune autre donnée personnelle, aucun identifiant technique. Un bénévole connecté
  * voit en plus « Vous » sur ses propres postes et de quoi se désinscrire, rien sur les autres.
  *
+ * @param sample saison d'exemple, aux dates fictives : signalée comme telle (V3)
  * @param opensOn date d'ouverture des inscriptions si elle est à venir, sinon {@code null}
  * @param filter filtre appliqué, après repli sur « Toutes » d'une valeur inconnue
  * @param signedIn un bénévole est connecté : le filtre « Les miennes » est proposé
  * @param anyUpcoming il reste des journées à venir, avant filtrage (pour distinguer les deux messages « aucune »)
  * @param days journées à venir retenues par le filtre, dans l'ordre des dates
  */
-record PublicPlanning(String seasonLabel, String opensOn, PlanningFilter filter, boolean signedIn,
+record PublicPlanning(boolean sample, String opensOn, PlanningFilter filter, boolean signedIn,
         boolean anyUpcoming, List<PublicDay> days) {
 
     static PublicPlanning none(PlanningFilter filter, boolean signedIn) {
-        return new PublicPlanning(null, null, filter, signedIn, false, List.of());
+        return new PublicPlanning(false, null, filter, signedIn, false, List.of());
     }
 
     /**
