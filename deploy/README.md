@@ -97,7 +97,7 @@ puis `docker compose -f compose.prod.yaml up -d`. Tant que `APP_TAG` n'est pas `
 ## Connexion des bénévoles (depuis S3)
 
 - **Origine des liens** : `APP_BASE_URL` (par défaut `https://hiver-solidaire.marcantoine-meunier.com` dans `compose.prod.yaml`). Le lien envoyé par e-mail est construit sur cette valeur, jamais sur l'en-tête `Host` de la requête.
-- **E-mails** : aucun `MAIL_HOST` avant S5 (Brevo). L'appli démarre et la page de connexion affiche « momentanément indisponible » ; le planning public reste servi. Ne jamais pointer la production vers Mailpit.
+- **E-mails** : voir « E-mails (Brevo, depuis S5a) » ci-dessous. Sans `MAIL_HOST`, l'appli démarre et la page de connexion affiche « momentanément indisponible » ; le planning public reste servi. Ne jamais pointer la production vers Mailpit.
 - **Sessions** : stockées en base (table `spring_session`, ADR-0007), elles survivent aux mises à jour. Pour déconnecter un bénévole de tous ses appareils : `DELETE FROM spring_session WHERE principal_name = '<identifiant du bénévole>';`.
 - **Limitation des demandes de lien** : 3 par adresse toutes les 15 minutes, 10 par IP par heure, **en mémoire**. Valable pour une instance unique : les compteurs repartent de zéro à chaque redémarrage et ne seraient pas partagés entre deux instances. L'IP vient de l'en-tête transmis par cloudflared (`forward-headers-strategy: native`) : l'appli ne doit être joignable que par cloudflared. La limitation de débit de Cloudflare reste la première barrière.
 - **Contact des coordinateurs** (depuis le lot 2) : un numéro de téléphone français ou une adresse e-mail, saisi dans le back-office (« Saison ») et affiché aux bénévoles après la limite de désinscription (la veille à 23 h 59). Aucune variable d'environnement : `APP_COORDINATORS_PHONE` n'est plus lue, la retirer du `.env` du serveur. Sans contact, les bénévoles lisent « Contactez un coordinateur. », sans lien, et le tableau de bord le signale. La migration V13 conserve le téléphone déjà saisi dans la saison. La saison d'exemple ne se modifie pas : son contact se renseigne en créant la vraie saison.
@@ -105,6 +105,34 @@ puis `docker compose -f compose.prod.yaml up -d`. Tant que `APP_TAG` n'est pas `
 - **Journal d'audit** (depuis S4b) : table `audit_log`, en ajout seul (un déclencheur refuse `UPDATE` et `DELETE`). Elle ne contient que des identifiants techniques et des dates : pour savoir qui a fait quoi, rapprocher `coordinator_id` de `volunteer.id`.
 - **Comptes supprimés** : la suppression par le bénévole (« Mon compte ») anonymise sa ligne, annule ses inscriptions à venir et supprime ses sessions et ses liens en cours (ADR-0008). Aucune action manuelle à prévoir.
 - **`APP_CLOCK_OFFSET`** : réservé au développement, ne jamais le définir en production (un avertissement apparaît au démarrage s'il l'est).
+
+## E-mails (Brevo, depuis S5a)
+
+L'appli envoie par SMTP le lien de connexion et les e-mails automatiques ([cahier des charges](../docs/cahier-des-charges.md) §6, [ADR-0012](../docs/adr/0012-table-d-envois-plutot-qu-envoi-dans-la-requete.md)) : confirmations, rappel de 18 h, alertes immédiates et récap de 20 h aux adresses d'`APP_COORDINATOR_EMAILS`.
+
+1. **Chez Brevo** : domaine d'envoi authentifié (SPF, DKIM, DMARC) sans toucher aux MX existants. Créer une clé SMTP dédiée à l'appli.
+2. **Suivi désactivé** : vérifier dans les réglages des e-mails transactionnels de Brevo que le suivi des ouvertures et des clics est **désactivé**. Sinon, Brevo réécrit les liens et ajoute un pixel, ce que le cahier des charges exclut (§6, « Aucun suivi »). Contrôle : dans un e-mail reçu, les liens commencent par `https://hiver-solidaire.marcantoine-meunier.com/`, et la source du message ne contient aucune image.
+3. **Dans le `.env` du serveur** (valeurs réelles, jamais dans le dépôt) :
+
+   ```bash
+   MAIL_HOST=smtp-relay.brevo.com
+   MAIL_PORT=587
+   MAIL_USERNAME=<identifiant SMTP Brevo>
+   MAIL_PASSWORD=<clé SMTP Brevo>
+   MAIL_SMTP_AUTH=true
+   MAIL_STARTTLS=true
+   MAIL_FROM=<adresse du domaine authentifié>
+   ```
+
+   Avec `MAIL_HOST`, `MAIL_FROM` est obligatoire : sans lui, l'appli refuse de démarrer. Le `.env.example` contient des valeurs de développement (Mailpit, `MAIL_HOST=localhost`) : ne pas les garder en production.
+4. `docker compose -f compose.prod.yaml up -d`, puis vérifier : un lien de connexion arrive, et les logs n'indiquent que des identifiants (`Mail delivery <uuid> (CONFIRMATION) sent`), jamais une adresse.
+
+À savoir :
+
+- **Une seule instance** de l'appli : la tâche des e-mails tourne toutes les 30 secondes dans l'appli, sans verrou distribué (ADR-0012). Ne pas lancer deux conteneurs `app` sur la même base.
+- **Heures** : rappel la veille à 18 h, récap à 20 h, heure de Paris. Si l'appli est arrêtée à ce moment-là, le rappel est rattrapé jusqu'à 22 h et le récap jusqu'au lendemain 8 h ; ensuite, ils sont perdus (jamais d'e-mail la nuit ni sur une soirée passée).
+- **Échecs** (Brevo indisponible, quota de 300 par jour) : 6 essais sur environ 2 heures, puis abandon. État des envois : `SELECT kind, count(*) FILTER (WHERE sent_at IS NOT NULL) AS envoyes, count(*) FILTER (WHERE abandon_reason = 'FAILED') AS echecs FROM mail_delivery WHERE created_at > now() - interval '1 day' GROUP BY kind;`. La table ne contient que des identifiants et des dates.
+- **`APP_MAIL_DEV_RUN_NOW`** et **`APP_MAIL_CONFIRMATION_DELAY`** : réservés au développement, ne jamais les définir en production (`compose.prod.yaml` ne les transmet pas).
 
 ## Contrôles utiles
 
