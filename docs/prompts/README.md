@@ -17,5 +17,6 @@ Chaque fichier décrit une session de travail confiée à Claude Code : objectif
 | [lot3-plusieurs-postes-et-recuperation.md](lot3-plusieurs-postes-et-recuperation.md) | S5 | Corrections, lot 3 : plusieurs postes par personne (R2), récupération liée aux préparations chez soi (R4) |
 | [lot4-navigation-et-accueil.md](lot4-navigation-et-accueil.md) | S5 | Corrections, lot 4 : menu burger, en-tête prune des pages coordinateur, page d'accueil |
 | [lot5-exports.md](lot5-exports.md) | S5 | Corrections, lot 5 : page Exports avec tableau mis à jour (htmx) et e-mails |
+| [s5a-emails.md](s5a-emails.md) | S5 | E-mails automatiques : confirmations, rappel la veille à 18 h, alertes, récap à 20 h |
 
 Pour lancer une session : ouvrir claude.ai/code sur ce dépôt, ou lancer `claude` en local dans le clone (selon le champ « Où » du fichier), choisir le mode plan, puis envoyer le message de lancement indiqué en tête du fichier.
