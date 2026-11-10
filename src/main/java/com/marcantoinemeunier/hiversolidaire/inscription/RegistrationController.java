@@ -69,7 +69,7 @@ class RegistrationController {
         return "redirect:/inscription/confirmee";
     }
 
-    /** Page de confirmation à l'écran (l'e-mail récapitulatif arrive en S5). */
+    /** Page de confirmation à l'écran ; l'e-mail récapitulatif suit, regroupé avec les autres changements (S5a). */
     @GetMapping("/inscription/confirmee")
     String confirmed(Model model) {
         if (!model.containsAttribute("activity")) {

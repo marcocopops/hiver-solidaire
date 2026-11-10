@@ -101,7 +101,7 @@ class DashboardTest {
         assertThat(jdbc.queryForObject("SELECT handled_by FROM coordinator_alert WHERE id = ?", UUID.class, alertId))
                 .isEqualTo(coordinator.id());
         assertThat(jdbc.queryForObject("SELECT sent_at IS NULL FROM coordinator_alert WHERE id = ?", Boolean.class,
-                alertId)).as("S5 still sends it").isTrue();
+                alertId)).as("handling an alert does not mark it as mailed").isTrue();
         assertThat(jdbc.queryForObject("""
                 SELECT count(*) FROM audit_log WHERE coordinator_id = ? AND action = 'ALERT_HANDLED' AND alert_id = ?
                 """, Integer.class, coordinator.id(), alertId)).isEqualTo(1);

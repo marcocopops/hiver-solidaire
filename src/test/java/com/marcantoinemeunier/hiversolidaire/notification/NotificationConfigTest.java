@@ -68,6 +68,13 @@ class NotificationConfigTest {
     }
 
     @Test
+    void a_mail_host_without_a_sender_address_stops_the_start() {
+        runner.withBean(JavaMailSenderImpl.class).withPropertyValues("spring.mail.host=localhost", "app.mail.from=")
+                .run(context -> assertThat(context).hasFailed().getFailure()
+                        .hasRootCauseMessage("MAIL_FROM is required when MAIL_HOST is set"));
+    }
+
+    @Test
     void an_outgoing_mail_never_prints_its_addresses() {
         var mail = new OutgoingMail(List.of("benevole@example.org"), "coordination@example.org", "Sujet", "Texte",
                 "<p>Texte</p>");

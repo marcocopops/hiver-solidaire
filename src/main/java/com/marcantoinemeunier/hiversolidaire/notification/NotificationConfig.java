@@ -28,7 +28,7 @@ class NotificationConfig {
             LOG.warn("No SMTP host configured: magic link login is unavailable");
             return new UnavailableMagicLinkSender();
         }
-        return new SmtpMagicLinkSender(mailSender.getObject(), messages, sender(from, messages));
+        return new SmtpMagicLinkSender(mailSender.getObject(), messages, sender(requiredFrom(from), messages));
     }
 
     /** Même canal pour les e-mails automatiques (ADR-0012) : sans SMTP, ils attendent puis expirent. */
@@ -39,7 +39,18 @@ class NotificationConfig {
             LOG.warn("No SMTP host configured: automatic e-mails are not sent");
             return new UnavailableMailTransport();
         }
-        return new SmtpMailTransport(mailSender.getObject(), from, senderName(messages));
+        return new SmtpMailTransport(mailSender.getObject(), requiredFrom(from), senderName(messages));
+    }
+
+    /**
+     * Avec un serveur SMTP, l'expéditeur est obligatoire : l'appli ne démarre pas plutôt que d'envoyer depuis une
+     * adresse vide.
+     */
+    private static String requiredFrom(String from) {
+        if (!StringUtils.hasText(from)) {
+            throw new IllegalStateException("MAIL_FROM is required when MAIL_HOST is set");
+        }
+        return from.strip();
     }
 
     private static boolean smtpConfigured(String host, ObjectProvider<JavaMailSender> mailSender) {
