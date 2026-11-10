@@ -76,7 +76,8 @@ class SeasonAdminTest {
                 "firstEvening", first.toString(),
                 "lastEvening", last.toString(),
                 "registrationsOpenAt", "2026-12-14T00:00",
-                "coordinatorsContact", ""));
+                "coordinatorsContact", "",
+                "organizer", ""));
         String[][] needs = {{"BREAKFAST", "1", "1", "7 h"}, {"MAIN_DISH", "1", "1", "19 h"}, {"SIDES", "1", "1", "19 h"},
             {"DINNER_PRESENCE", "2", "2", "19 h → 21 h"}, {"NIGHT", "1", "2", "Jusqu’au matin"}};
         for (int i = 0; i < needs.length; i++) {
@@ -135,6 +136,45 @@ class SeasonAdminTest {
         var again = create(browser, "lastEvening", LAST.plusDays(1).toString());
         assertThat(again.getContentAsString()).contains("Une saison est déjà en cours ou à venir");
         assertThat(jdbc.queryForObject("SELECT count(*) FROM season", Integer.class)).isEqualTo(1);
+    }
+
+    @Test
+    void the_organizer_is_saved_and_shown_on_the_home_page_with_the_season_dates() throws Exception {
+        var browser = volunteers.coordinator().browser();
+        create(browser, "organizer", "  Paroisse Saint-Exemple  ", "coordinatorsContact", "coordination@example.org");
+
+        assertThat(jdbc.queryForObject("SELECT organizer FROM season", String.class))
+                .isEqualTo("Paroisse Saint-Exemple");
+        assertThat(browser.get("/admin/saison").getContentAsString()).contains("Organisateur")
+                .contains("value=\"Paroisse Saint-Exemple\"");
+        var home = new Browser(mockMvc).get("/").getContentAsString();
+        assertThat(home).contains("Site d’inscription à Hiver Solidaire Paroisse Saint-Exemple")
+                .contains("Hiver Solidaire accueillera du lundi 4 janvier 2027 au soir au lundi 29 mars 2027 au matin")
+                .contains("href=\"mailto:coordination@example.org\"");
+
+        browser.get("/admin/saison");
+        browser.post("/admin/saison", form(FIRST, LAST, "organizer", " "));
+        assertThat(jdbc.queryForObject("SELECT organizer FROM season", String.class)).isNull();
+        assertThat(new Browser(mockMvc).get("/").getContentAsString())
+                .doesNotContain("Site d’inscription à Hiver Solidaire");
+    }
+
+    @Test
+    void an_organizer_too_long_or_with_control_characters_is_refused() throws Exception {
+        var coordinator = volunteers.coordinator();
+        var browser = coordinator.browser();
+        create(browser, "organizer", "Paroisse Saint-Exemple");
+        browser.get("/admin/saison");
+
+        for (var invalid : new String[] {"x".repeat(101), "Saint\nExemple", "Saint\u0000Exemple"}) {
+            var refused = browser.post("/admin/saison", form(FIRST, LAST, "organizer", invalid));
+            assertThat(refused.getStatus()).isEqualTo(200);
+            assertThat(refused.getContentAsString()).contains("L’organisateur tient sur une ligne");
+        }
+
+        assertThat(jdbc.queryForObject("SELECT organizer FROM season", String.class))
+                .isEqualTo("Paroisse Saint-Exemple");
+        assertThat(audits(coordinator.id(), "SEASON_UPDATED")).isZero();
     }
 
     @Test

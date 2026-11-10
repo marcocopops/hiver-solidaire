@@ -4,7 +4,6 @@
 <body>
 <header th:replace="~{fragments :: entete(#{admin.exports.title}, true)}"></header>
 <main class="page page--large">
-    <nav th:replace="~{admin/fragments :: nav}"></nav>
 
     <h2 th:text="#{admin.exports.csv}">Inscriptions au format CSV</h2>
     <p class="aide" th:text="#{admin.exports.csv.hint(${maxDays})}">Contient des coordonnées.</p>

@@ -4,7 +4,6 @@
 <body>
 <header th:replace="~{fragments :: entete(#{profile.title}, true)}"></header>
 <main class="page">
-    <nav th:replace="~{fragments :: nav}"></nav>
     <p th:text="#{profile.intro}">Première connexion.</p>
 
     <!-- Chaque champ invalide annonce son message d'erreur (aria-describedby), en plus de son aide éventuelle. -->

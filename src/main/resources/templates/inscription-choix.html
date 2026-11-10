@@ -4,7 +4,6 @@
 <body>
 <header th:replace="~{fragments :: entete(#{registration.choose.title}, true)}"></header>
 <main class="page">
-    <nav th:replace="~{fragments :: nav}"></nav>
     <p class="lead" th:text="${label}">Lun. 4 janv.</p>
 
     <p class="alerte" role="alert" th:if="${refusal != null}"

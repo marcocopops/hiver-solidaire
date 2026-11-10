@@ -50,6 +50,17 @@ BEGIN
 END
 $$;
 
+-- Organisateur factice de la saison (lot 4, page d'accueil, V15), seulement s'il n'a pas été saisi à la main. Une base
+-- d'avant la V15 n'a pas la colonne : rien à faire.
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns
+               WHERE table_schema = current_schema() AND table_name = 'season' AND column_name = 'organizer') THEN
+        EXECUTE 'UPDATE season SET organizer = $1 WHERE organizer IS NULL' USING 'Paroisse Saint-Exemple';
+    END IF;
+END
+$$;
+
 -- Bénévoles : 20 avec e-mail, 1 inscrit par téléphone (sans e-mail). Les 4 derniers arrivés ne sont pas encore « vus »
 -- par un coordinateur (tableau de bord, « nouveaux bénévoles »).
 CREATE TEMP TABLE seed_volunteer ON COMMIT DROP AS

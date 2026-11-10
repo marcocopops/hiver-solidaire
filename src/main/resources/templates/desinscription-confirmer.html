@@ -4,7 +4,6 @@
 <body>
 <header th:replace="~{fragments :: entete(#{cancellation.confirm.title}, true)}"></header>
 <main class="page">
-    <nav th:replace="~{fragments :: nav}"></nav>
     <dl class="recap">
         <dt th:text="#{registration.recap.when}">Quand</dt>
         <dd th:text="${#messages.msg(activity.key, activity.date)}">Dîner du lun. 4 janv.</dd>

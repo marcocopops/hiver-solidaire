@@ -4,7 +4,6 @@
 <body>
 <header th:replace="~{fragments :: entete(#{login.tooMany.title}, false)}"></header>
 <main class="page">
-    <nav th:replace="~{fragments :: nav}"></nav>
     <p class="alerte" th:text="#{login.tooMany.text}">Réessayez dans une heure.</p>
 </main>
 </body>

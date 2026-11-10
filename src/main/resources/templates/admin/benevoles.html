@@ -4,7 +4,6 @@
 <body>
 <header th:replace="~{fragments :: entete(#{admin.volunteers.title}, true)}"></header>
 <main class="page page--large">
-    <nav th:replace="~{admin/fragments :: nav}"></nav>
     <p th:replace="~{admin/fragments :: done}"></p>
     <form class="formulaire formulaire--ligne" th:action="@{/admin/benevoles}" method="get" role="search">
         <div>

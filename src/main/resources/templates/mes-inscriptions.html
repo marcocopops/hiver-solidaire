@@ -4,7 +4,6 @@
 <body>
 <header th:replace="~{fragments :: entete(#{common.myRegistrations}, true)}"></header>
 <main class="page">
-    <nav th:replace="~{fragments :: nav}"></nav>
     <p class="bandeau" role="status" th:if="${cancelled != null}"
        th:text="#{myRegistrations.cancelled(${#messages.msg(cancelled.key, cancelled.date)})}">
         Désinscription enregistrée.</p>

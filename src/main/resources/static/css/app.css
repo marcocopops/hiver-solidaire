@@ -56,6 +56,11 @@
     --texte-secondaire: #475569;
     --nuit: #1f2a44;
     --nuit-texte: #f8fafc;
+    --nuit-clair: #e4e9f2;
+    /* Pages et entrées coordinateur (lot 4) : 11,4:1 avec --nuit-texte, 10,8:1 sur --fond, 11,9:1 sur blanc. */
+    --prune: #5b2149;
+    --prune-clair: #f7ebf3;
+    --prune-mention: #e9d5e3;
     --lune: #fbbf24;
     --ambre: #b45309;
     --ambre-fonce: #92400e;
@@ -95,6 +100,10 @@
     --cible-tactile: 2.75rem;
     --hauteur-bouton: 3rem;
     --largeur-max: 40rem;
+    --largeur-large: 72rem;
+    /* Largeur de la colonne de contenu ; l'en-tête et la page la partagent pour rester alignés au pixel près. */
+    --largeur-contenu: var(--largeur-max);
+    --marge-laterale: var(--esp-4);
     --icone: 1.25rem;
 
     --police: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -154,13 +163,15 @@ a:hover {
 
 /* 4. Mise en page et en-tête : une colonne centrée, largeur maximale sur grand écran. */
 .page {
-    max-width: var(--largeur-max);
+    max-width: var(--largeur-contenu);
     margin: 0 auto;
-    padding: var(--esp-5) var(--esp-4) var(--esp-8);
+    padding: var(--esp-5) var(--marge-laterale) var(--esp-8);
 }
 
+/* Même marge latérale que .page, et même largeur utile : le contenu de l'en-tête commence au même pixel que celui
+   de la page, sur mobile comme sur ordinateur. */
 .entete {
-    padding: var(--esp-5) var(--esp-5) var(--esp-6);
+    padding: var(--esp-5) var(--marge-laterale) var(--esp-6);
     border-radius: 0 0 var(--rayon-entete) var(--rayon-entete);
     background: var(--nuit);
     color: var(--nuit-texte);
@@ -170,7 +181,7 @@ a:hover {
     display: flex;
     flex-direction: column;
     gap: var(--esp-4);
-    max-width: calc(var(--largeur-max) - 2 * var(--esp-4));
+    max-width: calc(var(--largeur-contenu) - 2 * var(--marge-laterale));
     margin: 0 auto;
 }
 
@@ -197,16 +208,130 @@ a:hover {
     color: var(--lune);
 }
 
-.entete__action {
+.entete__identite {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Pages du back-office : en-tête prune et mention « Accès coordinateur », pages plus larges. */
+.entete--coordinateur {
+    --largeur-contenu: var(--largeur-large);
+    background: var(--prune);
+}
+
+.entete__mention {
+    margin: 0;
+    color: var(--prune-mention);
+    font-size: 0.875rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+/* Menu « burger » : <details> sans JavaScript ; le panneau s'ouvre sous le bouton, aligné à droite. */
+.menu {
+    position: relative;
+}
+
+.menu__bouton {
     display: inline-flex;
     align-items: center;
+    gap: var(--esp-2);
     min-height: var(--cible-tactile);
     padding: 0 0.875rem;
     border: 1px solid var(--contour-sur-nuit);
     border-radius: var(--rayon-pilule);
     color: var(--nuit-texte);
     font-size: 0.9375rem;
+    list-style: none;
+    cursor: pointer;
+}
+
+.menu__bouton::-webkit-details-marker {
+    display: none;
+}
+
+.menu__bouton:hover,
+.menu[open] > .menu__bouton {
+    border-color: var(--nuit-texte);
+    background: rgba(248, 250, 252, 0.12);
+}
+
+.menu__liste {
+    position: absolute;
+    top: calc(100% + var(--esp-2));
+    right: 0;
+    z-index: 10;
+    min-width: 15rem;
+    padding: var(--esp-2);
+    border-radius: var(--rayon-carte);
+    background: var(--surface);
+    box-shadow: 0 8px 24px rgba(31, 42, 68, 0.25);
+}
+
+.menu__liste ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.menu__deconnexion {
+    margin: 0;
+}
+
+/* Entrées : cibles de 44 px, sur toute la largeur du panneau ; liens et bouton de déconnexion à l'identique. */
+.menu__lien {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: var(--cible-tactile);
+    padding: 0 var(--esp-3);
+    border: 0;
+    border-left: 4px solid transparent;
+    border-radius: var(--rayon-champ);
+    background: none;
+    color: var(--texte);
+    font: inherit;
+    text-align: left;
     text-decoration: none;
+    cursor: pointer;
+}
+
+.entete .menu__lien:hover {
+    background: var(--fond);
+    color: var(--texte);
+    text-decoration: underline;
+}
+
+/* Page en cours : fond bleu nuit clair (11,7:1), gras et barre à gauche (lisible sans la couleur). */
+.menu__lien[aria-current="page"],
+.entete .menu__lien[aria-current="page"]:hover {
+    border-left-color: var(--nuit);
+    background: var(--nuit-clair);
+    color: var(--nuit);
+    font-weight: 700;
+}
+
+.menu__lien--coordinateur,
+.entete .menu__lien--coordinateur:hover {
+    color: var(--prune);
+}
+
+.menu__lien--coordinateur[aria-current="page"],
+.entete .menu__lien--coordinateur[aria-current="page"]:hover {
+    border-left-color: var(--prune);
+    background: var(--prune-clair);
+    color: var(--prune);
+}
+
+/* Séparateurs : avant les entrées coordinateur et avant la déconnexion. */
+.menu__separe {
+    margin-top: var(--esp-1);
+    padding-top: var(--esp-1);
+    border-top: 1px solid var(--separateur);
+}
+
+.entete .menu__liste :focus-visible {
+    outline-color: var(--focus);
 }
 
 .entete a:hover {
@@ -271,18 +396,6 @@ a:hover {
 .bouton--danger:hover {
     border-color: var(--erreur-texte);
     background: var(--erreur-texte);
-}
-
-/* Bouton qui a l'air d'un lien (déconnexion en POST). */
-.lien {
-    min-height: var(--cible-tactile);
-    padding: 0;
-    border: 0;
-    background: none;
-    color: var(--ambre-texte);
-    font: inherit;
-    text-decoration: underline;
-    cursor: pointer;
 }
 
 /* Pastilles : statut d'une journée (R5, le texte dit le statut) et pseudos. */
@@ -362,24 +475,42 @@ a:hover {
     font-size: 1.25rem;
 }
 
-/* Navigation sous l'en-tête : retour au planning ; pour un bénévole, ses inscriptions, son compte, la déconnexion. */
-.nav {
+/* Page d'accueil : les trois façons de participer, une carte chacune. */
+.facons {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0 var(--esp-5);
-    margin: 0 0 var(--esp-4);
-    font-size: 0.9375rem;
-}
-
-.nav a {
-    display: inline-flex;
-    align-items: center;
-    min-height: var(--cible-tactile);
-}
-
-.nav__deconnexion {
+    flex-direction: column;
+    gap: var(--esp-3);
     margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.facon {
+    padding: var(--esp-4) var(--esp-5);
+    border-radius: var(--rayon-carte);
+    background: var(--surface);
+    box-shadow: var(--ombre);
+}
+
+.facon h3 {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-2);
+    margin: 0 0 var(--esp-2);
+    font-size: 1.125rem;
+}
+
+.facon h3 .icone {
+    color: var(--ambre);
+}
+
+.facon p,
+.facon ul {
+    margin: 0 0 var(--esp-2);
+}
+
+.facon > :last-child {
+    margin-bottom: 0;
 }
 
 /* 6. Planning par journée (ADR-0009) */
@@ -790,12 +921,7 @@ a:hover {
 /* Back-office des coordinateurs (S4b) : mêmes jetons que les pages bénévoles (design « veillée »), pages plus
    larges, pensées d'abord pour l'ordinateur. */
 .page--large {
-    max-width: 72rem;
-}
-
-.nav--admin {
-    padding-bottom: var(--esp-2);
-    border-bottom: 1px solid var(--separateur);
+    --largeur-contenu: var(--largeur-large);
 }
 
 .bouton--petit {
@@ -878,7 +1004,6 @@ a:hover {
         padding: 0;
     }
 
-    .nav,
     .ne-pas-imprimer,
     .entete__barre {
         display: none;

@@ -3,8 +3,58 @@
 <head th:replace="~{fragments :: head(#{home.title})}"></head>
 <body>
 <header th:replace="~{fragments :: entete(#{home.heading}, true)}"></header>
-<main class="page">
-    <p class="lead" th:text="#{home.opening}">Inscriptions à partir du 14 décembre 2026</p>
+<!-- Accueil : organisateur et contact saisis dans les réglages de la saison (jamais dans le dépôt) ; sans valeur, la
+     phrase n'est pas affichée. Aucune information sur les personnes accueillies au-delà d'une formulation générale. -->
+<main class="page accueil">
+    <th:block th:if="${season != null}">
+        <p class="bandeau" th:if="${season.sample}" th:text="#{planning.sample}">Saison d’exemple : dates à confirmer.</p>
+        <p class="lead" th:if="${season.organizer != null}"
+           th:text="#{home.organizer(${season.organizer}, ${season.winter})}">Site d’inscription à Hiver Solidaire…</p>
+        <p th:text="#{home.dates(${season.firstEvening}, ${season.lastMorning})}">Hiver Solidaire accueillera…</p>
+    </th:block>
+
+    <!-- Même bouton qu'en bas de page : on accède au planning sans faire défiler la présentation. -->
+    <p><a class="bouton" th:href="@{/planning}" th:text="#{home.planning}">Voir le planning</a></p>
+
+    <section aria-labelledby="ways-title">
+        <h2 id="ways-title" th:text="#{home.ways}">Trois façons de participer</h2>
+        <ul class="facons">
+            <li class="facon">
+                <h3>
+                    <svg class="icone" aria-hidden="true" focusable="false"><use th:href="@{/images/icones.svg#poste-BREAKFAST}"></use></svg>
+                    <span th:text="#{home.breakfast.title}">Le petit-déjeuner</span>
+                </h3>
+                <p th:text="#{home.breakfast.text}">Un bénévole.</p>
+            </li>
+            <li class="facon">
+                <h3>
+                    <svg class="icone" aria-hidden="true" focusable="false"><use th:href="@{/images/icones.svg#poste-DINNER_PRESENCE}"></use></svg>
+                    <span th:text="#{home.dinner.title}">Le dîner</span>
+                </h3>
+                <p th:text="#{home.dinner.text}">Arrivée à 19 h.</p>
+                <p th:text="#{home.dinner.options}">Au choix :</p>
+                <ul>
+                    <li th:text="#{home.dinner.option.share}">préparer et partager le dîner ;</li>
+                    <li th:text="#{home.dinner.option.prepare}">préparer le dîner chez soi ;</li>
+                    <li th:text="#{home.dinner.option.pickUp}">partager le dîner préparé par d’autres.</li>
+                </ul>
+            </li>
+            <li class="facon">
+                <h3>
+                    <svg class="icone" aria-hidden="true" focusable="false"><use th:href="@{/images/icones.svg#poste-NIGHT}"></use></svg>
+                    <span th:text="#{home.night.title}">La nuit</span>
+                </h3>
+                <p th:text="#{home.night.text}">Un ou deux bénévoles.</p>
+            </li>
+        </ul>
+    </section>
+
+    <p th:if="${coordinatorsContact != null}">
+        <th:block th:text="#{home.contact}">En cas de question, vous pouvez contacter l’équipe d’Hiver Solidaire :</th:block>
+        <a th:href="${coordinatorsContact.uri}" th:text="${coordinatorsContact.display}">Contact des coordinateurs</a>
+    </p>
+
+    <p th:text="#{home.signUp}">Pour vous inscrire, choisissez une journée sur le planning.</p>
     <p><a class="bouton" th:href="@{/planning}" th:text="#{home.planning}">Voir le planning</a></p>
 </main>
 </body>

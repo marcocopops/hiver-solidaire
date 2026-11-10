@@ -124,6 +124,8 @@ class SeedDevScriptTest {
                 .isEqualTo(4);
         assertThat(jdbc.queryForList("SELECT pseudo FROM volunteer", String.class))
                 .allMatch(pseudo -> pseudo.matches("^[A-ZÀ-Ý][a-zà-ÿ]+[A-Z]$"));
+        assertThat(jdbc.queryForObject("SELECT organizer FROM season", String.class))
+                .as("organisateur factice").isEqualTo("Paroisse Saint-Exemple");
 
         assertThat(count("SELECT count(*) FROM registration WHERE cancelled_at IS NULL"))
                 .isEqualTo(ACTIVE_REGISTRATIONS);
@@ -309,6 +311,16 @@ class SeedDevScriptTest {
 
         assertThat(count("SELECT count(*) FROM registration WHERE cancelled_at IS NULL"))
                 .isEqualTo(ACTIVE_REGISTRATIONS + 2);
+    }
+
+    @Test
+    void keeps_an_organizer_typed_by_hand() {
+        freshDatabase(null);
+        jdbc.update("UPDATE season SET organizer = 'Organisateur saisi à la main'");
+        seed();
+
+        assertThat(jdbc.queryForObject("SELECT organizer FROM season", String.class))
+                .isEqualTo("Organisateur saisi à la main");
     }
 
     @Test

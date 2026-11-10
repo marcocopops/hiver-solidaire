@@ -4,7 +4,6 @@
 <body>
 <header th:replace="~{fragments :: entete(#{admin.volunteer.delete.title}, true)}"></header>
 <main class="page page--large">
-    <nav th:replace="~{admin/fragments :: nav}"></nav>
     <p class="bandeau" th:text="${volunteer.lastName} + ' ' + ${volunteer.firstName} + ' (' + ${volunteer.pseudo} + ')'">
         Martin Anne (AnneM)</p>
     <th:block th:if="${self}">

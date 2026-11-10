@@ -189,7 +189,7 @@ class PlanningPageTest {
         assertThat(header).contains("href=\"/\"").contains("Hiver Solidaire")
                 .contains("href=\"/connexion\"").contains("Me connecter")
                 .contains("<h1>Planning de la saison</h1>")
-                .doesNotContain("Mon espace");
+                .doesNotContain("Mes inscriptions").doesNotContain("deconnexion");
         assertThat(body).doesNotContain("href=\"/mes-inscriptions\"").doesNotContain("Retour à l’accueil");
     }
 
