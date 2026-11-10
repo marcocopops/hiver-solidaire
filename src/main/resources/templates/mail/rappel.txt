@@ -1,0 +1,19 @@
+[(#{mail.greeting})]
+
+[(#{mail.reminder.intro(${day})})]
+[# th:each="line : ${lines}"]
+- [(${line.activity})] : [(${line.option})]
+  [(${line.schedule})]
+  [(${line.cancelText})][# th:if="${line.cancelLink}"]
+  [(${line.cancelLink})][/]
+[/]
+[(#{mail.reminder.thanks})]
+
+[(#{mail.myRegistrations(${myRegistrations})})]
+
+[(${contact})]
+
+[(#{mail.signature})]
+
+--
+[(#{mail.footer})]

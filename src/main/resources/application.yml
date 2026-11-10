@@ -19,7 +19,7 @@ spring:
     jdbc:
       initialize-schema: never
   # SMTP (Mailpit en développement). Sans MAIL_HOST, aucun envoi n'est configuré : l'appli démarre et la
-  # demande de lien affiche un message d'indisponibilité neutre (cas de la production avant S5).
+  # demande de lien affiche un message d'indisponibilité neutre, et les e-mails automatiques attendent puis expirent.
   mail:
     host: ${MAIL_HOST:}
     port: ${MAIL_PORT:587}
@@ -34,11 +34,18 @@ spring:
       "[mail.smtp.writetimeout]": 10000
 
 app:
-  # Origine publique de l'appli, pour construire le lien magique. Jamais déduite de l'en-tête Host de la
-  # requête (empoisonnement du lien).
+  # Origine publique de l'appli, pour construire le lien magique et les liens des e-mails. Jamais déduite de l'en-tête
+  # Host de la requête (empoisonnement du lien).
   base-url: ${APP_BASE_URL:http://localhost:8080}
   mail:
+    # Expéditeur de tous les e-mails, affiché « Hiver Solidaire » (messages.properties).
     from: ${MAIL_FROM:hiver-solidaire@example.org}
+    # E-mails automatiques (S5a, ADR-0012). La tâche planifiée tourne toutes les 30 s (app.mail.scheduler.enabled,
+    # vrai par défaut ; coupée dans les tests). Les confirmations partent 10 minutes après le dernier changement.
+    confirmation-delay: ${APP_MAIL_CONFIRMATION_DELAY:PT10M}
+    # Développement seulement : crée et envoie au démarrage le rappel et le récap, sans attendre 18 h ni 20 h.
+    # Jamais défini en production.
+    dev-run-now: ${APP_MAIL_DEV_RUN_NOW:false}
   coordinators:
     # Adresses des coordinateurs, séparées par des virgules (ADR-0010) : rôle coordinateur à la connexion. Vide :
     # aucun coordinateur, le back-office reste fermé à tous.

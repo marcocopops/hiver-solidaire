@@ -2,7 +2,7 @@ package com.marcantoinemeunier.hiversolidaire.notification;
 
 import java.net.URI;
 
-/** Aucun canal d'envoi configuré (production avant S5) : l'appli démarre, la connexion est indisponible. */
+/** Aucun canal d'envoi configuré (pas de {@code MAIL_HOST}) : l'appli démarre, la connexion est indisponible. */
 class UnavailableMagicLinkSender implements MagicLinkSender {
 
     @Override

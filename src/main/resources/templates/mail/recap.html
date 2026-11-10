@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+<meta charset="UTF-8">
+<title th:text="#{mail.recap.subject(${from}, ${to})}">Récap</title>
+</head>
+<body>
+<p th:text="#{mail.greeting}">Bonjour,</p>
+<p th:text="#{mail.recap.why}">Vous recevez ce mail car vous êtes administrateur.</p>
+<p th:text="#{mail.recap.intro(${from}, ${to})}">Voici le planning.</p>
+<p th:if="${days.isEmpty()}" th:text="#{mail.recap.noDays}">Aucune journée.</p>
+<th:block th:each="day : ${days}">
+<h2><span th:text="${day.label}">Lun. 4 janv.</span> : <span th:text="${day.status}">à compléter</span></h2>
+<ul th:unless="${day.missing.isEmpty()}">
+<li th:each="line : ${day.missing}"><strong th:text="${line}">Nuit : 1 à pourvoir</strong></li>
+</ul>
+<p th:if="${day.people.isEmpty()}" th:text="#{mail.recap.nobody}">Personne.</p>
+<ul th:unless="${day.people.isEmpty()}">
+<li th:each="person : ${day.people}"><span th:text="${person.option}">Nuit</span> : <span th:text="${person.person}">Anne Martin</span><th:block th:if="${person.noEmail}"> (<em th:text="${person.noEmail}">sans e-mail</em>)</th:block></li>
+</ul>
+<p th:each="line : ${day.doubles}" th:text="${line}">Compte pour 2 présences.</p>
+</th:block>
+
+<h2 th:text="#{mail.recap.alerts}">Alertes non traitées</h2>
+<p th:if="${alerts.isEmpty()}" th:text="#{mail.recap.none}">Aucune.</p>
+<ul th:unless="${alerts.isEmpty()}">
+<li th:each="line : ${alerts}" th:text="${line}">Alerte</li>
+</ul>
+
+<h2 th:text="#{mail.recap.pickups}">Repas à organiser</h2>
+<p th:if="${pickups.isEmpty()}" th:text="#{mail.recap.none}">Aucun.</p>
+<ul th:unless="${pickups.isEmpty()}">
+<li th:each="line : ${pickups}" th:text="${line}">Repas</li>
+</ul>
+
+<h2 th:text="#{mail.recap.newVolunteers}">Nouveaux bénévoles</h2>
+<p th:if="${newVolunteers.isEmpty()}" th:text="#{mail.recap.none}">Aucun.</p>
+<ul th:unless="${newVolunteers.isEmpty()}">
+<li th:each="line : ${newVolunteers}" th:text="${line}">Bénévole</li>
+</ul>
+
+<p>
+<span th:text="#{mail.recap.admin('')}">Back-office :</span>
+<a th:href="${admin}" th:text="${admin}">lien</a>
+</p>
+<p><small th:text="#{mail.recap.confidential}">Confidentiel.</small></p>
+<p><small th:text="#{mail.footer}">E-mail automatique.</small></p>
+</body>
+</html>

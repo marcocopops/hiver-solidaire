@@ -1,6 +1,7 @@
 package com.marcantoinemeunier.hiversolidaire.admin;
 
 import com.marcantoinemeunier.hiversolidaire.inscription.RegistrationChoice;
+import com.marcantoinemeunier.hiversolidaire.planning.CoordinatorPlanning;
 import com.marcantoinemeunier.hiversolidaire.planning.DayLabelFormatter;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.Post;
 import com.marcantoinemeunier.hiversolidaire.planning.persistence.RegistrationContact;

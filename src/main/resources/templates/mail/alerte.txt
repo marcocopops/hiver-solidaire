@@ -1,0 +1,13 @@
+[(#{mail.greeting})]
+
+[(#{mail.alert.intro(${evening})})]
+[# th:unless="${missing.isEmpty()}"]
+[(#{mail.alert.missing})]
+[# th:each="line : ${missing}"]- [(${line})]
+[/][/][# th:if="${missing.isEmpty()}"]
+[(#{mail.alert.complete})]
+[/]
+[(#{mail.alert.link(${link})})]
+
+--
+[(#{mail.footer})]

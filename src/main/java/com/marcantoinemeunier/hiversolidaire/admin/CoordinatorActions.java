@@ -12,6 +12,7 @@ import com.marcantoinemeunier.hiversolidaire.inscription.RegistrationService.Coo
 import com.marcantoinemeunier.hiversolidaire.inscription.RegistrationService.CoordinatorOutcome;
 import com.marcantoinemeunier.hiversolidaire.inscription.RegistrationService.Registered;
 import com.marcantoinemeunier.hiversolidaire.notification.CoordinatorAlerts;
+import com.marcantoinemeunier.hiversolidaire.planning.CoordinatorPlanning;
 import com.marcantoinemeunier.hiversolidaire.planning.season.SeasonForm;
 import com.marcantoinemeunier.hiversolidaire.planning.season.SeasonSettingsService;
 import com.marcantoinemeunier.hiversolidaire.planning.persistence.RegistrationContact;
@@ -137,7 +138,7 @@ class CoordinatorActions {
         if (volunteers.contact(volunteerId).isEmpty() || !volunteers.profileCompleted(volunteerId)) {
             throw new AdminSupport.NotFoundException();
         }
-        var registered = registrations.registerFor(volunteerId, choice);
+        var registered = registrations.registerByCoordinator(volunteerId, choice);
         if (registered.decision().accepted()) {
             audit.record(coordinatorId, Action.REGISTRATION_CREATED,
                     Target.registration(registered.registrationId(), volunteerId, registered.eveningId()));

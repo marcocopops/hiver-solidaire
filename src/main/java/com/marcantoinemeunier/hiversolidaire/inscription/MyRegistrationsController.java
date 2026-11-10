@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import org.springframework.web.util.UriComponentsBuilder;
 
 /**
  * « Mes inscriptions » : les inscriptions à venir du bénévole connecté, et seulement les siennes (aucun identifiant
@@ -34,7 +33,7 @@ class MyRegistrationsController {
     }
 
     /** Paramètre de la soirée à annuler : la date du soir J, pas celle de la carte du planning. */
-    static final String EVENING_PARAM = "soiree";
+    static final String EVENING_PARAM = RegistrationChoice.EVENING_PARAM;
 
     record Line(LocalDate date, ActivityLabel activity, String option, boolean cancellable, String deadline) {
     }
@@ -53,7 +52,7 @@ class MyRegistrationsController {
     }
 
     /** Page de confirmation ; après la limite de R6, elle donne le contact des coordinateurs, sans formulaire. */
-    @GetMapping("/mes-inscriptions/annuler")
+    @GetMapping(RegistrationChoice.CANCELLATION_PATH)
     String confirmCancellation(@RequestParam(name = EVENING_PARAM) String evening,
             @RequestParam(name = RegistrationChoice.CHOICE_PARAM, required = false) String choiceParam,
             Principal principal, Model model) {
@@ -72,7 +71,7 @@ class MyRegistrationsController {
         return "desinscription-confirmer";
     }
 
-    @PostMapping("/mes-inscriptions/annuler")
+    @PostMapping(RegistrationChoice.CANCELLATION_PATH)
     String cancel(@RequestParam(name = EVENING_PARAM) String evening,
             @RequestParam(name = RegistrationChoice.CHOICE_PARAM, required = false) String choiceParam,
             Principal principal, RedirectAttributes redirect) {
@@ -84,10 +83,8 @@ class MyRegistrationsController {
             throw new UnknownEveningException();
         }
         if (decision == CancellationDecision.TOO_LATE) {
-            return "redirect:" + UriComponentsBuilder.fromPath("/mes-inscriptions/annuler")
-                    .queryParam(EVENING_PARAM, choice.eveningDate())
-                    .queryParam(RegistrationChoice.CHOICE_PARAM, choice.choiceParam())
-                    .encode().build().toUriString();
+            return "redirect:" + RegistrationChoice.cancellationPath(choice.eveningDate(), choice.type(),
+                    choice.dishChoice());
         }
         redirect.addFlashAttribute("cancelled", ActivityLabel.of(choice.type(), choice.eveningDate()));
         return "redirect:/mes-inscriptions";

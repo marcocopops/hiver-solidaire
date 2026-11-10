@@ -1,6 +1,7 @@
 package com.marcantoinemeunier.hiversolidaire;
 
 import com.marcantoinemeunier.hiversolidaire.auth.CoordinatorEmails;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -19,6 +20,16 @@ public final class TestCoordinatorEmails extends CoordinatorEmails {
 
     public void remove(String email) {
         emails.remove(email);
+    }
+
+    @Override
+    public List<String> all() {
+        return emails.stream().sorted().toList();
+    }
+
+    /** À appeler à la fin d'un test qui compte les destinataires : les coordinateurs des autres tests restent sinon. */
+    public void clear() {
+        emails.clear();
     }
 
     @Override

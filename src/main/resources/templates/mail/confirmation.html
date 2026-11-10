@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+<meta charset="UTF-8">
+<title th:text="#{mail.confirmation.subject}">Vos inscriptions</title>
+</head>
+<body>
+<p th:text="#{mail.greeting}">Bonjour,</p>
+
+<th:block th:unless="${registered.isEmpty()}">
+<p th:text="${registered.size() > 1} ? #{mail.confirmation.registered.many} : #{mail.confirmation.registered}">Votre inscription pour Hiver Solidaire est enregistrée :</p>
+<ul>
+<li th:each="line : ${registered}">
+<strong th:text="${line.activity}">Dîner du lun. 4 janv.</strong> : <span th:text="${line.option}">Passer la nuit</span><br>
+<span th:text="${line.schedule}">Horaires</span>
+<th:block th:if="${line.note}"><br><span th:text="${line.note}">Enregistré par un coordinateur.</span></th:block>
+<br><span th:text="${line.cancelText}">Pour vous désinscrire :</span>
+<a th:if="${line.cancelLink}" th:href="${line.cancelLink}" th:text="${line.cancelLink}">lien</a>
+</li>
+</ul>
+</th:block>
+
+<th:block th:unless="${cancelled.isEmpty()}">
+<p th:text="${cancelled.size() > 1} ? #{mail.confirmation.cancelled.many} : #{mail.confirmation.cancelled}">Cette inscription est annulée :</p>
+<ul>
+<li th:each="line : ${cancelled}">
+<strong th:text="${line.activity}">Dîner du lun. 4 janv.</strong> : <span th:text="${line.option}">Passer la nuit</span>
+<th:block th:if="${line.note}"><br><span th:text="${line.note}">Enregistré par un coordinateur.</span></th:block>
+</li>
+</ul>
+</th:block>
+
+<p th:text="#{mail.confirmation.thanks}">Merci pour votre aide !</p>
+<p>
+<span th:text="#{mail.myRegistrations('')}">Toutes vos inscriptions :</span>
+<a th:href="${myRegistrations}" th:text="${myRegistrations}">lien</a>
+</p>
+<p th:text="${contact}">Une question ?</p>
+<p th:text="#{mail.signature}">Les coordinateurs</p>
+<p><small th:text="#{mail.footer}">E-mail automatique.</small></p>
+</body>
+</html>

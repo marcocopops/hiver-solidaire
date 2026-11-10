@@ -22,6 +22,10 @@ public record RegistrationChoice(LocalDate day, RegistrationType type, DishChoic
 
     public static final String DAY_PARAM = "jour";
     public static final String CHOICE_PARAM = "choix";
+    /** Soirée d'une inscription à annuler : la date du soir J, pas celle de la carte du planning. */
+    public static final String EVENING_PARAM = "soiree";
+    /** Page de confirmation de la désinscription (GET sans effet ; l'action est un POST). */
+    public static final String CANCELLATION_PATH = "/mes-inscriptions/annuler";
 
     public RegistrationChoice {
         Objects.requireNonNull(day, "day");
@@ -73,6 +77,15 @@ public record RegistrationChoice(LocalDate day, RegistrationType type, DishChoic
 
     public static String choiceParam(RegistrationType type, DishChoice dishChoice) {
         return dishChoice == null ? type.name() : type.name() + "." + dishChoice.name();
+    }
+
+    /**
+     * Page de confirmation de la désinscription d'une inscription, désignée par sa soirée et son choix (R2, ADR-0011) :
+     * c'est le lien des e-mails (S5a). Elle ne fait rien d'elle-même : le bénévole confirme par un POST.
+     */
+    public static String cancellationPath(LocalDate eveningDate, RegistrationType type, DishChoice dishChoice) {
+        return UriComponentsBuilder.fromPath(CANCELLATION_PATH).queryParam(EVENING_PARAM, eveningDate)
+                .queryParam(CHOICE_PARAM, choiceParam(type, dishChoice)).encode().build().toUriString();
     }
 
     public UriComponentsBuilder appendTo(UriComponentsBuilder uri) {

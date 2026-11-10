@@ -43,7 +43,8 @@ class TemplatesHaveNoInlineCodeTest {
 
         for (var template : templates) {
             var name = template.getFilename();
-            if ("fragments.html".equals(name)) {
+            // Les e-mails (S5a) n'ont ni l'en-tête ni la feuille de style du site : voir le test suivant.
+            if ("fragments.html".equals(name) || isMail(template)) {
                 continue;
             }
             var html = template.getContentAsString(StandardCharsets.UTF_8);
@@ -52,5 +53,32 @@ class TemplatesHaveNoInlineCodeTest {
             assertThat(html).as(name).contains("~{fragments :: head(").contains("~{fragments :: entete(")
                     .doesNotContain("<h1");
         }
+    }
+
+    /**
+     * E-mails (S5a, cahier des charges §6) : HTML simple, sans image, ni ressource externe, ni script. Aucun pixel de
+     * suivi : rien ne se charge à l'ouverture. Les liens sont des {@code th:href} vers l'appli, jamais en dur.
+     */
+    @Test
+    void mail_templates_load_nothing_and_track_nothing() throws IOException {
+        var templates = new PathMatchingResourcePatternResolver().getResources("classpath:templates/mail/*.html");
+        assertThat(templates).isNotEmpty();
+
+        for (var template : templates) {
+            var html = template.getContentAsString(StandardCharsets.UTF_8);
+
+            assertThat(html).as(template.getFilename())
+                    .doesNotContain("<img")
+                    .doesNotContain("<link")
+                    .doesNotContain("<script")
+                    .doesNotContain("<iframe")
+                    .doesNotContain("src=")
+                    .doesNotContain("href=\"http")
+                    .doesNotContain("~{fragments");
+        }
+    }
+
+    private static boolean isMail(org.springframework.core.io.Resource template) throws IOException {
+        return template.getURL().getPath().contains("/templates/mail/");
     }
 }

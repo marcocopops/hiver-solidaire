@@ -2,6 +2,7 @@ package com.marcantoinemeunier.hiversolidaire.auth;
 
 import com.marcantoinemeunier.hiversolidaire.benevole.EmailAddress;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,6 +39,14 @@ public class CoordinatorEmails {
                 .map(entry -> EmailAddress.normalize(entry)
                         .orElseThrow(() -> new IllegalStateException("app.coordinators.emails contains an invalid address")))
                 .collect(Collectors.toUnmodifiableSet());
+    }
+
+    /**
+     * Destinataires des e-mails aux coordinateurs (récap quotidien, alertes immédiates), dans l'ordre alphabétique.
+     * Vide : aucun e-mail aux coordinateurs.
+     */
+    public List<String> all() {
+        return emails.stream().sorted().toList();
     }
 
     /** @param normalizedEmail adresse du lien magique consommé, déjà normalisée */

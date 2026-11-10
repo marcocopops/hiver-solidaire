@@ -7,6 +7,7 @@ import com.marcantoinemeunier.hiversolidaire.inscription.RegistrationChoice;
 import com.marcantoinemeunier.hiversolidaire.inscription.RegistrationService;
 import com.marcantoinemeunier.hiversolidaire.inscription.RegistrationService.CoordinatorOutcome;
 import com.marcantoinemeunier.hiversolidaire.planning.ActivityLabel;
+import com.marcantoinemeunier.hiversolidaire.planning.CoordinatorPlanning;
 import com.marcantoinemeunier.hiversolidaire.planning.DayLabelFormatter;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.Cancellation;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.Day;

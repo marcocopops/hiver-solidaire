@@ -3,7 +3,7 @@ package com.marcantoinemeunier.hiversolidaire.notification;
 import java.net.URI;
 
 /**
- * Envoi du lien de connexion. Implémentation SMTP aujourd'hui ; Brevo s'y branchera en S5. Le lien, le jeton et
+ * Envoi du lien de connexion, par SMTP (Brevo en production, Mailpit en développement). Le lien, le jeton et
  * l'adresse ne sont jamais journalisés.
  */
 public interface MagicLinkSender {

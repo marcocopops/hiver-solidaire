@@ -3,6 +3,7 @@ package com.marcantoinemeunier.hiversolidaire.admin;
 import com.marcantoinemeunier.hiversolidaire.benevole.VolunteerService;
 import com.marcantoinemeunier.hiversolidaire.config.CoordinatorsContact;
 import com.marcantoinemeunier.hiversolidaire.notification.CoordinatorAlerts;
+import com.marcantoinemeunier.hiversolidaire.planning.CoordinatorPlanning;
 import com.marcantoinemeunier.hiversolidaire.planning.DayLabelFormatter;
 import com.marcantoinemeunier.hiversolidaire.planning.season.SeasonSettings;
 import com.marcantoinemeunier.hiversolidaire.planning.season.SeasonSettingsService;

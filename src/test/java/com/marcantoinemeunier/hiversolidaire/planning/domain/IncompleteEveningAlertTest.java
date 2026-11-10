@@ -2,14 +2,16 @@ package com.marcantoinemeunier.hiversolidaire.planning.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 /**
- * Alerte « soirée devenue incomplète » (§6) : une soirée des 7 prochains jours perd un minimum. La condition est
- * calculée ici ; l'e-mail aux coordinateurs arrive en S5.
+ * Alerte « soirée devenue incomplète » (§6) : une soirée des 7 prochains jours perd un minimum. Elle part par e-mail
+ * tout de suite si le dîner de la soirée commence dans moins de 48 h ; sinon, elle n'apparaît que dans le récap (S5a).
  */
 class IncompleteEveningAlertTest {
 
@@ -90,5 +92,37 @@ class IncompleteEveningAlertTest {
                 Registration.by(alice, RegistrationType.PICK_UP_AND_SHARE, null));
 
         assertThat(triggered(before)).isFalse();
+    }
+
+    private static Instant paris(LocalDateTime local) {
+        return local.atZone(ParisTime.ZONE).toInstant();
+    }
+
+    @Test
+    void an_evening_whose_dinner_starts_within_48_hours_is_mailed_immediately() {
+        var evening = LocalDate.of(2027, 1, 12);
+
+        assertThat(IncompleteEveningAlert.immediate(evening, paris(LocalDateTime.of(2027, 1, 10, 19, 1)))).isTrue();
+        assertThat(IncompleteEveningAlert.immediate(evening, paris(LocalDateTime.of(2027, 1, 12, 10, 0)))).isTrue();
+        // Dîner commencé : la nuit et le petit-déjeuner restent à venir.
+        assertThat(IncompleteEveningAlert.immediate(evening, paris(LocalDateTime.of(2027, 1, 12, 21, 0)))).isTrue();
+    }
+
+    @Test
+    void an_evening_48_hours_or_more_ahead_waits_for_the_recap() {
+        var evening = LocalDate.of(2027, 1, 12);
+
+        assertThat(IncompleteEveningAlert.immediate(evening, paris(LocalDateTime.of(2027, 1, 10, 19, 0)))).isFalse();
+        assertThat(IncompleteEveningAlert.immediate(evening, paris(LocalDateTime.of(2027, 1, 9, 20, 0)))).isFalse();
+    }
+
+    @Test
+    void the_48_hours_follow_daylight_saving_time() {
+        // Dîner du lundi 29 mars 2027 à 19 h (heure d'été, 17 h UTC) : 48 h avant, c'est le samedi 27 à 18 h (heure
+        // d'hiver, 17 h UTC), et non à 19 h.
+        var evening = LocalDate.of(2027, 3, 29);
+
+        assertThat(IncompleteEveningAlert.immediate(evening, Instant.parse("2027-03-27T17:00:00Z"))).isFalse();
+        assertThat(IncompleteEveningAlert.immediate(evening, Instant.parse("2027-03-27T17:01:00Z"))).isTrue();
     }
 }

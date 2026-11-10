@@ -6,6 +6,7 @@ import com.marcantoinemeunier.hiversolidaire.benevole.VolunteerContact;
 import com.marcantoinemeunier.hiversolidaire.benevole.VolunteerService;
 import com.marcantoinemeunier.hiversolidaire.inscription.RegistrationChoice;
 import com.marcantoinemeunier.hiversolidaire.planning.ActivityLabel;
+import com.marcantoinemeunier.hiversolidaire.planning.CoordinatorPlanning;
 import jakarta.validation.Valid;
 import java.security.Principal;
 import java.util.UUID;

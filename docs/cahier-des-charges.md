@@ -1,6 +1,6 @@
 # Hiver Solidaire — Cahier des charges du MVP
 
-*Version 0.7 · 9 novembre 2026 (plusieurs postes par personne et récupération, lot 3) · Marc-Antoine Meunier · statut : à valider*
+*Version 0.8 · 10 novembre 2026 (e-mails automatiques, S5a) · Marc-Antoine Meunier · statut : à valider*
 
 Ce document est la référence du projet. Toute évolution passe par une PR qui le met à jour.
 
@@ -22,7 +22,7 @@ Indicateurs en fin de saison : part des soirées complètes la veille ; aucun in
 - **Adresse** : `hiver-solidaire.marcantoine-meunier.com`, avec une redirection depuis `marcantoine-meunier.com/hiver-solidaire`. L'appli a sa propre origine, isolée du portfolio et du cv-assistant ([ADR-0001](adr/0001-sous-domaine-plutot-que-sous-chemin.md)).
 - **Ouverture des inscriptions** : mi-décembre 2026.
 - **Communauté** : une vingtaine de bénévoles qui se connaissent, tous majeurs.
-- **Accès** : toute personne disposant du lien, sans validation préalable. Garde-fous : Turnstile, et une alerte aux coordinateurs à la première inscription d'un nouveau bénévole.
+- **Accès** : toute personne disposant du lien, sans validation préalable. Garde-fous : Turnstile, et le signalement de chaque nouveau bénévole aux coordinateurs (tableau de bord, récap quotidien de S5a).
 - **Activités** : identiques à 2025-2026.
 - **Coordinateurs** : 2 à 3 personnes.
 - **Désinscription** : en autonomie jusqu'à la veille ; ensuite, par téléphone auprès d'un coordinateur.
@@ -109,12 +109,12 @@ Une saison est définie par sa première et sa dernière soirée (dates du soir 
 2. Il saisit son e-mail dans un formulaire protégé par Turnstile. Le message affiché est le même, que l'adresse soit connue ou non.
 3. Il ouvre le lien reçu (usage unique, valable 15 minutes) et appuie sur « Me connecter ». La connexion se fait en POST, car les filtres des messageries ouvrent les liens et consommeraient le jeton. Le lien porte aussi le choix de l'étape 1 (journée, type, plat, sans donnée personnelle) : il fonctionne sur un autre appareil que celui de la demande.
 4. La première fois, il donne son nom, son prénom, un **pseudo public** et son téléphone (obligatoire ; indicatif +33 par défaut, numéros étrangers acceptés, enregistré au format international). Le pseudo est proposé sous la forme prénom + initiale du nom (« MarieD ») et modifiable ; l'aide du champ dit qu'il est visible par tous sur le planning et qu'on peut choisir autre chose que son prénom. Il est unique sans tenir compte de la casse : en cas de doublon, une variante est proposée (« MarieD2 »). Une case « Me recontacter la saison prochaine », décochée par défaut, et un lien vers la notice d'information complètent le formulaire.
-5. Il confirme ; un e-mail récapitule la date, les horaires (textes fixes, tableau du §5) et le contact des coordinateurs.
+5. Il confirme ; un e-mail récapitule la date, les horaires (textes fixes, tableau du §5), le lien de désinscription et le contact des coordinateurs. Les changements rapprochés se regroupent : l'e-mail part 10 minutes après le dernier et donne l'état final (cinq inscriptions à la suite donnent un seul e-mail ; une inscription aussitôt annulée n'en donne aucun).
 6. Il reste connecté 30 jours sur cet appareil (hypothèse) : session stockée en base, 30 jours au plus après la connexion, même utilisée chaque jour ([ADR-0007](adr/0007-session-jdbc-plutot-que-se-souvenir-de-moi.md)).
 
 L'appli ne stocke ni l'adresse du lieu ni les consignes : les bénévoles les connaissent déjà (décision du lot 2), et elles n'apparaissent donc nulle part, ni sur la page publique ni dans l'e-mail.
 
-**Se désinscrire** : depuis la carte de la journée sur le planning, « Mes inscriptions » ou le lien de l'e-mail (S5), jusqu'à la veille de la soirée à 23 h 59 (R6). L'inscription est désignée par sa soirée et son choix (`soiree`, `choix`) : chaque poste se désinscrit seul, les autres postes du bénévole sur la soirée restent. Le lien ouvre une page de confirmation, et l'action se fait en POST. Pour un repas préparé chez soi qu'une personne doit venir récupérer, la page de confirmation le dit, et la désinscription alerte les coordinateurs (R4). La place libérée est immédiatement reprenable. Après la limite, le bouton disparaît et l'appli affiche le contact des coordinateurs. Si une soirée des 7 prochains jours (aujourd'hui compris) perd un minimum, les coordinateurs sont alertés : l'alerte est enregistrée dès S4 et envoyée par e-mail à partir de S5. L'alerte « récupération sans repas » (R4, lot 3) vaut pour toute soirée à venir.
+**Se désinscrire** : depuis la carte de la journée sur le planning, « Mes inscriptions » ou le lien des e-mails de confirmation et de rappel (S5a), jusqu'à la veille de la soirée à 23 h 59 (R6). L'inscription est désignée par sa soirée et son choix (`soiree`, `choix`) : chaque poste se désinscrit seul, les autres postes du bénévole sur la soirée restent. Le lien ouvre une page de confirmation, et l'action se fait en POST. Pour un repas préparé chez soi qu'une personne doit venir récupérer, la page de confirmation le dit, et la désinscription alerte les coordinateurs (R4). La place libérée est immédiatement reprenable. Après la limite, le bouton disparaît et l'appli affiche le contact des coordinateurs. Si une soirée des 7 prochains jours (aujourd'hui compris) perd un minimum, les coordinateurs sont alertés : l'alerte est enregistrée dès S4 ; depuis S5a, elle part tout de suite par e-mail si le dîner de la soirée commence dans moins de 48 heures, et figure sinon dans le récap quotidien. L'alerte « récupération sans repas » (R4, lot 3) vaut pour toute soirée à venir ; elle figure dans le récap. Le bénévole reçoit la confirmation de sa désinscription, regroupée comme celle de l'inscription.
 
 **Mon compte** : le bénévole voit ses données (e-mail, nom, prénom, pseudo, téléphone, accord de recontact), modifie son téléphone et son pseudo (mêmes règles qu'au premier profil), donne ou retire son accord de conservation, ou supprime son compte. L'e-mail n'est pas modifiable dans cette version ; nom et prénom se corrigent auprès d'un coordinateur. La suppression, après une page de confirmation, annule toutes ses inscriptions dont la soirée n'est pas passée (y compris après la limite de R6, avec l'alerte éventuelle) et anonymise son historique : plus aucun e-mail, nom, prénom, pseudo ni téléphone en base ; ses inscriptions passées restent comptées sans être rattachables à une personne ; il est déconnecté de tous ses appareils. Une nouvelle connexion avec la même adresse crée un nouveau compte.
 
@@ -136,14 +136,22 @@ L'appli ne stocke ni l'adresse du lieu ni les consignes : les bénévoles les co
 | Pour | E-mail | Quand |
 |---|---|---|
 | Bénévole | Lien de connexion | À la demande |
-| Bénévole | Confirmation d'inscription ou de désinscription | Un seul e-mail par session |
-| Bénévole | Rappel | La veille à 18 h (hypothèse) |
-| Coordinateurs | Récap des 7 prochains jours (sert aussi de plan B) | Chaque jour à 7 h |
-| Coordinateurs | Soirée devenue incomplète | Immédiatement |
-| Coordinateurs | Récupération sans repas (préparation chez soi annulée, R4) | Immédiatement |
-| Coordinateurs | Nouveau bénévole | À chaque première inscription |
+| Bénévole | Confirmation d'inscription ou de désinscription, par lui-même ou par un coordinateur | 10 minutes après le dernier changement : un seul e-mail pour les changements rapprochés, qui donne leur état final |
+| Bénévole | Rappel de la carte du lendemain : le petit-déjeuner du matin (soirée de la veille), le dîner et la nuit du soir (ADR-0009) ; un seul e-mail par bénévole | La veille à 18 h, heure de Paris |
+| Coordinateurs | Récap des journées J+1 à J+7 : par journée, ce qui manque par poste et les inscrits (nom, pseudo, téléphone, jamais l'e-mail), les bénévoles sans e-mail à prévenir par téléphone ; les alertes non traitées, les repas à organiser (R4), les nouveaux bénévoles. Sert aussi de plan B (§8) : lisible sans le site | Chaque jour à 20 h, de l'ouverture des inscriptions à la dernière soirée |
+| Coordinateurs | Soirée devenue incomplète, si son dîner commence dans moins de 48 heures | Immédiatement (moins d'une minute) |
+| Coordinateurs | Soirée devenue incomplète au-delà de 48 heures, récupération sans repas (R4), nouveau bénévole | Dans le récap seulement |
 
-L'offre gratuite de Brevo permet 300 e-mails par jour. Avec une vingtaine de bénévoles, c'est largement suffisant.
+Règles communes ([ADR-0012](adr/0012-table-d-envois-plutot-qu-envoi-dans-la-requete.md)) :
+
+- **Une seule fois** : chaque e-mail est une ligne d'une table d'envois, sans donnée personnelle ; la base refuse les doublons, même après un redémarrage. Son contenu est calculé à l'envoi : un poste annulé entre-temps n'y figure plus.
+- **Appli arrêtée à l'heure prévue** : le rappel est rattrapé jusqu'à 22 h, le récap jusqu'au lendemain 8 h, puis ils sont abandonnés ; jamais d'e-mail sur une soirée passée.
+- **Échec d'envoi** (Brevo indisponible, quota) : nouvel essai à 1, 5, 15, 30 et 60 minutes, puis abandon ; l'inscription n'attend jamais l'envoi.
+- **Destinataires** : un bénévole sans e-mail (inscrit par téléphone) ou un compte supprimé ne reçoit rien. Les e-mails aux coordinateurs vont aux adresses d'`APP_COORDINATOR_EMAILS` (ADR-0010) ; sans coordinateur, aucun.
+- **« Répondre à »** : le contact des coordinateurs de la saison quand c'est une adresse e-mail ; sinon, pas d'en-tête et l'e-mail donne le numéro (ou « Contactez un coordinateur »).
+- **Contenu** : texte brut et HTML simple, expéditeur « Hiver Solidaire ». Ni adresse du lieu ni consigne (l'appli ne les stocke pas). Aucun suivi : ni lien réécrit, ni image, ni pixel ; les liens pointent vers l'appli, et celui de désinscription ouvre la page de confirmation (GET sans effet).
+
+L'offre gratuite de Brevo permet 300 e-mails par jour. Avec une vingtaine de bénévoles, c'est largement suffisant (moins de 100 par jour estimés : une confirmation et un rappel par bénévole actif, un récap, quelques alertes).
 
 ## 7. Données personnelles (RGPD)
 
@@ -177,7 +185,7 @@ L'offre gratuite de Brevo permet 300 e-mails par jour. Avec une vingtaine de bé
 - Sonde HTTP externe toutes les 5 minutes, avec alerte sur téléphone
 - Sauvegardes quotidiennes chiffrées hors site, restauration testée avant l'ouverture
 - Objectifs : coupure de moins de 4 h (RTO), perte de moins de 24 h de données (RPO)
-- Plan B : récap quotidien et planning imprimable d'une période choisie, les 7 prochains jours par défaut (enregistré en PDF par le navigateur) chez les coordinateurs, Google Form de l'an dernier prêt à être réactivé, runbook « site indisponible »
+- Plan B : récap quotidien de 20 h (S5a, journées J+1 à J+7, lisible sans le site) et planning imprimable d'une période choisie, les 7 prochains jours par défaut (enregistré en PDF par le navigateur) chez les coordinateurs, Google Form de l'an dernier prêt à être réactivé, runbook « site indisponible »
 
 **Ergonomie et accessibilité** : mobile d'abord, grandes zones tactiles, français simple, objectif WCAG 2.2 AA, pages légères sans framework JavaScript lourd.
 
@@ -206,7 +214,7 @@ Rappels par SMS (payants), export iCal, messagerie relayée entre bénévoles d'
 2. Dates de la saison 2026-2027. Une saison d'exemple aux dates fictives (4 janv. → 21 mars 2027 au matin) est en place. Depuis S4b, un coordinateur la remplace depuis le back-office (« Saison ») en saisissant les vraies dates et le contact des coordinateurs, à condition qu'elle n'ait aucune inscription active. Restent à connaître : les dates réelles. L'adresse et les consignes du lieu ne sont plus demandées (lot 2).
 3. Nom exact de l'association, pour la notice et l'expéditeur des e-mails.
 4. Durées de conservation proposées dans la section RGPD.
-5. Durée de connexion des bénévoles (30 jours, appliquée en S3 et modifiable) et heure du rappel (18 h).
+5. Durée de connexion des bénévoles (30 jours, appliquée en S3 et modifiable). L'heure du rappel est fixée à 18 h la veille et celle du récap à 20 h (décision du 10 novembre 2026, S5a).
 6. ~~L'adresse du lieu reste-t-elle absente de la page publique ?~~ Close (lot 2) : l'appli ne stocke plus l'adresse du lieu, elle n'apparaît nulle part.
 7. La notice d'information (S5) doit mentionner le pseudo public : son affichage sur le planning, visible par tous, sa finalité et la façon d'en changer.
 8. Modification du pseudo : le bénévole la fait dans « Mon compte » depuis S4a ; un coordinateur la fait depuis la fiche du bénévole depuis S4b (pseudo usurpé), avec le nom et le prénom, mêmes règles et même unicité.

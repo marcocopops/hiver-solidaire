@@ -15,3 +15,4 @@ Chaque décision structurante est consignée ici, au format du [modèle](templat
 | [0009](0009-affichage-par-journee-donnees-par-soiree.md) | Affichage par journée, données par soirée | Proposé |
 | [0010](0010-coordinateurs-par-variable-d-environnement.md) | Coordinateurs désignés par variable d'environnement | Proposé |
 | [0011](0011-un-poste-par-benevole-et-par-soiree.md) | Un poste par bénévole et par soirée, plutôt qu'une inscription par soirée | Proposé |
+| [0012](0012-table-d-envois-plutot-qu-envoi-dans-la-requete.md) | Table d'envois et tâche planifiée plutôt qu'envoi dans la requête | Proposé |
