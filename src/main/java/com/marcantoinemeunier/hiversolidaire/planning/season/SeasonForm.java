@@ -16,7 +16,7 @@ import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
 
 /**
- * Création ou modification d'une saison par un coordinateur. Validé côté serveur ; les textes (horaires, contact)
+ * Création ou modification d'une saison par un coordinateur. Validé côté serveur ; les textes (contact, organisateur)
  * sont bornés et toujours affichés avec {@code th:text}. Le contact est vérifié par {@code CoordinatorsContact}.
  */
 public class SeasonForm {
@@ -53,11 +53,11 @@ public class SeasonForm {
     public static SeasonForm blank() {
         var form = new SeasonForm();
         form.needs = new ArrayList<>(List.of(
-                NeedForm.of(Post.BREAKFAST, 1, 1, null),
-                NeedForm.of(Post.MAIN_DISH, 1, 1, null),
-                NeedForm.of(Post.SIDES, 1, 1, null),
-                NeedForm.of(Post.DINNER_PRESENCE, 2, 2, null),
-                NeedForm.of(Post.NIGHT, 1, 2, null)));
+                NeedForm.of(Post.BREAKFAST, 1, 1),
+                NeedForm.of(Post.MAIN_DISH, 1, 1),
+                NeedForm.of(Post.SIDES, 1, 1),
+                NeedForm.of(Post.DINNER_PRESENCE, 2, 2),
+                NeedForm.of(Post.NIGHT, 1, 2)));
         return form;
     }
 
@@ -68,7 +68,7 @@ public class SeasonForm {
         form.registrationsOpenAt = settings.registrationsOpenAt();
         form.needs = new ArrayList<>(Day.POSTS.stream()
                 .map(post -> settings.needs().stream().filter(need -> need.post() == post).findFirst()
-                        .map(need -> NeedForm.of(post, need.minimum(), need.maximum(), need.schedule()))
+                        .map(need -> NeedForm.of(post, need.minimum(), need.maximum()))
                         .orElseThrow())
                 .toList());
         form.coordinatorsContact = settings.coordinatorsContact();
@@ -105,15 +105,11 @@ public class SeasonForm {
         @Max(value = 10, message = "{admin.season.error.need}")
         private int maximum;
 
-        @Size(max = 100, message = "{admin.season.error.schedule}")
-        private String schedule;
-
-        static NeedForm of(Post post, int minimum, int maximum, String schedule) {
+        static NeedForm of(Post post, int minimum, int maximum) {
             var form = new NeedForm();
             form.post = post;
             form.minimum = minimum;
             form.maximum = maximum;
-            form.schedule = schedule;
             return form;
         }
 
@@ -144,14 +140,6 @@ public class SeasonForm {
 
         public void setMaximum(int maximum) {
             this.maximum = maximum;
-        }
-
-        public String getSchedule() {
-            return schedule;
-        }
-
-        public void setSchedule(String schedule) {
-            this.schedule = schedule;
         }
     }
 

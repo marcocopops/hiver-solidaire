@@ -95,9 +95,9 @@ public class SeasonSettingsService {
     }
 
     private Optional<SeasonSettings> find(UUID id) {
-        var needs = jdbc.query("SELECT post, minimum, maximum, schedule FROM season_need WHERE season_id = ?",
+        var needs = jdbc.query("SELECT post, minimum, maximum FROM season_need WHERE season_id = ?",
                 (row, index) -> new NeedSetting(Post.valueOf(row.getString("post")), row.getInt("minimum"),
-                        row.getInt("maximum"), row.getString("schedule")), id);
+                        row.getInt("maximum")), id);
         return jdbc.query("""
                 SELECT id, first_evening, last_evening, registrations_open_at, sample, coordinators_contact, organizer
                 FROM season WHERE id = ?
@@ -200,9 +200,8 @@ public class SeasonSettingsService {
     private void writeNeeds(UUID seasonId, SeasonForm form) {
         jdbc.update("DELETE FROM season_need WHERE season_id = ?", seasonId);
         for (var need : form.getNeeds()) {
-            jdbc.update("INSERT INTO season_need (season_id, post, minimum, maximum, schedule) VALUES (?, ?, ?, ?, ?)",
-                    seasonId, need.getPost().name(), need.getMinimum(), need.getMaximum(),
-                    SeasonForm.blankToNull(need.getSchedule()));
+            jdbc.update("INSERT INTO season_need (season_id, post, minimum, maximum) VALUES (?, ?, ?, ?)",
+                    seasonId, need.getPost().name(), need.getMinimum(), need.getMaximum());
         }
     }
 

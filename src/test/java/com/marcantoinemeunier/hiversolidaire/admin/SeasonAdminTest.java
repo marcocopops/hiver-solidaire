@@ -78,11 +78,11 @@ class SeasonAdminTest {
                 "registrationsOpenAt", "2026-12-14T00:00",
                 "coordinatorsContact", "",
                 "organizer", ""));
-        String[][] needs = {{"BREAKFAST", "1", "1", "7 h"}, {"MAIN_DISH", "1", "1", "19 h"}, {"SIDES", "1", "1", "19 h"},
-            {"DINNER_PRESENCE", "2", "2", "19 h → 21 h"}, {"NIGHT", "1", "2", "Jusqu’au matin"}};
+        String[][] needs = {{"BREAKFAST", "1", "1"}, {"MAIN_DISH", "1", "1"}, {"SIDES", "1", "1"},
+            {"DINNER_PRESENCE", "2", "2"}, {"NIGHT", "1", "2"}};
         for (int i = 0; i < needs.length; i++) {
             params.addAll(List.of("needs[" + i + "].post", needs[i][0], "needs[" + i + "].minimum", needs[i][1],
-                    "needs[" + i + "].maximum", needs[i][2], "needs[" + i + "].schedule", needs[i][3]));
+                    "needs[" + i + "].maximum", needs[i][2]));
         }
         for (int i = 0; i < overrides.length; i += 2) {
             var index = params.indexOf(overrides[i]);
@@ -125,12 +125,13 @@ class SeasonAdminTest {
         assertThat(evenings()).isEqualTo(84);
         assertThat(jdbc.queryForObject("SELECT min(evening_date) FROM evening", LocalDate.class)).isEqualTo(FIRST);
         assertThat(jdbc.queryForObject("SELECT max(evening_date) FROM evening", LocalDate.class)).isEqualTo(LAST);
-        assertThat(jdbc.queryForObject("SELECT schedule FROM season_need WHERE post = 'NIGHT'", String.class))
-                .isEqualTo("Jusqu’au matin");
+        assertThat(jdbc.queryForObject("SELECT maximum FROM season_need WHERE post = 'NIGHT'", Integer.class))
+                .isEqualTo(2);
         assertThat(audits(coordinator.id(), "SAMPLE_SEASON_DELETED")).isEqualTo(1);
         assertThat(audits(coordinator.id(), "SEASON_CREATED")).isEqualTo(1);
         assertThat(browser.get("/admin/saison").getContentAsString()).contains("value=\"2027-01-04\"")
-                .doesNotContain("Nom de la saison").doesNotContain("Adresse du lieu").doesNotContain("Consignes");
+                .doesNotContain("Nom de la saison").doesNotContain("Adresse du lieu").doesNotContain("Consignes")
+                .doesNotContain("Horaires").doesNotContain(".schedule");
 
         // Une seule saison active à la fois : une seconde création est refusée.
         var again = create(browser, "lastEvening", LAST.plusDays(1).toString());
