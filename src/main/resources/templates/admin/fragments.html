@@ -47,7 +47,6 @@
                     <th scope="col"></th>
                     <th scope="col" th:text="#{admin.season.minimum}">Minimum</th>
                     <th scope="col" th:text="#{admin.season.maximum}">Maximum</th>
-                    <th scope="col" th:text="#{admin.season.schedule}">Horaires</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -61,8 +60,6 @@
                     </td>
                     <td><input type="number" min="0" max="10" required th:field="*{needs[__${iter.index}__].maximum}"
                                th:attr="aria-label=#{admin.season.maximum}"></td>
-                    <td><input type="text" maxlength="100" th:field="*{needs[__${iter.index}__].schedule}"
-                               th:attr="aria-label=#{admin.season.schedule}"></td>
                 </tr>
                 </tbody>
             </table>
