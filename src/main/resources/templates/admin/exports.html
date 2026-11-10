@@ -4,26 +4,28 @@
 <body>
 <header th:replace="~{fragments :: entete(#{admin.exports.title}, true)}"></header>
 <main class="page page--large">
+    <!-- Dates de la période : un changement recharge le tableau par htmx ; sans JavaScript, « Afficher » envoie le
+         formulaire en GET. -->
+    <div class="exports__barre">
+        <form id="periode" class="formulaire formulaire--ligne exports__periode" th:action="@{/admin/exports}" method="get"
+              th:hx-get="@{/admin/exports/tableau}" hx-trigger="change" hx-target="#tableau-export" hx-swap="innerHTML"
+              hx-sync="this:replace">
+            <div>
+                <label for="du" th:text="#{admin.exports.from}">Du</label>
+                <input id="du" type="date" name="du" required th:value="${from}">
+            </div>
+            <div>
+                <label for="au" th:text="#{admin.exports.to}">Au</label>
+                <input id="au" type="date" name="au" required th:value="${to}">
+            </div>
+            <button class="bouton bouton--secondaire sans-js" type="submit" th:text="#{admin.exports.show}">Afficher</button>
+        </form>
+        <form th:replace="~{admin/fragments :: exportActions(false)}"></form>
+    </div>
 
-    <h2 th:text="#{admin.exports.csv}">Inscriptions au format CSV</h2>
-    <p class="aide" th:text="#{admin.exports.csv.hint(${maxDays})}">Contient des coordonnées.</p>
-    <form class="formulaire formulaire--ligne" th:action="@{/admin/exports/inscriptions.csv}" method="post">
-        <div>
-            <label for="du" th:text="#{admin.exports.from}">Du</label>
-            <input id="du" type="date" name="du" required th:value="${from}">
-        </div>
-        <div>
-            <label for="au" th:text="#{admin.exports.to}">Au</label>
-            <input id="au" type="date" name="au" required th:value="${to}">
-        </div>
-        <button class="bouton" type="submit" th:text="#{admin.exports.csv.submit}">Télécharger le CSV</button>
-    </form>
-
-    <h2 th:text="#{admin.exports.print}">Planning imprimable</h2>
-    <p class="aide" th:text="#{admin.exports.print.hint}">Plan B.</p>
-    <form class="formulaire" th:action="@{/admin/exports/impression}" method="post">
-        <button class="bouton" type="submit" th:text="#{admin.exports.print.submit}">Ouvrir la page imprimable</button>
-    </form>
+    <div id="tableau-export" th:insert="~{admin/fragments :: exportTable}"></div>
 </main>
+<script th:src="@{/js/htmx-2.0.4.min.js}" defer></script>
+<script th:src="@{/js/exports.js}" defer></script>
 </body>
 </html>

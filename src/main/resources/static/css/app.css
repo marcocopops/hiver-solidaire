@@ -992,6 +992,31 @@ a:hover {
     flex: 1 1 12rem;
 }
 
+/* Page des exports : dates et boutons sur une ligne, qui passent à la ligne sur un téléphone. */
+.exports__barre {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--esp-4);
+    margin-bottom: var(--esp-5);
+}
+
+.exports__periode {
+    flex: 2 1 20rem;
+    margin: 0;
+}
+
+.exports__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--esp-3);
+}
+
+/* Avec JavaScript (classe posée par exports.js), le tableau suit les dates : le bouton « Afficher » est masqué. */
+.js .sans-js {
+    display: none;
+}
+
 /* Page imprimable du planning (plan B, §8) : le navigateur l'enregistre en PDF. */
 @media print {
     body {
@@ -1004,7 +1029,6 @@ a:hover {
         padding: 0;
     }
 
-    .ne-pas-imprimer,
     .entete__barre {
         display: none;
     }

@@ -24,7 +24,10 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
-/** Exports (§6, §8) : CSV d'une période et page imprimable des 7 prochains jours, réservés et audités. */
+/**
+ * Exports (§6, §8) : tableau de la période à l'écran (page et fragment htmx, non audités), page imprimable et CSV
+ * (POST audités) ; 7 prochains jours par défaut, 31 jours au plus.
+ */
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import({TestcontainersConfiguration.class, TestClockAndMailConfiguration.class})
@@ -118,19 +121,118 @@ class ExportTest {
         assertThat(output.getAll()).doesNotContain(anne.email()).doesNotContain("HYPERLINK");
     }
 
+
+    @Test
+    void the_page_shows_the_next_7_days_with_contact_details_without_audit(CapturedOutput output) throws Exception {
+        var anne = volunteers.volunteer();
+        TestVolunteers.register(anne.browser(), SOON, "NIGHT_AND_DINNER");
+        var coordinator = volunteers.coordinator();
+
+        var response = coordinator.browser().get("/admin/exports");
+
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(response.getContentAsString())
+                .contains("value=\"2027-01-04\"").contains("value=\"2027-01-10\"")
+                .contains("Ouvrir la page imprimable").contains("Exporter au format CSV").contains("Afficher")
+                .contains("Mar. 5 janv.").contains("Dim. 10 janv.").doesNotContain("Lun. 11 janv.")
+                .contains("Martin Anne (" + anne.pseudo() + ")").contains("+33600000001").contains(anne.email())
+                .contains("hx-get=\"/admin/exports/tableau\"")
+                .contains("src=\"/js/htmx-2.0.4.min.js\"").contains("src=\"/js/exports.js\"");
+        assertThat(audits(coordinator.id(), "PRINTABLE_PLANNING_VIEWED")).isZero();
+        assertThat(audits(coordinator.id(), "REGISTRATIONS_EXPORTED")).isZero();
+        assertThat(output.getAll()).doesNotContain(anne.email());
+    }
+
+    @Test
+    void the_page_shows_the_chosen_period_and_keeps_it_for_the_exports() throws Exception {
+        var browser = volunteers.coordinator().browser();
+
+        var html = browser.get("/admin/exports?du=2027-01-06&au=2027-01-08").getContentAsString();
+
+        assertThat(html).contains("Mer. 6 janv.").contains("Ven. 8 janv.").doesNotContain("Mar. 5 janv.")
+                .doesNotContain("Sam. 9 janv.")
+                .contains("type=\"hidden\" name=\"du\" value=\"2027-01-06\"")
+                .contains("type=\"hidden\" name=\"au\" value=\"2027-01-08\"");
+    }
+
+    @Test
+    void the_fragment_contains_the_table_with_emails_and_the_export_buttons_for_the_period() throws Exception {
+        var anne = volunteers.volunteer();
+        TestVolunteers.register(anne.browser(), SOON, "NIGHT_AND_DINNER");
+        var browser = volunteers.coordinator().browser();
+        var pseudo = Browser.uniquePseudo();
+        var noEmail = formulaVolunteer(pseudo);
+        browser.get("/admin/inscriptions/nouvelle?jour=" + WEEKEND + "&benevole=" + noEmail + "&choix=BREAKFAST");
+        browser.post("/admin/inscriptions/nouvelle", "jour", WEEKEND.toString(), "benevole", noEmail.toString(), "choix",
+                "BREAKFAST");
+
+        var response = browser.get("/admin/exports/tableau?du=2027-01-05&au=2027-01-09");
+
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(response.getContentAsString()).doesNotContain("<html").doesNotContain("<header")
+                .contains("Martin Anne (" + anne.pseudo() + ")").contains(anne.email())
+                .contains("(" + pseudo + ")").contains("Sans e-mail")
+                .contains("hx-swap-oob=\"true\"").contains("name=\"_csrf\"")
+                .contains("type=\"hidden\" name=\"du\" value=\"2027-01-05\"")
+                .contains("type=\"hidden\" name=\"au\" value=\"2027-01-09\"")
+                .doesNotContain("disabled");
+    }
+
+    @Test
+    void an_invalid_period_gives_a_clear_message_on_the_page_and_in_the_fragment() throws Exception {
+        var anne = volunteers.volunteer();
+        TestVolunteers.register(anne.browser(), SOON, "NIGHT_AND_DINNER");
+        var browser = volunteers.coordinator().browser();
+        var cases = new String[][] {
+                {"du=2027-01-10&au=2027-01-04", "« Au » doit tomber le même jour que « Du » ou après."},
+                {"du=2027-01-01&au=2027-03-01", "La période ne peut pas dépasser 31 jours."},
+                {"du=hier&au=2027-01-04", "Indiquez deux dates valides."},
+                {"du=&au=", "Indiquez deux dates valides."}};
+
+        for (var c : cases) {
+            for (var path : new String[] {"/admin/exports?", "/admin/exports/tableau?"}) {
+                var response = browser.get(path + c[0]);
+
+                assertThat(response.getStatus()).as(path + c[0]).isEqualTo(200);
+                assertThat(response.getContentAsString()).as(path + c[0]).contains(c[1])
+                        .doesNotContain(anne.email()).contains("disabled");
+            }
+        }
+        // Les champs gardent ce qui a été saisi.
+        assertThat(browser.get("/admin/exports?du=2027-01-10&au=2027-01-04").getContentAsString())
+                .contains("value=\"2027-01-10\"").contains("value=\"2027-01-04\"");
+    }
+
     @Test
     void an_invalid_period_is_refused_without_audit() throws Exception {
         var coordinator = volunteers.coordinator();
         var browser = coordinator.browser();
+
+        for (var path : new String[] {"/admin/exports/inscriptions.csv", "/admin/exports/impression"}) {
+            browser.get("/admin/exports");
+            var inverted = browser.post(path, "du", "2027-01-10", "au", "2027-01-04");
+            assertThat(inverted.getStatus()).as(path).isEqualTo(400);
+            assertThat(inverted.getContentAsString()).as(path).contains("« Au » doit tomber le même jour");
+            browser.get("/admin/exports");
+            var tooLong = browser.post(path, "du", "2027-01-01", "au", "2027-02-01");
+            assertThat(tooLong.getStatus()).as(path).isEqualTo(400);
+            assertThat(tooLong.getContentAsString()).as(path).contains("31 jours");
+            browser.get("/admin/exports");
+            assertThat(browser.post(path, "du", "hier", "au", "2027-01-04").getStatus()).as(path).isEqualTo(400);
+            browser.get("/admin/exports");
+            assertThat(browser.post(path).getStatus()).as(path).isEqualTo(400);
+        }
+        assertThat(audits(coordinator.id(), "REGISTRATIONS_EXPORTED")).isZero();
+        assertThat(audits(coordinator.id(), "PRINTABLE_PLANNING_VIEWED")).isZero();
+    }
+
+    @Test
+    void the_csv_accepts_31_days() throws Exception {
+        var browser = volunteers.coordinator().browser();
         browser.get("/admin/exports");
 
-        assertThat(browser.post("/admin/exports/inscriptions.csv", "du", "2027-01-10", "au", "2027-01-04").getStatus())
-                .isEqualTo(400);
-        assertThat(browser.post("/admin/exports/inscriptions.csv", "du", "2027-01-01", "au", "2028-01-01").getStatus())
-                .isEqualTo(400);
-        assertThat(browser.post("/admin/exports/inscriptions.csv", "du", "hier", "au", "2027-01-04").getStatus())
-                .isEqualTo(404);
-        assertThat(audits(coordinator.id(), "REGISTRATIONS_EXPORTED")).isZero();
+        assertThat(browser.post("/admin/exports/inscriptions.csv", "du", "2027-01-01", "au", "2027-01-31").getStatus())
+                .isEqualTo(200);
     }
 
     @Test
@@ -139,24 +241,30 @@ class ExportTest {
 
         assertThat(browser.get("/admin/exports/inscriptions.csv?du=2027-01-04&au=2027-01-10").getStatus())
                 .isIn(403, 404, 405);
-        assertThat(browser.get("/admin/exports/impression").getStatus()).isIn(403, 404, 405);
+        assertThat(browser.get("/admin/exports/impression?du=2027-01-04&au=2027-01-10").getStatus())
+                .isIn(403, 404, 405);
     }
 
     @Test
-    void the_printable_planning_shows_the_next_7_days_with_contact_details() throws Exception {
+    void the_printable_planning_shows_the_chosen_period_with_contact_details() throws Exception {
         var anne = volunteers.volunteer();
         TestVolunteers.register(anne.browser(), SOON, "NIGHT_AND_DINNER");
         var coordinator = volunteers.coordinator();
         var browser = coordinator.browser();
         browser.get("/admin/exports");
 
-        var response = browser.post("/admin/exports/impression");
+        var response = browser.post("/admin/exports/impression", "du", "2027-01-05", "au", "2027-01-06");
 
         assertThat(response.getStatus()).isEqualTo(200);
-        assertThat(response.getContentAsString()).contains("Planning du lun. 4 janv. au dim. 10 janv.")
-                .contains("Mar. 5 janv.").contains("Dim. 10 janv.").doesNotContain("Lun. 11 janv.")
-                .contains("Martin Anne (" + anne.pseudo() + ") +33600000001")
-                .contains("place à pourvoir");
-        assertThat(audits(coordinator.id(), "PRINTABLE_PLANNING_VIEWED")).isEqualTo(1);
+        assertThat(response.getContentAsString()).contains("Planning du mar. 5 janv. au mer. 6 janv.")
+                .contains("Mar. 5 janv.").contains("Mer. 6 janv.").doesNotContain("Jeu. 7 janv.")
+                .doesNotContain("Lun. 4 janv.")
+                .contains("Martin Anne (" + anne.pseudo() + ")").contains("+33600000001").contains(anne.email())
+                .contains("place à pourvoir")
+                .doesNotContain("htmx");
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM audit_log WHERE coordinator_id = ? AND action = 'PRINTABLE_PLANNING_VIEWED'
+                    AND period_from = DATE '2027-01-05' AND period_to = DATE '2027-01-06'
+                """, Integer.class, coordinator.id())).isEqualTo(1);
     }
 }
