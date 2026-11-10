@@ -8,7 +8,7 @@
 <p th:text="#{mail.greeting}">Bonjour,</p>
 
 <th:block th:unless="${registered.isEmpty()}">
-<p th:text="${registered.size() > 1} ? #{mail.confirmation.registered.many} : #{mail.confirmation.registered}">Votre inscription est enregistrée :</p>
+<p th:text="${registered.size() > 1} ? #{mail.confirmation.registered.many} : #{mail.confirmation.registered}">Votre inscription pour Hiver Solidaire est enregistrée :</p>
 <ul>
 <li th:each="line : ${registered}">
 <strong th:text="${line.activity}">Dîner du lun. 4 janv.</strong> : <span th:text="${line.option}">Passer la nuit</span><br>

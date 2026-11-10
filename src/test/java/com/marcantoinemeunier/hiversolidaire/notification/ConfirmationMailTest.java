@@ -129,7 +129,7 @@ class ConfirmationMailTest {
             assertThat(mail.to()).containsExactly(anne.email());
             assertThat(mail.subject()).isEqualTo("Vos inscriptions — Hiver Solidaire");
             assertThat(mail.text())
-                    .contains("Votre inscription est enregistrée :")
+                    .contains("Votre inscription pour Hiver Solidaire est enregistrée :")
                     .contains("Dîner et nuit du mar. 12 janv. : Passer la nuit et partager le dîner")
                     .contains("Du dîner (19 h) au petit-déjeuner du lendemain")
                     .contains("Pour vous désinscrire, jusqu’au lun. 11 janv. à 23 h 59 :")
@@ -216,7 +216,7 @@ class ConfirmationMailTest {
                 .contains("Enregistré par un coordinateur.");
         // Un déplacement : une annulation et une inscription, dans le même e-mail.
         assertThat(mails.sentTo(email).getLast().text())
-                .containsSubsequence("Votre inscription est enregistrée :", "Dîner et nuit du mer. 13 janv.",
+                .containsSubsequence("Votre inscription pour Hiver Solidaire est enregistrée :", "Dîner et nuit du mer. 13 janv.",
                         "Enregistré par un coordinateur.", "Cette inscription est annulée :",
                         "Dîner et nuit du mar. 12 janv.", "Annulé par un coordinateur.");
     }
