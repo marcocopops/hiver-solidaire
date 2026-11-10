@@ -79,5 +79,53 @@
     <p class="aide" id="organizer-hint" th:text="#{admin.season.organizer.hint}">Affiché sur la page d’accueil.</p>
     <p class="erreur" th:if="${#fields.hasErrors('organizer')}" th:text="#{admin.season.error.organizer}">Organisateur.</p>
 </th:block>
+<!-- Coordonnées des inscrits par jour et par poste : tableau de la page des exports et de la page imprimable. -->
+<th:block th:fragment="contacts(days)">
+    <p th:if="${days.isEmpty()}" th:text="#{planning.none}">Aucune journée.</p>
+    <section class="impression__jour" th:each="day : ${days}">
+        <h2 th:text="${day.label}">Lun. 4 janv.</h2>
+        <div class="tableau-defilant">
+            <table class="tableau">
+                <tbody>
+                <tr th:each="post : ${day.posts}">
+                    <th scope="row" th:text="#{${post.postKey}}">Nuit</th>
+                    <td>
+                        <th:block th:each="person, iter : ${post.people}">
+                            <th:block th:text="${person.name} + ' (' + ${person.pseudo} + ') · ' + ${person.phone} + ' · '
+                                    + (${person.email != null} ? ${person.email} : #{admin.noEmail})">Martin Anne (AnneM) · +33600000001 · anne@example.org</th:block><br th:unless="${iter.last}">
+                        </th:block>
+                        <strong th:if="${post.missing > 0}" th:text="#{admin.print.missing(${post.missing})}">1 place à pourvoir</strong>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</th:block>
+
+<!-- Page des exports : contenu de #tableau-export, le message si la période est refusée, sinon le tableau. -->
+<th:block th:fragment="exportTable">
+    <p class="erreur" role="alert" th:if="${error != null}" th:text="#{${error}(${maxDays})}">Période refusée.</p>
+    <th:block th:if="${error == null}" th:insert="~{admin/fragments :: contacts(${days})}"></th:block>
+</th:block>
+
+<!-- Boutons d'export de la période affichée (champs cachés), désactivés si la période est refusée. Formulaire distinct
+     de celui des dates : le jeton CSRF ne part jamais dans l'URL du GET « Afficher ». oob : renvoyé avec le tableau
+     par le fragment htmx, il remplace celui de la page (hx-swap-oob). -->
+<form id="exports-actions" class="exports__actions" th:fragment="exportActions(oob)" method="post"
+      th:action="@{/admin/exports/inscriptions.csv}" th:hx-swap-oob="${oob} ? 'true'">
+    <input type="hidden" name="du" th:value="${period?.from}">
+    <input type="hidden" name="au" th:value="${period?.to}">
+    <button class="bouton" type="submit" th:formaction="@{/admin/exports/impression}" formtarget="_blank"
+            th:disabled="${period == null}" th:text="#{admin.exports.print.submit}">Ouvrir la page imprimable</button>
+    <button class="bouton bouton--secondaire" type="submit" th:disabled="${period == null}"
+            th:text="#{admin.exports.csv.submit}">Exporter au format CSV</button>
+</form>
+
+<!-- Réponse du fragment htmx (GET /admin/exports/tableau) : le tableau, et les boutons pour la nouvelle période. -->
+<th:block th:fragment="exportPartial">
+    <th:block th:replace="~{admin/fragments :: exportTable}"></th:block>
+    <form th:replace="~{admin/fragments :: exportActions(true)}"></form>
+</th:block>
 </body>
 </html>

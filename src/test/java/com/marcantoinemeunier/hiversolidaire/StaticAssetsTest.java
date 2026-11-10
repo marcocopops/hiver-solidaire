@@ -65,4 +65,19 @@ class StaticAssetsTest {
             assertThat(mockMvc.perform(get(url)).andReturn().getResponse().getStatus()).as(url).isEqualTo(200);
         }
     }
+
+    @Test
+    void htmx_is_served_locally_with_its_license() throws Exception {
+        var script = mockMvc.perform(get("/js/htmx-2.0.4.min.js")).andReturn().getResponse();
+        var license = mockMvc.perform(get("/js/htmx-LICENSE.txt")).andReturn().getResponse();
+        var config = mockMvc.perform(get("/js/exports.js")).andReturn().getResponse();
+
+        assertThat(script.getStatus()).isEqualTo(200);
+        assertThat(script.getContentType()).startsWith("text/javascript");
+        assertThat(license.getStatus()).isEqualTo(200);
+        assertThat(license.getContentAsString()).contains("Zero-Clause BSD");
+        // Réglages de htmx compatibles avec la CSP (§8) et sans copie de page dans le stockage du navigateur.
+        assertThat(config.getContentAsString()).contains("includeIndicatorStyles = false")
+                .contains("allowEval = false").contains("historyEnabled = false");
+    }
 }
