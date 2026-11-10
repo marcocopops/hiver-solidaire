@@ -1,0 +1,30 @@
+[(#{mail.greeting})]
+
+[(#{mail.recap.intro(${from}, ${to})})]
+[# th:if="${days.isEmpty()}"]
+[(#{mail.recap.noDays})]
+[/][# th:each="day : ${days}"]
+== [(${day.label})] : [(${day.status})] ==
+[# th:each="line : ${day.missing}"]! [(${line})]
+[/][# th:if="${day.people.isEmpty()}"][(#{mail.recap.nobody})]
+[/][# th:each="person : ${day.people}"]- [(${person.option})] : [(${person.person})][# th:if="${person.noEmail}"] ([(${person.noEmail})])[/]
+[/][# th:each="line : ${day.doubles}"]* [(${line})]
+[/][/]
+== [(#{mail.recap.alerts})] ==
+[# th:if="${alerts.isEmpty()}"][(#{mail.recap.none})]
+[/][# th:each="line : ${alerts}"]- [(${line})]
+[/]
+== [(#{mail.recap.pickups})] ==
+[# th:if="${pickups.isEmpty()}"][(#{mail.recap.none})]
+[/][# th:each="line : ${pickups}"]- [(${line})]
+[/]
+== [(#{mail.recap.newVolunteers})] ==
+[# th:if="${newVolunteers.isEmpty()}"][(#{mail.recap.none})]
+[/][# th:each="line : ${newVolunteers}"]- [(${line})]
+[/]
+[(#{mail.recap.admin(${admin})})]
+
+[(#{mail.recap.confidential})]
+
+--
+[(#{mail.footer})]

@@ -1,4 +1,4 @@
-package com.marcantoinemeunier.hiversolidaire.admin;
+package com.marcantoinemeunier.hiversolidaire.planning;
 
 import com.marcantoinemeunier.hiversolidaire.planning.domain.Day;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.DayStatus;
@@ -24,11 +24,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Lectures du back-office sur le planning de la saison courante : journées (ADR-0009), soirées et inscrits avec leurs
- * coordonnées. Lecture seule ; les écritures passent par {@code RegistrationService}, sous le verrou de R1.
+ * Lectures réservées aux coordinateurs sur le planning de la saison courante : journées (ADR-0009), soirées et inscrits
+ * avec leurs coordonnées. Utilisées par le back-office et par le récap quotidien (S5a). Lecture seule ; les écritures
+ * passent par {@code RegistrationService}, sous le verrou de R1. Jamais pour une page publique.
  */
 @Service
-class CoordinatorPlanning {
+public class CoordinatorPlanning {
 
     private final SeasonRepository seasons;
     private final EveningRepository evenings;
@@ -50,14 +51,14 @@ class CoordinatorPlanning {
      * @param contacts inscrits actifs des soirées de la période, par soirée (soir J)
      * @param eveningIds identifiant de chaque soirée, par date
      */
-    record Window(SeasonEntity season, List<Day> days, Map<LocalDate, List<RegistrationContact>> contacts,
+    public record Window(SeasonEntity season, List<Day> days, Map<LocalDate, List<RegistrationContact>> contacts,
             Map<LocalDate, UUID> eveningIds) {
 
-        Optional<Day> day(LocalDate date) {
+        public Optional<Day> day(LocalDate date) {
             return days.stream().filter(day -> day.date().equals(date)).findFirst();
         }
 
-        List<RegistrationContact> contactsOn(LocalDate eveningDate, Post post) {
+        public List<RegistrationContact> contactsOn(LocalDate eveningDate, Post post) {
             return contacts.getOrDefault(eveningDate, List.of()).stream()
                     .filter(contact -> contact.type().coveredPosts(contact.dishChoice()).contains(post))
                     .toList();
@@ -66,27 +67,27 @@ class CoordinatorPlanning {
 
     /** Inscription active et coordonnées de son bénévole. */
     @Transactional(readOnly = true)
-    Optional<RegistrationContact> registration(UUID registrationId) {
+    public Optional<RegistrationContact> registration(UUID registrationId) {
         return registrations.findActiveContact(registrationId);
     }
 
     /** Inscriptions actives d'un bénévole, passées comprises. */
     @Transactional(readOnly = true)
-    List<RegistrationContact> registrationsOf(UUID volunteerId) {
+    public List<RegistrationContact> registrationsOf(UUID volunteerId) {
         return registrations.findContactsOfVolunteer(volunteerId);
     }
 
-    LocalDate today() {
+    public LocalDate today() {
         return ParisTime.today(clock.instant());
     }
 
-    Optional<SeasonEntity> currentSeason() {
+    public Optional<SeasonEntity> currentSeason() {
         return seasons.findCurrent(today());
     }
 
     /** La soirée D-1 porte le petit-déjeuner du jour D : on lit à partir de la veille. */
     @Transactional(readOnly = true)
-    Optional<Window> load(LocalDate from, LocalDate to) {
+    public Optional<Window> load(LocalDate from, LocalDate to) {
         return currentSeason().map(season -> load(season, from, to));
     }
 
@@ -112,7 +113,7 @@ class CoordinatorPlanning {
 
     /** Journées à compléter de la période (R5). */
     @Transactional(readOnly = true)
-    List<Day> incompleteDays(LocalDate from, LocalDate to) {
+    public List<Day> incompleteDays(LocalDate from, LocalDate to) {
         return load(from, to).map(window -> window.days().stream()
                 .filter(day -> day.status() == DayStatus.INCOMPLETE).toList()).orElse(List.of());
     }
@@ -122,7 +123,7 @@ class CoordinatorPlanning {
      * récupération restée sans repas.
      */
     @Transactional(readOnly = true)
-    List<Evening> eveningsWithPickupToOrganize() {
+    public List<Evening> eveningsWithPickupToOrganize() {
         return currentSeason().map(season -> {
             var needs = season.needs();
             var today = today();

@@ -1,6 +1,7 @@
 package com.marcantoinemeunier.hiversolidaire.benevole;
 
 import com.marcantoinemeunier.hiversolidaire.inscription.RegistrationService;
+import com.marcantoinemeunier.hiversolidaire.notification.MailOutbox;
 import java.time.Clock;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -11,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
  * Suppression du compte par le bénévole (§6 « Mon compte », ADR-0008), en une transaction :
  * <ol>
  *   <li>ses inscriptions à venir sont annulées, sous le verrou de chaque soirée, avec l'alerte éventuelle ;</li>
+ *   <li>les e-mails qui l'attendaient ne partent plus (confirmation, rappel) ;</li>
  *   <li>sa ligne est anonymisée : ses inscriptions passées restent comptées, rattachées à personne ;</li>
  *   <li>ses liens de connexion en cours sont supprimés (ils contiennent son adresse) ;</li>
  *   <li>toutes ses sessions sont supprimées (ADR-0007), sur tous ses appareils.</li>
@@ -22,13 +24,15 @@ public class AccountDeletionService {
 
     private final VolunteerRepository volunteers;
     private final RegistrationService registrations;
+    private final MailOutbox mails;
     private final JdbcTemplate jdbc;
     private final Clock clock;
 
-    AccountDeletionService(VolunteerRepository volunteers, RegistrationService registrations, JdbcTemplate jdbc,
-            Clock clock) {
+    AccountDeletionService(VolunteerRepository volunteers, RegistrationService registrations, MailOutbox mails,
+            JdbcTemplate jdbc, Clock clock) {
         this.volunteers = volunteers;
         this.registrations = registrations;
+        this.mails = mails;
         this.jdbc = jdbc;
         this.clock = clock;
     }
@@ -36,6 +40,7 @@ public class AccountDeletionService {
     @Transactional
     public void delete(UUID volunteerId) {
         registrations.cancelAllUpcoming(volunteerId);
+        mails.forget(volunteerId);
         var volunteer = volunteers.findById(volunteerId).orElseThrow();
         var email = volunteer.email();
         volunteer.anonymize(clock.instant());

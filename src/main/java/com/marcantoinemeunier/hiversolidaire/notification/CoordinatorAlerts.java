@@ -1,5 +1,6 @@
 package com.marcantoinemeunier.hiversolidaire.notification;
 
+import com.marcantoinemeunier.hiversolidaire.planning.domain.IncompleteEveningAlert;
 import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.Instant;
@@ -13,8 +14,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Alertes aux coordinateurs à envoyer (table {@code coordinator_alert}, ADR-0008). Écrites dans la transaction de
- * leur cause : une alerte n'existe que si l'annulation a bien eu lieu, et elle survit à un redémarrage. L'envoi par
- * e-mail arrive en S5 : il lira les lignes sans {@code sent_at}. Aucune donnée personnelle, la soirée seule.
+ * leur cause : une alerte n'existe que si l'annulation a bien eu lieu, et elle survit à un redémarrage. Aucune donnée
+ * personnelle, la soirée seule. Une soirée devenue incomplète dont le dîner commence dans moins de 48 h part tout de
+ * suite par e-mail (ligne de la table d'envois écrite dans la même transaction, {@code sent_at} posé à l'envoi) ; les
+ * autres alertes n'apparaissent que dans le récap quotidien (S5a).
  */
 @Component
 public class CoordinatorAlerts {
@@ -28,10 +31,12 @@ public class CoordinatorAlerts {
     }
 
     private final JdbcTemplate jdbc;
+    private final MailDeliveries deliveries;
     private final Clock clock;
 
-    CoordinatorAlerts(JdbcTemplate jdbc, Clock clock) {
+    CoordinatorAlerts(JdbcTemplate jdbc, MailDeliveries deliveries, Clock clock) {
         this.jdbc = jdbc;
+        this.deliveries = deliveries;
         this.clock = clock;
     }
 
@@ -65,9 +70,19 @@ public class CoordinatorAlerts {
                 Timestamp.from(clock.instant()), coordinatorId, alertId) == 1;
     }
 
+    /**
+     * Soirée des 7 prochains jours devenue incomplète ; e-mail immédiat si son dîner commence dans moins de 48 h
+     * ({@link IncompleteEveningAlert#immediate}).
+     *
+     * @param eveningDate date du soir J de la soirée
+     */
     @Transactional(propagation = Propagation.MANDATORY)
-    public void eveningIncomplete(UUID eveningId) {
-        record(Kind.EVENING_INCOMPLETE, eveningId);
+    public void eveningIncomplete(UUID eveningId, LocalDate eveningDate) {
+        var alertId = record(Kind.EVENING_INCOMPLETE, eveningId);
+        var now = clock.instant();
+        if (IncompleteEveningAlert.immediate(eveningDate, now)) {
+            deliveries.createAlert(alertId, now, MailSchedule.eveningPastAt(eveningDate));
+        }
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -75,8 +90,10 @@ public class CoordinatorAlerts {
         record(Kind.PICKUP_WITHOUT_MEAL, eveningId);
     }
 
-    private void record(Kind kind, UUID eveningId) {
+    private UUID record(Kind kind, UUID eveningId) {
+        var id = UUID.randomUUID();
         jdbc.update("INSERT INTO coordinator_alert (id, kind, evening_id, created_at) VALUES (?, ?, ?, ?)",
-                UUID.randomUUID(), kind.name(), eveningId, Timestamp.from(clock.instant()));
+                id, kind.name(), eveningId, Timestamp.from(clock.instant()));
+        return id;
     }
 }

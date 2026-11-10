@@ -1,6 +1,7 @@
 package com.marcantoinemeunier.hiversolidaire.inscription;
 
 import com.marcantoinemeunier.hiversolidaire.notification.CoordinatorAlerts;
+import com.marcantoinemeunier.hiversolidaire.notification.MailOutbox;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.Cancellation;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.CancellationDecision;
 import com.marcantoinemeunier.hiversolidaire.planning.domain.Day;
@@ -39,14 +40,16 @@ public class RegistrationService {
     private final EveningRepository evenings;
     private final RegistrationRepository registrations;
     private final CoordinatorAlerts alerts;
+    private final MailOutbox mails;
     private final Clock clock;
 
     RegistrationService(SeasonRepository seasons, EveningRepository evenings, RegistrationRepository registrations,
-            CoordinatorAlerts alerts, Clock clock) {
+            CoordinatorAlerts alerts, MailOutbox mails, Clock clock) {
         this.seasons = seasons;
         this.evenings = evenings;
         this.registrations = registrations;
         this.alerts = alerts;
+        this.mails = mails;
         this.clock = clock;
     }
 
@@ -61,11 +64,11 @@ public class RegistrationService {
     /**
      * R1 à R7 à l'écriture : verrou exclusif sur la soirée ({@code SELECT … FOR UPDATE}), lecture des inscriptions
      * existantes, décision du domaine, puis insertion, dans la même transaction. Deux inscriptions sur la même
-     * soirée s'exécutent l'une après l'autre.
+     * soirée s'exécutent l'une après l'autre. La confirmation par e-mail est écrite dans la même transaction.
      */
     @Transactional
     public RegistrationDecision register(UUID volunteerId, RegistrationChoice choice) {
-        return registerFor(volunteerId, choice).decision();
+        return register(volunteerId, choice, false).decision();
     }
 
     /**
@@ -77,11 +80,15 @@ public class RegistrationService {
     }
 
     /**
-     * Inscription d'un bénévole, en ligne ou par un coordinateur (inscription par téléphone) : mêmes règles R1 à R4 et
-     * R7, R2 pour ce bénévole, sous le même verrou.
+     * Inscription d'un bénévole par un coordinateur (inscription par téléphone) : mêmes règles R1 à R4 et R7, R2 pour ce
+     * bénévole, sous le même verrou qu'en ligne. Le bénévole reçoit la confirmation s'il a une adresse.
      */
     @Transactional
-    public Registered registerFor(UUID volunteerId, RegistrationChoice choice) {
+    public Registered registerByCoordinator(UUID volunteerId, RegistrationChoice choice) {
+        return register(volunteerId, choice, true);
+    }
+
+    private Registered register(UUID volunteerId, RegistrationChoice choice, boolean byCoordinator) {
         var season = currentSeason().orElseThrow(UnknownEveningException::new);
         var eveningId = evenings.findIdBySeasonAndDate(season.id(), choice.eveningDate())
                 .orElseThrow(UnknownEveningException::new);
@@ -92,6 +99,7 @@ public class RegistrationService {
             return new Registered(decision, null, evening.id());
         }
         var created = insert(evening.id(), candidate);
+        mails.registered(volunteerId, created.id(), byCoordinator);
         return new Registered(decision, created.id(), evening.id());
     }
 
@@ -152,6 +160,7 @@ public class RegistrationService {
         }
         var volunteerId = registration.get().volunteerId();
         cancelLocked(evening, registration.get(), now);
+        mails.cancelled(volunteerId, registrationId, true);
         return new CoordinatorChange(CoordinatorOutcome.DONE, null, volunteerId, evening.id(), null, null);
     }
 
@@ -201,6 +210,8 @@ public class RegistrationService {
         }
         cancelLocked(lockedSource, registration.get(), now);
         var created = insert(lockedTarget.id(), candidate);
+        mails.cancelled(volunteerId, registrationId, true);
+        mails.registered(volunteerId, created.id(), true);
         return new CoordinatorChange(CoordinatorOutcome.DONE, null, volunteerId, lockedSource.id(), lockedTarget.id(),
                 created.id());
     }
@@ -223,7 +234,7 @@ public class RegistrationService {
      */
     private void recordAlerts(UUID eveningId, Evening before, Evening after, Instant now) {
         if (IncompleteEveningAlert.triggeredBy(before, after, ParisTime.today(now))) {
-            alerts.eveningIncomplete(eveningId);
+            alerts.eveningIncomplete(eveningId, before.date());
         }
         if (PickupWithoutMealAlert.triggeredBy(before, after)) {
             alerts.pickupWithoutMeal(eveningId);
@@ -250,11 +261,12 @@ public class RegistrationService {
         if (!decision.accepted()) {
             return decision;
         }
-        registrations.findActiveOf(eveningId, volunteerId).stream()
+        var cancelled = registrations.findActiveOf(eveningId, volunteerId).stream()
                 .filter(registration -> registration.toDomain().equals(target))
-                .findFirst().orElseThrow()
-                .cancel(now);
+                .findFirst().orElseThrow();
+        cancelled.cancel(now);
         recordAlerts(eveningId, before, before.without(target), now);
+        mails.cancelled(volunteerId, cancelled.id(), false);
         return CancellationDecision.ACCEPTED;
     }
 
@@ -262,7 +274,7 @@ public class RegistrationService {
      * Suppression du compte : annule toutes les inscriptions actives dont la soirée n'est pas passée, tous postes
      * confondus, y compris après la limite de R6. Les soirées sont verrouillées dans l'ordre des dates : pas
      * d'interblocage avec une inscription concurrente, qui n'en verrouille qu'une. Une alerte par cause et par soirée,
-     * pas une par inscription.
+     * pas une par inscription. Aucune confirmation : le compte est supprimé.
      */
     @Transactional
     public void cancelAllUpcoming(UUID volunteerId) {

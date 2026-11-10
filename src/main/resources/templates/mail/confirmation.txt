@@ -1,0 +1,25 @@
+[(#{mail.greeting})]
+[# th:unless="${registered.isEmpty()}"]
+[(${registered.size() > 1} ? #{mail.confirmation.registered.many} : #{mail.confirmation.registered})]
+[# th:each="line : ${registered}"]
+- [(${line.activity})] : [(${line.option})]
+  [(${line.schedule})][# th:if="${line.note}"]
+  [(${line.note})][/]
+  [(${line.cancelText})][# th:if="${line.cancelLink}"]
+  [(${line.cancelLink})][/]
+[/][/][# th:unless="${cancelled.isEmpty()}"]
+[(${cancelled.size() > 1} ? #{mail.confirmation.cancelled.many} : #{mail.confirmation.cancelled})]
+[# th:each="line : ${cancelled}"]
+- [(${line.activity})] : [(${line.option})][# th:if="${line.note}"]
+  [(${line.note})][/]
+[/][/]
+[(#{mail.confirmation.thanks})]
+
+[(#{mail.myRegistrations(${myRegistrations})})]
+
+[(${contact})]
+
+[(#{mail.signature})]
+
+--
+[(#{mail.footer})]

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+<meta charset="UTF-8">
+<title th:text="#{mail.reminder.subject(${day})}">Rappel</title>
+</head>
+<body>
+<p th:text="#{mail.greeting}">Bonjour,</p>
+<p th:text="#{mail.reminder.intro(${day})}">Petit rappel : demain, vous participez à l’accueil.</p>
+<ul>
+<li th:each="line : ${lines}">
+<strong th:text="${line.activity}">Dîner du lun. 4 janv.</strong> : <span th:text="${line.option}">Passer la nuit</span><br>
+<span th:text="${line.schedule}">Horaires</span>
+<br><span th:text="${line.cancelText}">Pour vous désinscrire :</span>
+<a th:if="${line.cancelLink}" th:href="${line.cancelLink}" th:text="${line.cancelLink}">lien</a>
+</li>
+</ul>
+<p th:text="#{mail.reminder.thanks}">Merci !</p>
+<p>
+<span th:text="#{mail.myRegistrations('')}">Toutes vos inscriptions :</span>
+<a th:href="${myRegistrations}" th:text="${myRegistrations}">lien</a>
+</p>
+<p th:text="${contact}">Une question ?</p>
+<p th:text="#{mail.signature}">Les coordinateurs</p>
+<p><small th:text="#{mail.footer}">E-mail automatique.</small></p>
+</body>
+</html>

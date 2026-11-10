@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+<meta charset="UTF-8">
+<title th:text="#{mail.alert.subject(${evening})}">Soirée à compléter</title>
+</head>
+<body>
+<p th:text="#{mail.greeting}">Bonjour,</p>
+<p th:text="#{mail.alert.intro(${evening})}">La soirée n’a plus tous ses minimums.</p>
+<th:block th:unless="${missing.isEmpty()}">
+<p th:text="#{mail.alert.missing}">Il manque :</p>
+<ul>
+<li th:each="line : ${missing}" th:text="${line}">Nuit : 1 à pourvoir</li>
+</ul>
+</th:block>
+<p th:if="${missing.isEmpty()}" th:text="#{mail.alert.complete}">De nouveau complète.</p>
+<p>
+<span th:text="#{mail.alert.link('')}">Fiche de la journée :</span>
+<a th:href="${link}" th:text="${link}">lien</a>
+</p>
+<p><small th:text="#{mail.footer}">E-mail automatique.</small></p>
+</body>
+</html>
