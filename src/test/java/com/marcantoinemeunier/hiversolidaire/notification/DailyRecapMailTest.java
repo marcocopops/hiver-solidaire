@@ -131,6 +131,8 @@ class DailyRecapMailTest {
                     assertThat(mail.to()).contains(coordinator);
                     assertThat(mail.replyTo()).isNull();
                     assertThat(mail.text())
+                            .containsSubsequence("Bonjour,",
+                                    "Vous recevez ce mail car vous êtes administrateur Hiver Solidaire.")
                             .contains("Voici le planning des journées du mar. 5 janv. au lun. 11 janv. :")
                             // Mercredi 6 : le petit-déjeuner (soirée du mardi) puis la nuit du mercredi.
                             .containsSubsequence("== Mer. 6 janv. : à compléter ==",

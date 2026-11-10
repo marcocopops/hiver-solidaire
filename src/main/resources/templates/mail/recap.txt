@@ -1,4 +1,5 @@
 [(#{mail.greeting})]
+[(#{mail.recap.why})]
 
 [(#{mail.recap.intro(${from}, ${to})})]
 [# th:if="${days.isEmpty()}"]

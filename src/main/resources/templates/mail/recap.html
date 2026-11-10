@@ -6,6 +6,7 @@
 </head>
 <body>
 <p th:text="#{mail.greeting}">Bonjour,</p>
+<p th:text="#{mail.recap.why}">Vous recevez ce mail car vous êtes administrateur.</p>
 <p th:text="#{mail.recap.intro(${from}, ${to})}">Voici le planning.</p>
 <p th:if="${days.isEmpty()}" th:text="#{mail.recap.noDays}">Aucune journée.</p>
 <th:block th:each="day : ${days}">

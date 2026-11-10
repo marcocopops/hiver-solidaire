@@ -160,7 +160,7 @@ class ConfirmationMailTest {
         after(Duration.ofMinutes(1));
 
         assertThat(mails.sentTo(anne.email())).singleElement().satisfies(mail -> assertThat(mail.text())
-                .contains("Vos inscriptions sont enregistrées :")
+                .contains("Vos inscriptions pour Hiver Solidaire sont enregistrées :")
                 .containsSubsequence("Dîner et nuit du mar. 12 janv.", "Dîner du mer. 13 janv.",
                         "Petit-déjeuner du ven. 15 janv.")
                 .contains("Repas livré pour 19 h, dîner de 19 h à 21 h – 21 h 30.")

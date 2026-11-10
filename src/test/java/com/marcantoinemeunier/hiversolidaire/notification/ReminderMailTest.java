@@ -127,7 +127,7 @@ class ReminderMailTest {
         assertThat(mails.sentTo(anne.email()).stream().filter(mail -> mail.subject().equals(SUBJECT)))
                 .singleElement().satisfies(mail -> {
                     assertThat(mail.text())
-                            .contains("Petit rappel : demain, lun. 11 janv., vous participez à l’accueil.")
+                            .contains("Rappel : demain, lun. 11 janv., vous participez à l’accueil Hiver Solidaire.")
                             // Le petit-déjeuner du lundi matin d'abord, rattaché à la soirée du dimanche : sa limite
                             // de désinscription (samedi 23 h 59) est passée.
                             .containsSubsequence("Petit-déjeuner du lun. 11 janv.", "Petit-déjeuner à 7 h.",
