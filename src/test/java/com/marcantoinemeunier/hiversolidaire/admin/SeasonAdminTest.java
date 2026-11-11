@@ -337,6 +337,18 @@ class SeasonAdminTest {
     }
 
     @Test
+    void the_dashboard_reports_a_missing_organizer_named_by_the_privacy_notice() throws Exception {
+        var browser = volunteers.coordinator().browser();
+        // La saison d'exemple n'a pas d'organisateur : la notice ne nomme pas le responsable du traitement.
+        assertThat(browser.get("/admin").getContentAsString())
+                .contains("L’organisateur de la saison n’est pas renseigné");
+
+        create(browser, "organizer", "Association factice des tests");
+        assertThat(browser.get("/admin").getContentAsString())
+                .doesNotContain("L’organisateur de la saison n’est pas renseigné");
+    }
+
+    @Test
     void the_planning_shows_no_season_name_only_a_notice_for_the_sample_season() throws Exception {
         var before = new Browser(mockMvc).get("/planning").getContentAsString();
         assertThat(before).contains("Saison d’exemple : les dates sont à confirmer.")

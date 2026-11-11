@@ -64,5 +64,6 @@
     <p><a class="bouton bouton--danger" th:href="@{/admin/benevoles/{id}/supprimer(id=${volunteer.id})}"
           th:text="#{admin.volunteer.delete}">Supprimer</a></p>
 </main>
+<footer th:replace="~{fragments :: pied}"></footer>
 </body>
 </html>

@@ -81,11 +81,12 @@
             <p class="aide" id="recontact-hint" th:text="#{profile.recontact.hint}">Sans cette case…</p>
         </div>
 
-        <p><a th:href="@{/notice}" target="_blank" rel="noopener" th:text="#{profile.notice}">Notice</a></p>
+        <p><a th:href="@{/donnees-personnelles}" target="_blank" rel="noopener" th:text="#{profile.notice}">Notice</a></p>
 
         <button class="bouton" type="submit" th:text="#{profile.submit}">Continuer</button>
     </form>
 </main>
+<footer th:replace="~{fragments :: pied}"></footer>
 <!-- Suggestion du pseudo pendant la saisie ; sans JavaScript, le serveur propose la même valeur. -->
 <script th:src="@{/js/profil.js}" defer></script>
 </body>

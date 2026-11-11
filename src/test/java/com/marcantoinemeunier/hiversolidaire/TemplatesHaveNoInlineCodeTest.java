@@ -74,6 +74,10 @@ class TemplatesHaveNoInlineCodeTest {
             // Le titre de la page est dans l'en-tête commun (fragment entete), jamais en dur.
             assertThat(html).as(name).contains("~{fragments :: head(").contains("~{fragments :: entete(")
                     .doesNotContain("<h1");
+            // Pied de page avec le lien vers la notice d'information (§7), sauf sur la page imprimable (plan B).
+            if (!"impression.html".equals(name)) {
+                assertThat(html).as(name).contains("<footer th:replace=\"~{fragments :: pied}\"></footer>");
+            }
         }
     }
 

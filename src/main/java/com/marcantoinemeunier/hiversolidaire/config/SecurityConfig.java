@@ -74,8 +74,8 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(HttpSecurity http, MagicLinkLogin magicLinkLogin) throws Exception {
         http.authorizeHttpRequests(requests -> requests
                 .requestMatchers("/", "/error").permitAll()
-                // Planning public et choix d'une soirée : lecture seule, sans donnée personnelle.
-                .requestMatchers(HttpMethod.GET, "/planning", "/inscription", "/notice").permitAll()
+                // Planning public, choix d'une soirée et notice d'information : lecture seule, sans donnée personnelle.
+                .requestMatchers(HttpMethod.GET, "/planning", "/inscription", "/donnees-personnelles").permitAll()
                 // Fin de la suppression du compte : la session vient d'être invalidée.
                 .requestMatchers(HttpMethod.GET, "/compte-supprime").permitAll()
                 // Demande du lien, page « Me connecter » et consommation du jeton (POST protégé par CSRF).

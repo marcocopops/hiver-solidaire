@@ -89,7 +89,8 @@
     <h2 th:text="#{account.delete.title}">Supprimer mon compte</h2>
     <p th:text="#{account.delete.intro}">Vos données seront effacées.</p>
     <p><a class="bouton bouton--secondaire" th:href="@{/mon-compte/supprimer}" th:text="#{account.delete.link}">Supprimer mon compte</a></p>
-    <p><a th:href="@{/notice}" th:text="#{profile.notice}">Notice</a></p>
+    <p><a th:href="@{/donnees-personnelles}" th:text="#{profile.notice}">Notice</a></p>
 </main>
+<footer th:replace="~{fragments :: pied}"></footer>
 </body>
 </html>
