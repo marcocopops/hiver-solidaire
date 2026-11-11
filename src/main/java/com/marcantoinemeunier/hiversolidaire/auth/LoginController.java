@@ -3,6 +3,7 @@ package com.marcantoinemeunier.hiversolidaire.auth;
 import com.marcantoinemeunier.hiversolidaire.benevole.EmailAddress;
 import com.marcantoinemeunier.hiversolidaire.inscription.RegistrationChoice;
 import com.marcantoinemeunier.hiversolidaire.notification.MagicLinkSender;
+import com.marcantoinemeunier.hiversolidaire.notification.RecipientGuard;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.net.URI;
@@ -33,13 +34,15 @@ class LoginController {
     private final HashedJdbcOneTimeTokenService tokens;
     private final MagicLinkSender sender;
     private final MagicLinkRateLimits limits;
+    private final RecipientGuard guard;
     private final String baseUrl;
 
     LoginController(HashedJdbcOneTimeTokenService tokens, MagicLinkSender sender, MagicLinkRateLimits limits,
-            @Value("${app.base-url}") String baseUrl) {
+            RecipientGuard guard, @Value("${app.base-url}") String baseUrl) {
         this.tokens = tokens;
         this.sender = sender;
         this.limits = limits;
+        this.guard = guard;
         this.baseUrl = baseUrl;
     }
 
@@ -74,7 +77,8 @@ class LoginController {
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
             return "connexion-trop-de-demandes";
         }
-        if (limits.allowEmail(normalized.get())) {
+        // Domaine réservé aux tests (M30) : ni jeton ni envoi, et la même réponse.
+        if (guard.allows(normalized.get()) && limits.allowEmail(normalized.get())) {
             var token = tokens.generate(new GenerateOneTimeTokenRequest(normalized.get(), LINK_VALIDITY));
             sender.send(normalized.get(), link(token.getTokenValue(), choice));
         }

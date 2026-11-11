@@ -10,6 +10,7 @@ import java.time.Duration;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,15 +40,17 @@ class MailDispatcher {
 
     private final MailDeliveries deliveries;
     private final MailTransport transport;
+    private final RecipientGuard guard;
     private final Map<Kind, MailComposer> composers = new EnumMap<>(Kind.class);
     private final TransactionTemplate writes;
     private final TransactionTemplate reads;
     private final Clock clock;
 
-    MailDispatcher(MailDeliveries deliveries, MailTransport transport, List<MailComposer> composers,
-            PlatformTransactionManager transactions, Clock clock) {
+    MailDispatcher(MailDeliveries deliveries, MailTransport transport, RecipientGuard guard,
+            List<MailComposer> composers, PlatformTransactionManager transactions, Clock clock) {
         this.deliveries = deliveries;
         this.transport = transport;
+        this.guard = guard;
         composers.forEach(composer -> this.composers.put(composer.kind(), composer));
         this.writes = new TransactionTemplate(transactions);
         this.reads = new TransactionTemplate(transactions);
@@ -85,12 +88,27 @@ class MailDispatcher {
         }
         var delivery = prepared.delivery();
         switch (prepared.composed()) {
-            case Skipped skipped -> {
-                writes.executeWithoutResult(status -> deliveries.abandon(id, skipped.reason(), clock.instant()));
-                LOG.info("Mail delivery {} ({}) abandoned: {}", id, delivery.kind(), skipped.reason());
-            }
-            case Ready ready -> send(delivery, ready.mail());
+            case Skipped skipped -> abandon(delivery, skipped.reason());
+            case Ready ready -> allowedRecipients(ready.mail()).ifPresentOrElse(mail -> send(delivery, mail),
+                    () -> abandon(delivery, AbandonReason.RESERVED_DOMAIN));
         }
+    }
+
+    private void abandon(MailDelivery delivery, AbandonReason reason) {
+        writes.executeWithoutResult(status -> deliveries.abandon(delivery.id(), reason, clock.instant()));
+        LOG.info("Mail delivery {} ({}) abandoned: {}", delivery.id(), delivery.kind(), reason);
+    }
+
+    /** L'e-mail sans les destinataires des domaines réservés (M30), ou vide s'il n'en reste aucun. */
+    private Optional<OutgoingMail> allowedRecipients(OutgoingMail mail) {
+        var allowed = mail.to().stream().filter(guard::allows).toList();
+        if (allowed.isEmpty()) {
+            return Optional.empty();
+        }
+        if (allowed.size() == mail.to().size()) {
+            return Optional.of(mail);
+        }
+        return Optional.of(new OutgoingMail(allowed, mail.replyTo(), mail.subject(), mail.text(), mail.html()));
     }
 
     private Prepared prepare(MailDelivery delivery) {

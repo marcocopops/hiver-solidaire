@@ -43,6 +43,18 @@ class NotificationConfig {
     }
 
     /**
+     * Garde-fou des domaines réservés (M30). {@code app.mail.allow-reserved-domains} ne vaut vrai qu'en développement,
+     * pour que Mailpit reçoive les adresses factices.
+     */
+    @Bean
+    RecipientGuard recipientGuard(@Value("${app.mail.allow-reserved-domains:false}") boolean allowReservedDomains) {
+        if (allowReservedDomains) {
+            LOG.warn("Development only: e-mails to reserved test domains are allowed");
+        }
+        return new RecipientGuard(allowReservedDomains);
+    }
+
+    /**
      * Avec un serveur SMTP, l'expéditeur est obligatoire : l'appli ne démarre pas plutôt que d'envoyer depuis une
      * adresse vide.
      */

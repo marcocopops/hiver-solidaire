@@ -36,6 +36,13 @@ public class TestClockAndMailConfiguration {
         return new RecordingMailTransport();
     }
 
+    /** Garde-fou des domaines réservés, désactivé par défaut (adresses de test en {@code @example.org}). */
+    @Bean
+    @Primary
+    public TestRecipientGuard testRecipientGuard() {
+        return new TestRecipientGuard();
+    }
+
     /** Liste des coordinateurs modifiable : chaque test y ajoute ses propres adresses factices. */
     @Bean
     @Primary
