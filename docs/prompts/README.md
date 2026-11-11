@@ -18,5 +18,6 @@ Chaque fichier décrit une session de travail confiée à Claude Code : objectif
 | [lot4-navigation-et-accueil.md](lot4-navigation-et-accueil.md) | S5 | Corrections, lot 4 : menu burger, en-tête prune des pages coordinateur, page d'accueil |
 | [lot5-exports.md](lot5-exports.md) | S5 | Corrections, lot 5 : page Exports avec tableau mis à jour (htmx) et e-mails |
 | [s5a-emails.md](s5a-emails.md) | S5 | E-mails automatiques : confirmations, rappel la veille à 18 h, alertes, récap à 20 h |
+| [s5b-turnstile-et-rgpd.md](s5b-turnstile-et-rgpd.md) | S5 | Turnstile sur la demande de lien, notice RGPD, purge, garde-fou d'envoi vers les domaines réservés |
 
 Pour lancer une session : ouvrir claude.ai/code sur ce dépôt, ou lancer `claude` en local dans le clone (selon le champ « Où » du fichier), choisir le mode plan, puis envoyer le message de lancement indiqué en tête du fichier.
