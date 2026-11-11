@@ -16,3 +16,5 @@ Chaque décision structurante est consignée ici, au format du [modèle](templat
 | [0010](0010-coordinateurs-par-variable-d-environnement.md) | Coordinateurs désignés par variable d'environnement | Proposé |
 | [0011](0011-un-poste-par-benevole-et-par-soiree.md) | Un poste par bénévole et par soirée, plutôt qu'une inscription par soirée | Proposé |
 | [0012](0012-table-d-envois-plutot-qu-envoi-dans-la-requete.md) | Table d'envois et tâche planifiée plutôt qu'envoi dans la requête | Proposé |
+| [0013](0013-turnstile-exception-a-la-regle-sans-cdn.md) | Cloudflare Turnstile sur la demande de lien, exception à la règle « pas de CDN » | Proposé |
+| [0014](0014-purge-par-anonymisation-et-journal-d-audit-borne.md) | Purge quotidienne par anonymisation, journal d'audit borné à six mois | Proposé |

@@ -102,8 +102,9 @@ puis `docker compose -f compose.prod.yaml up -d`. Tant que `APP_TAG` n'est pas `
 - **Limitation des demandes de lien** : 3 par adresse toutes les 15 minutes, 10 par IP par heure, **en mémoire**. Valable pour une instance unique : les compteurs repartent de zéro à chaque redémarrage et ne seraient pas partagés entre deux instances. L'IP vient de l'en-tête transmis par cloudflared (`forward-headers-strategy: native`) : l'appli ne doit être joignable que par cloudflared. La limitation de débit de Cloudflare reste la première barrière.
 - **Contact des coordinateurs** (depuis le lot 2) : un numéro de téléphone français ou une adresse e-mail, saisi dans le back-office (« Saison ») et affiché aux bénévoles après la limite de désinscription (la veille à 23 h 59). Aucune variable d'environnement : `APP_COORDINATORS_PHONE` n'est plus lue, la retirer du `.env` du serveur. Sans contact, les bénévoles lisent « Contactez un coordinateur. », sans lien, et le tableau de bord le signale. La migration V13 conserve le téléphone déjà saisi dans la saison. La saison d'exemple ne se modifie pas : son contact se renseigne en créant la vraie saison.
 - **`APP_COORDINATOR_EMAILS`** (depuis S4b, [ADR-0010](../docs/adr/0010-coordinateurs-par-variable-d-environnement.md)) : adresses des coordinateurs, séparées par des virgules, dans le `.env` du serveur. À la connexion par lien magique, une adresse de la liste reçoit le rôle coordinateur (back-office `/admin`), en plus du rôle bénévole. Une entrée qui n'est pas une adresse empêche le démarrage. Pour retirer un coordinateur : enlever son adresse, puis `docker compose -f compose.prod.yaml up -d` ; il perd le rôle à sa prochaine connexion, et au plus tard 8 h après la précédente (durée d'une session coordinateur). Pour l'en priver tout de suite, supprimer aussi ses sessions : `DELETE FROM spring_session WHERE principal_name = '<identifiant>';`. Mettre à jour la politique Cloudflare Access en même temps.
-- **Journal d'audit** (depuis S4b) : table `audit_log`, en ajout seul (un déclencheur refuse `UPDATE` et `DELETE`). Elle ne contient que des identifiants techniques et des dates : pour savoir qui a fait quoi, rapprocher `coordinator_id` de `volunteer.id`.
+- **Journal d'audit** (depuis S4b) : table `audit_log`, en ajout seul (un déclencheur refuse `UPDATE` et `DELETE`, sauf la suppression des lignes de plus de 6 mois par la purge, depuis S5b). Elle ne contient que des identifiants techniques et des dates : pour savoir qui a fait quoi, rapprocher `coordinator_id` de `volunteer.id`.
 - **Comptes supprimés** : la suppression par le bénévole (« Mon compte ») anonymise sa ligne, annule ses inscriptions à venir et supprime ses sessions et ses liens en cours (ADR-0008). Aucune action manuelle à prévoir.
+- **Turnstile** (depuis S5b) : voir « Turnstile » ci-dessous. Sans clés, la page de connexion affiche « momentanément indisponible ».
 - **`APP_CLOCK_OFFSET`** : réservé au développement, ne jamais le définir en production (un avertissement apparaît au démarrage s'il l'est).
 
 ## E-mails (Brevo, depuis S5a)
@@ -132,7 +133,34 @@ L'appli envoie par SMTP le lien de connexion et les e-mails automatiques ([cahie
 - **Une seule instance** de l'appli : la tâche des e-mails tourne toutes les 30 secondes dans l'appli, sans verrou distribué (ADR-0012). Ne pas lancer deux conteneurs `app` sur la même base.
 - **Heures** : rappel la veille à 18 h, récap à 20 h, heure de Paris. Si l'appli est arrêtée à ce moment-là, le rappel est rattrapé jusqu'à 22 h et le récap jusqu'au lendemain 8 h ; ensuite, ils sont perdus (jamais d'e-mail la nuit ni sur une soirée passée).
 - **Échecs** (Brevo indisponible, quota de 300 par jour) : 6 essais sur environ 2 heures, puis abandon. État des envois : `SELECT kind, count(*) FILTER (WHERE sent_at IS NOT NULL) AS envoyes, count(*) FILTER (WHERE abandon_reason = 'FAILED') AS echecs FROM mail_delivery WHERE created_at > now() - interval '1 day' GROUP BY kind;`. La table ne contient que des identifiants et des dates.
-- **`APP_MAIL_DEV_RUN_NOW`** et **`APP_MAIL_CONFIRMATION_DELAY`** : réservés au développement, ne jamais les définir en production (`compose.prod.yaml` ne les transmet pas).
+- **`APP_MAIL_DEV_RUN_NOW`**, **`APP_MAIL_CONFIRMATION_DELAY`** et **`APP_MAIL_ALLOW_RESERVED_DOMAINS`** : réservés au développement, ne jamais les définir en production (`compose.prod.yaml` ne les transmet pas). En production, aucun e-mail ne part vers un domaine réservé aux tests (`example.org`, `.test`, `.invalid`…) : il est abandonné (`abandon_reason = 'RESERVED_DOMAIN'`).
+
+## Turnstile (depuis S5b)
+
+La demande de lien de connexion est protégée par Cloudflare Turnstile ([ADR-0013](../docs/adr/0013-turnstile-exception-a-la-regle-sans-cdn.md)).
+
+1. **Chez Cloudflare** : tableau de bord → Turnstile → « Add widget ». Nom : « Hiver Solidaire » ; nom d'hôte : `hiver-solidaire.marcantoine-meunier.com` (seulement lui) ; mode : **Managed** ; pas de pré-autorisation (« pre-clearance ») nécessaire. Noter la clé de site (publique) et la clé secrète.
+2. **Dans le `.env` du serveur** (valeurs réelles, jamais dans le dépôt) :
+
+   ```bash
+   TURNSTILE_SITE_KEY=<clé de site du widget>
+   TURNSTILE_SECRET_KEY=<clé secrète du widget>
+   ```
+
+   Les clés de test de `.env.example` (`1x000…`) ne sont acceptées qu'avec une `APP_BASE_URL` locale : en production, elles rendent la connexion indisponible (avertissement au démarrage : `Cloudflare test keys are only allowed on localhost`).
+3. `docker compose -f compose.prod.yaml up -d`, puis vérifier : la page `/connexion` affiche la case de vérification, sans erreur de CSP dans la console du navigateur, et un lien de connexion arrive.
+
+À savoir :
+
+- L'appli appelle `https://challenges.cloudflare.com/turnstile/v0/siteverify` à chaque demande de lien (sortie HTTPS depuis le conteneur, déjà nécessaire pour Brevo). Si Cloudflare ne répond pas en 5 secondes, la demande est refusée, avec un message qui invite à réessayer.
+- Logs : `Turnstile check failed [invalid-input-response]` pour un refus (codes de Cloudflare seulement), `Turnstile check unavailable (…)` si Cloudflare ne répond pas. Jamais de jeton, d'IP ni d'adresse.
+- Changer de clés : modifier le `.env`, puis `docker compose -f compose.prod.yaml up -d`.
+
+## Purge des données (depuis S5b)
+
+Chaque jour à 4 h 30 (heure de Paris), et au démarrage, l'appli applique les durées de conservation ([cahier des charges](../docs/cahier-des-charges.md) §7, [ADR-0014](../docs/adr/0014-purge-par-anonymisation-et-journal-d-audit-borne.md)) : comptes sans profil supprimés après 7 jours, bénévoles sans accord anonymisés un mois après la fin de la saison, avec accord après 3 ans sans participation, envois d'e-mails, alertes et journal d'audit de plus de 6 mois supprimés. Aucune action manuelle.
+
+Contrôle : `docker compose -f compose.prod.yaml logs app | grep "Data retention run"` donne, pour chaque exécution, des comptes seulement. Une seule instance de l'appli : la purge n'a pas de verrou distribué.
 
 ## Contrôles utiles
 

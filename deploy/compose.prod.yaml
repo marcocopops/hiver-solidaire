@@ -25,6 +25,10 @@ services:
       MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-true}
       MAIL_STARTTLS: ${MAIL_STARTTLS:-true}
       MAIL_FROM: ${MAIL_FROM:-}
+      # Cloudflare Turnstile sur la demande de lien (ADR-0013, deploy/README.md « Turnstile »). Sans clés, ou avec les clés
+      # de test de .env.example : l'appli démarre et la connexion affiche « momentanément indisponible ».
+      TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
       # Adresses des coordinateurs, séparées par des virgules (ADR-0010) : rôle coordinateur à la connexion. Vide :
       # back-office fermé à tous. Valeurs réelles dans .env sur le serveur, jamais dans le dépôt.
       APP_COORDINATOR_EMAILS: ${APP_COORDINATOR_EMAILS:-}

@@ -1,6 +1,6 @@
 # Hiver Solidaire — Cahier des charges du MVP
 
-*Version 0.8 · 10 novembre 2026 (e-mails automatiques, S5a) · Marc-Antoine Meunier · statut : à valider*
+*Version 0.9 · 16 novembre 2026 (Turnstile, notice et purge, S5b) · Marc-Antoine Meunier · statut : à valider*
 
 Ce document est la référence du projet. Toute évolution passe par une PR qui le met à jour.
 
@@ -155,15 +155,18 @@ L'offre gratuite de Brevo permet 300 e-mails par jour. Avec une vingtaine de bé
 
 ## 7. Données personnelles (RGPD)
 
-- **Responsable** : l'association (nom à préciser).
+- **Responsable** : l'organisateur de la saison, saisi dans les réglages de la saison (« Organisateur », lot 4) ; la notice le nomme, et le tableau de bord signale qu'il manque. Son nom n'est jamais dans le dépôt.
 - **Données** : nom, prénom, pseudo, e-mail, téléphone, inscriptions, accord de conservation, horodatages. Aucun champ libre, pour éviter la saisie de données sensibles, sauf le pseudo, étroitement borné : 3 à 20 caractères, lettres latines (accents compris), chiffres, tiret et souligné. Tous les bénévoles sont majeurs. Rien sur les personnes accueillies.
-- **Suppression à la demande** : depuis « Mon compte », par anonymisation de la ligne du bénévole ([ADR-0008](adr/0008-annulation-logique-et-anonymisation.md)) ; ses liens de connexion en cours et ses sessions sont supprimés. Les sauvegardes antérieures en gardent une copie jusqu'à leur expiration (à préciser dans la notice).
-- **Création du compte** : à la première connexion par lien magique, avec l'e-mail seul (le contrôle de l'adresse est prouvé) ; nom, prénom et téléphone suivent au formulaire de première connexion. Un compte resté sans profil sera supprimé par la purge (S5). Sessions stockées en base pendant 30 jours au plus (8 h pour un coordinateur). Un coordinateur peut aussi créer le compte d'un bénévole qui s'inscrit par téléphone : nom, prénom, pseudo et téléphone, sans e-mail.
-- **Visibilité** : le public voit les pseudos et les soirées où ils sont inscrits, rien d'autre ; le bénévole voit ses propres données ; les coordinateurs voient tout. Les exports CSV et imprimés contiennent des coordonnées : à ne garder que le temps nécessaire, à détruire après usage. Le bénévole est informé du caractère public de son pseudo par l'aide du champ, puis par la notice (S5).
-- **Base légale** : intérêt légitime de l'association pour organiser l'accueil (à confirmer). La conservation entre saisons repose sur le consentement, retirable à tout moment.
-- **Durées proposées** : sans accord, suppression un mois après la fin de saison ; avec accord, jusqu'au retrait et au plus 3 ans sans participation ; journaux techniques, 6 mois.
+- **Suppression à la demande** : depuis « Mon compte », par anonymisation de la ligne du bénévole ([ADR-0008](adr/0008-annulation-logique-et-anonymisation.md)) ; ses liens de connexion en cours et ses sessions sont supprimés. Les sauvegardes antérieures en gardent une copie jusqu'à leur expiration (la notice annonce « au plus 30 jours », à reprendre de S6).
+- **Création du compte** : à la première connexion par lien magique, avec l'e-mail seul (le contrôle de l'adresse est prouvé) ; nom, prénom et téléphone suivent au formulaire de première connexion. Un compte resté sans profil est supprimé par la purge au bout de 7 jours. Sessions stockées en base pendant 30 jours au plus (8 h pour un coordinateur). Un coordinateur peut aussi créer le compte d'un bénévole qui s'inscrit par téléphone : nom, prénom, pseudo et téléphone, sans e-mail.
+- **Visibilité** : le public voit les pseudos et les soirées où ils sont inscrits, rien d'autre ; le bénévole voit ses propres données ; les coordinateurs voient tout. Les exports CSV et imprimés contiennent des coordonnées : à ne garder que le temps nécessaire, à détruire après usage. Le bénévole est informé du caractère public de son pseudo par l'aide du champ, puis par la notice.
+- **Base légale** : intérêt légitime de l'organisateur pour organiser l'accueil (à confirmer). La conservation entre saisons repose sur le consentement, retirable à tout moment.
+- **Durées retenues** (S5b, jusqu'à avis contraire de l'association, [ADR-0014](adr/0014-purge-par-anonymisation-et-journal-d-audit-borne.md)) : sans accord, anonymisation un mois après la fin de la saison (le lendemain matin de sa dernière soirée) ; avec accord, conservation jusqu'au retrait, et au plus 3 ans sans participation (dernière inscription non annulée, à défaut la création du compte) ; compte resté sans profil, supprimé au bout de 7 jours ; données techniques (envois d'e-mails, alertes, journal d'audit), 6 mois au plus ; liens de connexion et sessions, purgés dès leur expiration.
+- **Purge** : chaque jour à 4 h 30, heure de Paris, et au démarrage de l'appli. Elle anonymise (ADR-0008) plutôt que supprimer : les inscriptions passées restent comptées. Un bénévole qui a une inscription à venir n'est jamais touché. Le journal d'audit reste en ajout seul, sauf pour ses lignes de plus de 6 mois, que la base elle-même autorise à supprimer. Chaque exécution laisse une ligne de log avec des comptes, jamais d'identité.
+- **Notice d'information** (`/donnees-personnelles`, publique) : responsable, finalités, données, pseudo public, base légale, destinataires, sous-traitants, hébergement, durées, sauvegardes, cookie, droits et réclamation auprès de la CNIL. Liée depuis le premier profil (à côté de l'accord), « Mon compte » et le pied de chaque page.
+- **Garde-fou d'envoi** : l'appli n'envoie jamais d'e-mail vers un domaine réservé aux tests (`example.org`, `example.com`, `example.net`, `.test`, `.example`, `.invalid`, `.localhost` ; RFC 2606 et 6761). L'e-mail est abandonné sans erreur ; la demande de lien donne la même réponse. Désactivable en développement seulement (`APP_MAIL_ALLOW_RESERVED_DOMAINS`), pour que Mailpit reçoive les adresses factices.
 - **Sous-traitants à citer dans la notice** : Cloudflare (réseau, tunnel, Access, Turnstile) et Brevo (e-mails). Hébergement sur un serveur personnel situé en France.
-- **Livrables** : notice d'information, fiche du registre des traitements.
+- **Livrables** : notice d'information (S5b), fiche du registre des traitements ([docs/rgpd/registre.md](rgpd/registre.md), à compléter par l'association).
 
 ## 8. Exigences non fonctionnelles
 
@@ -171,10 +174,11 @@ L'offre gratuite de Brevo permet 300 e-mails par jour. Avec une vingtaine de bé
 
 - Cloudflare Tunnel sortant, aucun port entrant ; WAF, limitation de débit, HSTS
 - Lien magique via Spring Security (jeton à usage unique de 15 minutes, validé en POST). Seule l'empreinte SHA-256 du jeton est stockée, et sa consommation est atomique. La réponse est la même que le compte existe ou non ; les demandes sont limitées par e-mail (3 par 15 minutes) et par IP (10 par heure), en mémoire pour une instance unique, en plus de Turnstile.
+- Turnstile sur la seule demande de lien ([ADR-0013](adr/0013-turnstile-exception-a-la-regle-sans-cdn.md)) : jeton vérifié par le serveur (`siteverify`, délai court, IP transmise par cloudflared) avant toute création de lien ou tout envoi ; si Cloudflare ne répond pas, la demande est refusée. Sans clés (`TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`), ou avec les clés de test de Cloudflare hors localhost, la demande de lien est indisponible ; le reste du site est servi.
 - Cookie `__Host-`, HttpOnly, Secure, SameSite=Lax ; nouvel identifiant de session à la connexion ; protection CSRF active
 - Autorisation vérifiée côté serveur sur chaque action, avec des tests d'accès croisé
 - Back-office protégé par le rôle coordinateur (`APP_COORDINATOR_EMAILS`, ADR-0010), vérifié par l'appli sur chaque route `/admin/**`, et par Cloudflare Access sur `/admin/*`, configuré chez Cloudflare (`deploy/README.md`) ; l'appli ne fait pas confiance à Access (défense en profondeur). Session coordinateur de 8 h après la connexion, puis reconnexion ; celle d'un bénévole reste de 30 jours
-- CSP stricte sans script inline (htmx servi localement), `frame-ancestors 'none'`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`
+- CSP stricte sans script inline (htmx servi localement), `frame-ancestors 'none'`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`. Seule exception à « pas de CDN » : sur `/connexion`, `script-src` et `frame-src` s'ouvrent à `https://challenges.cloudflare.com` pour Turnstile (ADR-0013), et rien d'autre
 - Conteneurs non-root, système de fichiers en lecture seule, aucune capability, limites CPU et mémoire, réseau Docker dédié ; base et endpoints de supervision jamais exposés
 - Secrets hors du dépôt, dans un fichier d'environnement sur le serveur, illisibles par Claude Code (règles deny)
 - En CI : Dependabot, revue des dépendances et scan de l'image. Pas de runner auto-hébergé sur un dépôt public ; déploiement en pull depuis le homelab, sans clé du homelab dans GitHub.
@@ -213,10 +217,10 @@ Rappels par SMS (payants), export iCal, messagerie relayée entre bénévoles d'
 1. ~~Une seule inscription par bénévole et par soirée ?~~ Close (lot 3) : R2 porte désormais sur le poste ([ADR-0011](adr/0011-un-poste-par-benevole-et-par-soiree.md)). Un bénévole cumule les postes distincts d'une soirée, et l'exception « sur décision d'un coordinateur » (décidée le 25 octobre 2026, jamais livrée) est sans objet pour le cumul de postes. La désinscription, « Mes inscriptions » et le calcul des alertes raisonnent par inscription. Restent à confirmer avec les coordinateurs : « Récupérer » cumulable seulement avec le petit-déjeuner ; désinscription acceptée, avec alerte, d'une préparation chez soi déjà récupérée ; dîner du jour D cumulable avec le petit-déjeuner du lendemain (même soirée), refusé avant le lot 3.
 2. Dates de la saison 2026-2027. Une saison d'exemple aux dates fictives (4 janv. → 21 mars 2027 au matin) est en place. Depuis S4b, un coordinateur la remplace depuis le back-office (« Saison ») en saisissant les vraies dates et le contact des coordinateurs, à condition qu'elle n'ait aucune inscription active. Restent à connaître : les dates réelles. L'adresse et les consignes du lieu ne sont plus demandées (lot 2).
 3. Nom exact de l'association, pour la notice et l'expéditeur des e-mails.
-4. Durées de conservation proposées dans la section RGPD.
+4. Durées de conservation : celles du §7 sont retenues et appliquées par la purge (S5b), jusqu'à avis contraire de l'association. Restent à confirmer avec elle : les durées, la base légale (intérêt légitime), le journal d'audit à 6 mois, la durée des sauvegardes (S6).
 5. Durée de connexion des bénévoles (30 jours, appliquée en S3 et modifiable). L'heure du rappel est fixée à 18 h la veille et celle du récap à 20 h (décision du 10 novembre 2026, S5a).
 6. ~~L'adresse du lieu reste-t-elle absente de la page publique ?~~ Close (lot 2) : l'appli ne stocke plus l'adresse du lieu, elle n'apparaît nulle part.
-7. La notice d'information (S5) doit mentionner le pseudo public : son affichage sur le planning, visible par tous, sa finalité et la façon d'en changer.
+7. ~~La notice d'information (S5) doit mentionner le pseudo public~~ Close (S5b) : la notice a sa section « Votre pseudo est public » (affichage sur le planning, visible par tous, finalité, changement dans « Mon compte »).
 8. Modification du pseudo : le bénévole la fait dans « Mon compte » depuis S4a ; un coordinateur la fait depuis la fiche du bénévole depuis S4b (pseudo usurpé), avec le nom et le prénom, mêmes règles et même unicité.
 9. Désinscription : l'activité de R6 est le soir J pour tous les types, petit-déjeuner compris (décision proposée en S4a, à confirmer avec les coordinateurs). Avec l'affichage par journée (S4), la limite du petit-déjeuner du jour D tombe le jour D-2 à 23 h 59 : à confirmer aussi. La suppression d'un compte annule aussi les inscriptions de la soirée même ou du lendemain, après la limite de R6 : la page de confirmation demande de prévenir les coordinateurs.
 
