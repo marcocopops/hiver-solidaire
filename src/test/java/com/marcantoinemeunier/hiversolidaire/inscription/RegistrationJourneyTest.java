@@ -96,7 +96,7 @@ class RegistrationJourneyTest {
         var loginPage = computer.get("/connexion?jour=" + DAY + "&choix=NIGHT_AND_DINNER").getContentAsString();
         assertThat(loginPage).contains("name=\"jour\" value=\"" + DAY + "\"")
                 .contains("name=\"choix\" value=\"NIGHT_AND_DINNER\"");
-        assertThat(computer.post("/connexion", "email", email, "jour", DAY.toString(),
+        assertThat(computer.requestLink(email, "jour", DAY.toString(),
                 "choix", "NIGHT_AND_DINNER").getRedirectedUrl()).isEqualTo("/connexion/envoye");
         var link = sender.lastSentTo(email).orElseThrow();
         assertThat(link.link().getQuery()).contains("jour=" + DAY).contains("choix=NIGHT_AND_DINNER");
@@ -146,7 +146,7 @@ class RegistrationJourneyTest {
         var email = Browser.uniqueEmail();
         var first = new Browser(mockMvc);
         first.get("/connexion");
-        first.post("/connexion", "email", email);
+        first.requestLink(email);
         var firstToken = sender.lastSentTo(email).orElseThrow().token();
         first.get("/login/ott?token=" + firstToken);
         first.post("/login/ott", "token", firstToken);
@@ -155,7 +155,7 @@ class RegistrationJourneyTest {
 
         var browser = new Browser(mockMvc);
         browser.get("/connexion?jour=" + DAY + "&choix=BREAKFAST");
-        browser.post("/connexion", "email", email, "jour", DAY.toString(), "choix", "BREAKFAST");
+        browser.requestLink(email, "jour", DAY.toString(), "choix", "BREAKFAST");
         var token = sender.lastSentTo(email).orElseThrow().token();
         browser.get("/login/ott?token=" + token);
 
@@ -345,7 +345,7 @@ class RegistrationJourneyTest {
         var browser = new Browser(mockMvc);
         var email = Browser.uniqueEmail();
         browser.get("/connexion");
-        browser.post("/connexion", "email", email);
+        browser.requestLink(email);
         var token = sender.lastSentTo(email).orElseThrow().token();
         browser.get("/login/ott?token=" + token);
         browser.post("/login/ott", "token", token);

@@ -45,7 +45,7 @@ class PageLayoutTest {
         var browser = new Browser(mockMvc);
         var email = Browser.uniqueEmail();
         browser.get("/connexion");
-        browser.post("/connexion", "email", email);
+        browser.requestLink(email);
         var token = sender.lastSentTo(email).orElseThrow().token();
         browser.get("/login/ott?token=" + token);
         browser.post("/login/ott", "token", token);

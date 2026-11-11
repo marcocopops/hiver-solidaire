@@ -36,6 +36,13 @@ public class TestClockAndMailConfiguration {
         return new RecordingMailTransport();
     }
 
+    /** Turnstile sans Cloudflare : accepte le jeton factice des formulaires de test. */
+    @Bean
+    @Primary
+    public StubTurnstile stubTurnstile() {
+        return new StubTurnstile();
+    }
+
     /** Garde-fou des domaines réservés, désactivé par défaut (adresses de test en {@code @example.org}). */
     @Bean
     @Primary

@@ -16,6 +16,8 @@ class TemplatesHaveNoInlineCodeTest {
 
     private static final Pattern INLINE_SCRIPT = Pattern.compile("<script(?![^>]*\\bth:src=)[^>]*>",
             Pattern.CASE_INSENSITIVE);
+    private static final String TURNSTILE_SCRIPT =
+            "<script src=\"https://challenges.cloudflare.com/turnstile/v0/api.js\" async defer></script>";
     private static final Pattern EVENT_HANDLER = Pattern.compile("\\s(?:th:)?on[a-z]+\\s*=", Pattern.CASE_INSENSITIVE);
 
     @Test
@@ -32,8 +34,28 @@ class TemplatesHaveNoInlineCodeTest {
                     .doesNotContain("<style")
                     .doesNotContain("th:utext")
                     .doesNotContain("javascript:");
-            assertThat(INLINE_SCRIPT.matcher(html).find()).as(name + " : script sans th:src").isFalse();
+            // Seule exception (ADR-0013) : le script de Turnstile, servi par Cloudflare, sur la page de demande de lien.
+            var scripts = "connexion.html".equals(name) ? html.replace(TURNSTILE_SCRIPT, "") : html;
+            assertThat(INLINE_SCRIPT.matcher(scripts).find()).as(name + " : script sans th:src").isFalse();
             assertThat(EVENT_HANDLER.matcher(html).find()).as(name + " : gestionnaire d'événement inline").isFalse();
+        }
+    }
+
+    /** Aucune ressource externe, hormis le script de Turnstile sur la page de demande de lien (ADR-0013). */
+    @Test
+    void no_template_loads_an_external_resource() throws IOException {
+        var templates = new PathMatchingResourcePatternResolver().getResources("classpath:templates/**/*.html");
+        var external = Pattern.compile("\\bsrc=\"(?:https?:)?//", Pattern.CASE_INSENSITIVE);
+
+        for (var template : templates) {
+            var html = template.getContentAsString(StandardCharsets.UTF_8);
+            var name = template.getFilename();
+            if ("connexion.html".equals(name)) {
+                assertThat(html).as(name).containsOnlyOnce(TURNSTILE_SCRIPT);
+                html = html.replace(TURNSTILE_SCRIPT, "");
+            }
+            assertThat(external.matcher(html).find()).as(name + " : ressource externe").isFalse();
+            assertThat(html).as(name).doesNotContain("<link href=\"http").doesNotContain("<iframe");
         }
     }
 

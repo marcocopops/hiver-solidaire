@@ -49,6 +49,11 @@ app:
     # Garde-fou (M30) : aucun e-mail vers un domaine réservé aux tests (example.org, .test, .invalid…). Développement
     # seulement : vrai pour que Mailpit reçoive les adresses factices. Jamais défini en production.
     allow-reserved-domains: ${APP_MAIL_ALLOW_RESERVED_DOMAINS:false}
+  # Cloudflare Turnstile sur la demande de lien (ADR-0013). Sans clé, l'appli démarre et la demande de lien affiche
+  # « momentanément indisponible ». Les clés de test de Cloudflare ne sont acceptées qu'avec une APP_BASE_URL locale.
+  turnstile:
+    site-key: ${TURNSTILE_SITE_KEY:}
+    secret-key: ${TURNSTILE_SECRET_KEY:}
   coordinators:
     # Adresses des coordinateurs, séparées par des virgules (ADR-0010) : rôle coordinateur à la connexion. Vide :
     # aucun coordinateur, le back-office reste fermé à tous.

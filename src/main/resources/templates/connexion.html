@@ -7,6 +7,10 @@
 
     <p class="alerte" role="alert" th:if="${invalidLink}" th:text="#{login.invalidLink}">Lien plus valable.</p>
     <p class="alerte" role="alert" th:if="${unavailable}" th:text="#{login.unavailable}">Indisponible.</p>
+    <p class="alerte" role="alert" th:if="${turnstileFailed}" th:text="#{login.turnstile.failed}">
+        Vérification non aboutie.</p>
+    <p class="alerte" role="alert" th:if="${turnstileUnavailable}" th:text="#{login.turnstile.unavailable}">
+        Vérification impossible.</p>
 
     <th:block th:unless="${unavailable}">
         <p th:text="${choice != null} ? #{login.intro.choice} : #{login.intro}">Saisissez votre adresse e-mail.</p>
@@ -21,8 +25,13 @@
                 <p class="erreur" id="email-error" th:if="${invalidEmail}" th:text="#{login.error.email}">
                     Adresse invalide.</p>
             </div>
+            <!-- Turnstile (ADR-0013) : le script de Cloudflare remplit le champ cf-turnstile-response du formulaire. -->
+            <div class="cf-turnstile champ" th:attr="data-sitekey=${turnstileSiteKey}" data-language="fr"
+                 data-theme="light" data-size="flexible"></div>
+            <noscript><p class="aide" th:text="#{login.turnstile.noscript}">JavaScript est nécessaire.</p></noscript>
             <button class="bouton" type="submit" th:text="#{login.submit}">Recevoir le lien</button>
         </form>
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     </th:block>
 </main>
 </body>

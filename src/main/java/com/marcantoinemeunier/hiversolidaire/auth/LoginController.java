@@ -31,18 +31,23 @@ class LoginController {
     /** Durée de validité du lien (§6, §8). */
     static final Duration LINK_VALIDITY = Duration.ofMinutes(15);
 
+    /** Champ rempli par le widget Turnstile dans le formulaire. */
+    static final String TURNSTILE_FIELD = "cf-turnstile-response";
+
     private final HashedJdbcOneTimeTokenService tokens;
     private final MagicLinkSender sender;
     private final MagicLinkRateLimits limits;
     private final RecipientGuard guard;
+    private final Turnstile turnstile;
     private final String baseUrl;
 
     LoginController(HashedJdbcOneTimeTokenService tokens, MagicLinkSender sender, MagicLinkRateLimits limits,
-            RecipientGuard guard, @Value("${app.base-url}") String baseUrl) {
+            RecipientGuard guard, Turnstile turnstile, @Value("${app.base-url}") String baseUrl) {
         this.tokens = tokens;
         this.sender = sender;
         this.limits = limits;
         this.guard = guard;
+        this.turnstile = turnstile;
         this.baseUrl = baseUrl;
     }
 
@@ -56,15 +61,18 @@ class LoginController {
 
     /**
      * Même réponse, que l'adresse soit connue ou non, et que la limite par adresse soit atteinte ou non : aucune
-     * recherche du bénévole ici, l'envoi part en arrière-plan (menace M3).
+     * recherche du bénévole ici, l'envoi part en arrière-plan (menace M3). Turnstile est vérifié après la limite par IP
+     * (qui borne les appels à Cloudflare) et avant toute création de jeton ou tout envoi (M4, M5) ; sans réponse de
+     * Cloudflare, la demande est refusée.
      */
     @PostMapping("/connexion")
     String requestLink(@RequestParam(name = "email", defaultValue = "") String email,
             @RequestParam(name = RegistrationChoice.DAY_PARAM, required = false) String day,
             @RequestParam(name = RegistrationChoice.CHOICE_PARAM, required = false) String choiceParam,
+            @RequestParam(name = TURNSTILE_FIELD, required = false) String turnstileToken,
             HttpServletRequest request, HttpServletResponse response, Model model) {
         var choice = RegistrationChoice.parse(day, choiceParam).orElse(null);
-        if (!sender.available()) {
+        if (!available()) {
             response.setStatus(HttpStatus.SERVICE_UNAVAILABLE.value());
             return form(model, choice, email);
         }
@@ -76,6 +84,15 @@ class LoginController {
         if (!limits.allowIp(request.getRemoteAddr())) {
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
             return "connexion-trop-de-demandes";
+        }
+        var check = turnstileToken == null || turnstileToken.isBlank()
+                ? Turnstile.Outcome.FAILED
+                : turnstile.verify(turnstileToken, request.getRemoteAddr());
+        if (check != Turnstile.Outcome.PASSED) {
+            var unavailable = check == Turnstile.Outcome.UNAVAILABLE;
+            response.setStatus(unavailable ? HttpStatus.SERVICE_UNAVAILABLE.value() : HttpStatus.BAD_REQUEST.value());
+            model.addAttribute(unavailable ? "turnstileUnavailable" : "turnstileFailed", true);
+            return form(model, choice, email);
         }
         // Domaine réservé aux tests (M30) : ni jeton ni envoi, et la même réponse.
         if (guard.allows(normalized.get()) && limits.allowEmail(normalized.get())) {
@@ -116,8 +133,14 @@ class LoginController {
     private String form(Model model, RegistrationChoice choice, String email) {
         model.addAttribute("choice", choice);
         model.addAttribute("email", email);
-        model.addAttribute("unavailable", !sender.available());
+        model.addAttribute("unavailable", !available());
+        model.addAttribute("turnstileSiteKey", turnstile.siteKey());
         return "connexion";
+    }
+
+    /** La demande de lien demande un canal d'envoi et la vérification anti-robot. */
+    private boolean available() {
+        return sender.available() && turnstile.configured();
     }
 
     /** Lien construit sur l'origine configurée, jamais sur l'en-tête Host de la requête. */
