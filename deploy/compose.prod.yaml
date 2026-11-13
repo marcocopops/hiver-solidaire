@@ -59,7 +59,7 @@ services:
     # Le port de management (8081) n'est joignable que depuis le conteneur (healthcheck).
 
   db:
-    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+    image: postgres:17.11-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
     restart: unless-stopped
     logging: *logging
     user: "70:70"

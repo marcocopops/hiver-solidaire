@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # --- Build : compilation et extraction du jar -------------------------------------------------
-FROM eclipse-temurin:21-jdk-alpine@sha256:0bfc69a4758a86710e5c474032d28400a8bd00874766f9e8b1642ac2fd293159 AS build
+FROM eclipse-temurin:21.0.12.1_1-jdk-alpine@sha256:0bfc69a4758a86710e5c474032d28400a8bd00874766f9e8b1642ac2fd293159 AS build
 WORKDIR /workspace
 
 COPY .mvn/ .mvn/
@@ -13,7 +13,7 @@ RUN --mount=type=cache,target=/root/.m2 ./mvnw -B -DskipTests package \
     && java -Djarmode=tools -jar target/app.jar extract --destination /workspace/extracted
 
 # --- Exécution : JRE 21, utilisateur non-root, système de fichiers en lecture seule ---------------
-FROM eclipse-temurin:21-jre-alpine@sha256:b48e02e0ea88d7bfb305335df94923bdef394905f4147dccd52e873cf17b1088
+FROM eclipse-temurin:21.0.12.1_1-jre-alpine@sha256:b48e02e0ea88d7bfb305335df94923bdef394905f4147dccd52e873cf17b1088
 # Correctifs de sécurité Alpine publiés après la construction de l'image de base épinglée (brotli-libs,
 # zlib CVE-2026-4738, libexpat…) : on met à jour tous les paquets du système au build. L'image de base reste
 # épinglée par empreinte ; le scan de la CI vérifie le résultat. Dependabot remplace l'empreinte chaque semaine.
