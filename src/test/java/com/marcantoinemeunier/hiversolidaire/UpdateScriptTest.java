@@ -189,6 +189,25 @@ class UpdateScriptTest {
         assertThat(pings).containsExactly("/ping/update-uuid/0");
     }
 
+    /** Une image piégée ne fait pas lire un fichier de l'hôte par un lien symbolique, même avec --diff. */
+    @Test
+    @Order(8)
+    void a_symbolic_link_from_the_image_is_reported_but_never_followed() throws IOException {
+        var host = work.resolve("secret-de-l-hote");
+        Files.writeString(host, "CONTENU-DE-L-HOTE\n");
+        var link = Files.createSymbolicLink(reference.resolve("piege"), host);
+        try {
+            var update = scripts.script("update.sh", List.of(), "");
+            var diff = scripts.script("update.sh", List.of("--diff"), "");
+
+            assertThat(update.exitCode()).as(update.output()).isEqualTo(3);
+            assertThat(update.output()).contains("piege (pas un fichier ordinaire");
+            assertThat(diff.output()).contains("piege").doesNotContain("CONTENU-DE-L-HOTE");
+        } finally {
+            Files.delete(link);
+        }
+    }
+
     /** Fichiers de deploy/ que .dockerignore laisse entrer dans l'image. */
     private static List<String> imageFiles() {
         try {

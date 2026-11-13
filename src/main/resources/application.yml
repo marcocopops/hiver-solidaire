@@ -77,6 +77,9 @@ server:
 management:
   server:
     port: 8081
+    # Boucle locale seulement : le healthcheck Docker tourne dans le conteneur. Les autres conteneurs du réseau edge,
+    # partagé avec d'autres applis, ne joignent pas ce port.
+    address: 127.0.0.1
   endpoints:
     web:
       exposure:

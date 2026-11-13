@@ -41,12 +41,15 @@ fetch_reference() {
         || die "cette version de l'image ne contient pas /app/deploy (antérieure à S6)"
 }
 
-# Fichiers de l'image absents ou différents sur le serveur, un par ligne.
+# Fichiers de l'image absents ou différents sur le serveur, un par ligne. Seuls des fichiers ordinaires sont comparés :
+# un lien symbolique venu de l'image ferait lire un fichier de l'hôte (et l'afficher par --diff). Il est signalé.
 drifted_files() {
     local file name
     for file in "$reference_dir"/*; do
         name=$(basename "$file")
-        if [[ ! -f $name ]] || ! cmp -s "$file" "$name"; then
+        if [[ -L $file || ! -f $file ]]; then
+            printf '%s (pas un fichier ordinaire : ne pas copier)\n' "$name"
+        elif [[ ! -f $name ]] || ! cmp -s "$file" "$name"; then
             printf '%s\n' "$name"
         fi
     done
@@ -61,6 +64,7 @@ if [[ ${1:-} == --diff && $# -eq 1 ]]; then
         exit 0
     fi
     while IFS= read -r name; do
+        [[ -f $reference_dir/$name && ! -L $reference_dir/$name ]] || { printf '%s\n' "$name"; continue; }
         diff -u --label "serveur/$name" --label "version en service/$name" \
             "$( [[ -f $name ]] && echo "$name" || echo /dev/null)" "$reference_dir/$name" || true
     done <<<"$drift"

@@ -56,6 +56,11 @@ trap 'exit 130' INT TERM
 [[ -n $ping_url ]] || log "Avertissement : BACKUP_PING_URL absent de .env, aucun échec ne sera signalé"
 ping_monitor "$ping_url" start
 
+# Les secrets de restic et de R2 ne doivent être lisibles que par leur propriétaire (chmod 600).
+if [[ -e backup.env && $(stat -c %a backup.env) != [67]00 ]]; then
+    die "backup.env est lisible par d'autres utilisateurs : chmod 600 backup.env"
+fi
+
 # Une seule sauvegarde à la fois (verrou sur le script lui-même).
 exec 9<"${BASH_SOURCE[0]}"
 flock -n 9 || die "une sauvegarde est déjà en cours"
