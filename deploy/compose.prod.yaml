@@ -2,10 +2,18 @@
 # Les variables viennent du fichier .env placé à côté de ce fichier, sur le serveur uniquement.
 name: hiver-solidaire
 
+# Taille des logs bornée sur chaque service (S6) : 3 fichiers de 10 Mo au plus, puis rotation par Docker.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   app:
     image: ghcr.io/marcocopops/hiver-solidaire:${APP_TAG:-main}
     restart: unless-stopped
+    logging: *logging
     depends_on:
       db:
         condition: service_healthy
@@ -53,6 +61,7 @@ services:
   db:
     image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
     restart: unless-stopped
+    logging: *logging
     user: "70:70"
     environment:
       POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB manquant dans .env}
@@ -78,6 +87,33 @@ services:
     networks:
       - internal
 
+  # Sauvegardes chiffrées vers Cloudflare R2 (deploy/backup.sh, deploy/restore.sh, ADR-0016). Profil « backup » :
+  # jamais démarré par « up -d » ni par update.sh, seulement par « docker compose run » depuis les scripts, qui lui
+  # passent l'utilisateur du script et le dump à envoyer (en lecture seule). Il ne voit ni la base ni l'appli.
+  restic:
+    image: restic/restic:0.19.1@sha256:136600b6ff6843d61d355f7f71f460a166429f35de6fd11b568fece3c9a4d510
+    profiles: [backup]
+    logging: *logging
+    # Dépôt, mot de passe restic et clé R2 limitée au bucket : backup.env, à côté de ce fichier, chmod 600
+    # (modèle : backup.env.example). Absent, restic échoue et backup.sh envoie l'alerte.
+    env_file:
+      - path: backup.env
+        required: false
+    environment:
+      # Cache dans la mémoire du conteneur : rien de persistant sur l'hôte.
+      RESTIC_CACHE_DIR: /tmp/restic-cache
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    cpus: 1.0
+    mem_limit: 512m
+    pids_limit: 128
+    networks:
+      - backup
+
 networks:
   # Réseau partagé avec le conteneur cloudflared existant, créé une fois : docker network create edge
   edge:
@@ -85,6 +121,8 @@ networks:
   # Entre app et db seulement, sans accès à l'extérieur.
   internal:
     internal: true
+  # Sortie vers R2 pour restic seulement : ni l'appli ni la base n'y sont.
+  backup: {}
 
 volumes:
   db-data:

@@ -27,7 +27,8 @@ Le réseau `edge` est partagé avec d'autres applications. L'appli y est donc jo
 
 ```bash
 sudo mkdir -p /opt/hiver-solidaire && cd /opt/hiver-solidaire
-# Copier deploy/compose.prod.yaml, deploy/update.sh et .env.example à cet endroit
+# Copier à cet endroit : .env.example et, depuis deploy/, compose.prod.yaml, lib.sh, update.sh, backup.sh,
+# restore.sh, restore-check.sql, backup.env.example (liste à jour : « Fichiers du serveur » plus bas)
 cp .env.example .env && chmod 600 .env
 ```
 
@@ -161,6 +162,69 @@ La demande de lien de connexion est protégée par Cloudflare Turnstile ([ADR-00
 Chaque jour à 4 h 30 (heure de Paris), et au démarrage, l'appli applique les durées de conservation ([cahier des charges](../docs/cahier-des-charges.md) §7, [ADR-0014](../docs/adr/0014-purge-par-anonymisation-et-journal-d-audit-borne.md)) : comptes sans profil supprimés après 7 jours, bénévoles sans accord anonymisés un mois après la fin de la saison, avec accord après 3 ans sans participation, envois d'e-mails, alertes et journal d'audit de plus de 6 mois supprimés. Aucune action manuelle.
 
 Contrôle : `docker compose -f compose.prod.yaml logs app | grep "Data retention run"` donne, pour chaque exécution, des comptes seulement. Une seule instance de l'appli : la purge n'a pas de verrou distribué.
+
+## Sauvegardes (depuis S6)
+
+Chaque nuit, `backup.sh` sauvegarde la base, chiffrée par restic, dans un bucket Cloudflare R2 ([ADR-0016](../docs/adr/0016-sauvegardes-restic-vers-r2-dans-un-conteneur.md)) : 7 sauvegardes quotidiennes et 4 hebdomadaires, soit 30 jours au plus (durée annoncée par la notice), et une vérification du dépôt le dimanche. Le dump en clair n'existe qu'en mémoire (`/dev/shm`), le temps de l'envoi. restic tourne dans un conteneur (service `restic`, profil `backup`, de `compose.prod.yaml`) qui ne voit ni la base ni l'appli. Un échec, ou une nuit sans sauvegarde, déclenche une alerte de healthchecks.io.
+
+### 1. Bucket et clé R2 (chez Cloudflare)
+
+1. R2 → *Create bucket* : nom `hiver-solidaire-sauvegardes`, *Location* → **Specify jurisdiction** → **European Union (EU)**. Aucun accès public, aucun domaine personnalisé.
+2. R2 → *Manage R2 API Tokens* → *Create API token* : permission **Object Read & Write**, *Specify bucket(s)* → le seul `hiver-solidaire-sauvegardes`, sans date d'expiration (ou une date notée dans le runbook). Noter l'*Access Key ID* et la *Secret Access Key* (affichée une seule fois). Repérer l'*Account ID* du compte.
+
+### 2. Secrets sur le serveur
+
+```bash
+cd /opt/hiver-solidaire
+cp backup.env.example backup.env && chmod 600 backup.env
+openssl rand -base64 32      # mot de passe restic
+```
+
+Renseigner dans `backup.env` : `RESTIC_REPOSITORY` (avec l'Account ID et l'adresse `.eu.`), `RESTIC_PASSWORD`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`. Ce fichier n'est lu que par le conteneur restic et ne quitte jamais le serveur.
+
+**Le mot de passe restic doit aussi être gardé hors du serveur, dans un gestionnaire de mots de passe (avec l'Account ID, le nom du bucket et la clé R2). Sans lui, les sauvegardes sont illisibles : si le serveur est perdu, elles le sont aussi.**
+
+### 3. Alerte (healthchecks.io)
+
+1. Créer un compte sur [healthchecks.io](https://healthchecks.io) (offre gratuite), avec l'adresse du porteur du projet, et un projet « Hiver Solidaire ».
+2. *Add Check* : nom « Sauvegarde », *Schedule* **Cron** `15 5 * * *`, fuseau `Europe/Paris`, *Grace time* **1 heure**. Copier son adresse de ping.
+3. Dans `.env` : `BACKUP_PING_URL=https://hc-ping.com/<uuid>`. Cette adresse ne doit pas être publiée (n'importe qui pourrait signaler un faux succès).
+4. *Integrations* : l'e-mail est actif par défaut ; ajouter si possible une notification sur téléphone (application mobile ou autre intégration gratuite).
+
+Le script n'envoie que `start`, puis son code de sortie (0 : succès) : aucun log, aucune donnée.
+
+### 4. Initialisation et première sauvegarde
+
+```bash
+cd /opt/hiver-solidaire
+chmod 700 backup.sh restore.sh
+./backup.sh --init        # crée le dépôt chiffré dans le bucket (une seule fois)
+./backup.sh               # première sauvegarde ; healthchecks.io passe au vert
+./restore.sh              # test de restauration (ci-dessous)
+```
+
+### 5. Cron
+
+```bash
+mkdir -p /var/log/hiver-solidaire
+crontab -e     # crontab de root (les scripts utilisent Docker)
+# 15 5 * * * /opt/hiver-solidaire/backup.sh >> /var/log/hiver-solidaire/backup.log 2>&1
+```
+
+5 h 15, heure du serveur (supposé à l'heure de Paris : `timedatectl`), après la purge de 4 h 30 : les sauvegardes ne contiennent déjà plus les données purgées. Rotation du log : `logrotate` (« Mise à jour automatique »).
+
+### 6. Restaurer
+
+```bash
+./restore.sh                     # contrôle : dernière sauvegarde dans une base jetable, vérifiée puis effacée
+./restore.sh <identifiant>       # une sauvegarde précise
+docker compose -f compose.prod.yaml --profile backup run --rm --no-deps restic snapshots --host hiver-solidaire   # liste
+./restore.sh --production <identifiant>   # remplace la base de production (runbook, « Restaurer la base »)
+```
+
+Le contrôle affiche, pour la sauvegarde et la production, la dernière migration Flyway, les migrations en échec, et les nombres de saisons, soirées, bénévoles, inscriptions, lignes du journal d'audit et envois d'e-mails. Il échoue si l'historique Flyway manque, si une migration est en échec, s'il n'y a aucune soirée, ou si la dernière sauvegarde a plus de 26 h. Les écarts avec la production correspondent à l'activité depuis la nuit.
+
+**Avant la bêta du 30 novembre**, faire un vrai test de restauration sur le serveur, puis noter sa date dans le [runbook](../docs/exploitation/runbook.md) (« Tests de restauration »).
 
 ## Contrôles utiles
 

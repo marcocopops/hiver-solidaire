@@ -24,3 +24,6 @@ secrets/
 
 # Claude Code : réglages personnels
 .claude/settings.local.json
+
+# Secrets des sauvegardes (restic, R2) : seul deploy/backup.env.example est versionné
+backup.env
