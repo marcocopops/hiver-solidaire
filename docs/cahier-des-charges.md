@@ -186,8 +186,8 @@ L'offre gratuite de Brevo permet 300 e-mails par jour. Avec une vingtaine de bé
 
 **Disponibilité et continuité** :
 
-- Sonde HTTP externe toutes les 5 minutes, avec alerte sur téléphone
-- Sauvegardes quotidiennes chiffrées hors site, restauration testée avant l'ouverture
+- Sonde HTTP externe toutes les 5 minutes, avec alerte sur téléphone, sur une page de santé publique `/sante` (200 si l'appli et la base répondent, 503 sinon, sans aucun détail), seule exception à Cloudflare Access avant l'ouverture ; le port de management reste fermé au public
+- Sauvegardes quotidiennes chiffrées hors site (restic vers Cloudflare R2, 7 quotidiennes et 4 hebdomadaires, soit 30 jours au plus), restauration testée avant l'ouverture ; un échec de sauvegarde alerte (healthchecks.io). Version de l'appli épinglée pendant la saison, déploiement volontaire ([ADR-0015](adr/0015-signaler-la-divergence-des-fichiers-de-deploiement.md)). Procédures dans le [runbook](exploitation/runbook.md)
 - Objectifs : coupure de moins de 4 h (RTO), perte de moins de 24 h de données (RPO)
 - Plan B : récap quotidien de 20 h (S5a, journées J+1 à J+7, lisible sans le site) et planning imprimable d'une période choisie, les 7 prochains jours par défaut (enregistré en PDF par le navigateur) chez les coordinateurs, Google Form de l'an dernier prêt à être réactivé, runbook « site indisponible »
 

@@ -170,4 +170,32 @@ docker compose -f compose.prod.yaml logs --tail=100 app
 docker inspect --format '{{.State.Health.Status}}' hiver-solidaire-app-1
 ```
 
-La sonde externe interroge `https://hiver-solidaire.marcantoine-meunier.com/`. Le healthcheck Docker utilise le port de management 8081, interne au conteneur.
+Le healthcheck Docker utilise le port de management 8081, interne au conteneur. La sonde externe interroge `/sante` (ci-dessous).
+
+## Sonde externe (depuis S6)
+
+La page publique `https://hiver-solidaire.marcantoine-meunier.com/sante` répond **200** si l'appli et la base répondent, **503** sinon, sans aucun détail (corps vide, ni version ni erreur). Le résultat est gardé 10 secondes. Le port de management (8081) n'est jamais routé.
+
+### Règle Cloudflare Access « Bypass » sur `/sante`
+
+Tant que le site entier est derrière Access (owner-only, jusqu'à l'ouverture), une sonde sur `/` recevrait la page de connexion d'Access, avec un code 200 ou 302, et croirait le site en ligne. Seul `/sante` y échappe :
+
+1. Zero Trust → Access → Applications → *Add an application* → *Self-hosted*. Nom : « Hiver Solidaire — santé ».
+2. Domaine : `hiver-solidaire.marcantoine-meunier.com`, chemin **`sante`** (exactement, sans joker). L'application la plus précise l'emporte sur celle du site entier.
+3. Politique : action **Bypass**, *Include* → *Everyone*. Aucune autre application ne doit avoir de règle Bypass, et surtout pas celle de `/admin`.
+4. Vérifier dans une fenêtre privée : `/sante` répond sans page d'Access, `/` et `/admin` affichent toujours la page d'Access.
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' https://hiver-solidaire.marcantoine-meunier.com/sante   # 200
+curl -s -o /dev/null -w '%{http_code}\n' https://hiver-solidaire.marcantoine-meunier.com/        # 302 vers Access avant l'ouverture
+```
+
+Après l'ouverture (runbook, « Ouvrir le site le jour J »), la règle peut rester : la page ne révèle rien.
+
+### Moniteur UptimeRobot
+
+1. Créer un compte UptimeRobot (offre gratuite) avec une adresse du porteur du projet.
+2. *Add New Monitor* : type **HTTP(s)**, nom « Hiver Solidaire », URL `https://hiver-solidaire.marcantoine-meunier.com/sante`, intervalle **5 minutes**. Une réponse autre que 2xx (503, 502 de Cloudflare quand le tunnel est coupé, délai dépassé) est une panne.
+3. Contacts d'alerte : l'e-mail du porteur du projet ; installer l'application mobile UptimeRobot et activer ses notifications (vérifier à la création que l'offre gratuite les inclut ; sinon, garder l'e-mail et une notification de la messagerie du téléphone sur l'expéditeur d'UptimeRobot).
+4. Ne pas créer de page de statut publique.
+5. Tester : `docker compose -f compose.prod.yaml stop app`, attendre l'alerte (5 à 10 minutes), puis `docker compose -f compose.prod.yaml start app` et attendre l'alerte de retour.
