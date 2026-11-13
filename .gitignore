@@ -27,3 +27,6 @@ secrets/
 
 # Secrets des sauvegardes (restic, R2) : seul deploy/backup.env.example est versionné
 backup.env
+
+# État d'update.sh sur le serveur (dernier écart signalé)
+.update-drift

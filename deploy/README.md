@@ -75,25 +75,95 @@ docker run --rm --network edge --entrypoint wget ghcr.io/marcocopops/hiver-solid
 
 ## 6. Mise à jour automatique (pull)
 
-`deploy/update.sh` tire la nouvelle image puis relance les conteneurs modifiés. Le lancer par cron, par exemple toutes les 10 minutes :
+`update.sh` tire l'image d'`APP_TAG`, relance les conteneurs modifiés, puis compare les fichiers du serveur à ceux de la version en service ([ADR-0015](../docs/adr/0015-signaler-la-divergence-des-fichiers-de-deploiement.md)). Il ne remplace jamais un fichier : il signale l'écart. Il n'écrit dans son log que lorsque quelque chose change (version déployée, écart apparu ou disparu, erreur).
 
 ```bash
-chmod +x /opt/hiver-solidaire/update.sh
-crontab -e
-# */10 * * * * /opt/hiver-solidaire/update.sh >> /var/log/hiver-solidaire-update.log 2>&1
+cd /opt/hiver-solidaire
+chmod 700 update.sh
+mkdir -p /var/log/hiver-solidaire
+cp logrotate.conf /etc/logrotate.d/hiver-solidaire     # rotation des logs des scripts (5 Mo, 8 semaines)
+crontab -e     # crontab de root
+# */10 * * * * /opt/hiver-solidaire/update.sh >> /var/log/hiver-solidaire/update.log 2>&1
 ```
 
-Pendant la saison, une mise à jour automatique sur `main` est un choix à reconsidérer (voir plus bas : épingler un tag `sha-…`).
+Alerte : sur healthchecks.io (voir « Sauvegardes »), un second check « Mise à jour », *Period* **10 minutes**, *Grace time* **30 minutes**, et son adresse dans `.env` : `UPDATE_PING_URL=https://hc-ping.com/<uuid>`. Le check passe en échec si la mise à jour échoue, si des fichiers divergent (code 3), ou si le cron ne tourne plus.
 
-## 7. Retour arrière
-
-Chaque commit de `main` publie un tag immuable `sha-<commit>`. Pour revenir à une version précédente, ajouter dans `.env` :
+Écart signalé (`ÉCART : fichiers du serveur différents de la version en service`) :
 
 ```bash
-APP_TAG=sha-<commit-précédent>
+./update.sh --diff      # diff -u entre les fichiers du serveur et ceux de la version en service
 ```
 
-puis `docker compose -f compose.prod.yaml up -d`. Tant que `APP_TAG` n'est pas `main`, `update.sh` ne change pas de version : retirer la ligne pour reprendre les mises à jour automatiques. Les migrations Flyway ne se défont pas : un retour arrière de l'image ne revient pas sur le schéma (on corrige en avant, par une nouvelle migration).
+Relire le diff (une nouvelle variable à ajouter dans `.env` ? un script modifié ?), puis copier les fichiers depuis le dépôt, à la même version que l'image (`git checkout <commit>` sur le poste, ou le diff lui-même). `update.sh` écrit `Plus d'écart` au passage suivant. Ne jamais copier un fichier sans l'avoir relu : c'est ce qui sépare le code de l'image (conteneur durci) du code qui tourne en root sur l'hôte.
+
+Les logs Docker de chaque service sont limités à 3 fichiers de 10 Mo (`logging` dans `compose.prod.yaml`).
+
+## 7. Épingler la version, déployer une correction, revenir en arrière
+
+Chaque commit de `main` publie un tag `sha-<commit>` ; l'image porte son commit (`org.opencontainers.image.revision`). **À l'ouverture des inscriptions (14 décembre), la production cesse de suivre `main`** : un déploiement devient un geste volontaire.
+
+### Épingler la version en service
+
+```bash
+cd /opt/hiver-solidaire
+image=$(docker inspect --format '{{.Image}}' "$(docker compose -f compose.prod.yaml ps -q app)")
+docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$image"   # commit
+docker image inspect --format '{{index .RepoDigests 0}}' "$image"                                       # empreinte
+```
+
+Dans `.env` :
+
+```bash
+APP_TAG=sha-<commit>@sha256:<empreinte>
+```
+
+L'empreinte protège aussi contre une image remplacée sur GHCR après validation (modèle de menaces, M17) : Docker refuse une image dont l'empreinte diffère. Puis `docker compose -f compose.prod.yaml up -d` (rien ne redémarre si c'est déjà la version en service). `update.sh` continue de tourner : il ne change plus de version, et surveille toujours les fichiers.
+
+### Déployer une correction
+
+1. PR fusionnée dans `main`, CI verte : le tag `sha-<nouveau commit>` existe sur GHCR.
+2. Image et empreinte :
+
+   ```bash
+   new=ghcr.io/marcocopops/hiver-solidaire:sha-<nouveau commit>
+   docker pull "$new" && docker image inspect --format '{{index .RepoDigests 0}}' "$new"
+   ```
+
+3. Fichiers de déploiement de la nouvelle version, avant de basculer (copiés sans lancer l'image) :
+
+   ```bash
+   id=$(docker create "$new") && docker cp "$id:/app/deploy" /tmp/deploy-nouvelle-version && docker rm "$id"
+   for f in /tmp/deploy-nouvelle-version/*; do diff -u "$(basename "$f")" "$f"; done
+   ```
+
+   Relire, copier ce qui change, compléter `.env` si besoin, puis `rm -r /tmp/deploy-nouvelle-version`.
+4. Si la version contient une migration Flyway : `./backup.sh` juste avant.
+5. Noter l'`APP_TAG` actuel (retour arrière), puis le remplacer dans `.env` par `sha-<nouveau commit>@sha256:<empreinte>`, et `docker compose -f compose.prod.yaml up -d`.
+6. Vérifier : `docker compose -f compose.prod.yaml ps` (« healthy »), `/sante` à 200, le planning, une connexion. Consigner la version dans le runbook (« Versions déployées »).
+
+### Revenir en arrière
+
+Remettre l'`APP_TAG` précédent dans `.env`, puis `docker compose -f compose.prod.yaml up -d`. Les migrations Flyway ne se défont pas :
+
+- une ancienne version démarre sur un schéma plus récent tant que la migration n'a fait qu'ajouter (Flyway ignore les migrations « futures ») ;
+- si la migration a supprimé ou renommé une colonne, l'ancienne version refuse de démarrer (`ddl-auto: validate`) : soit corriger en avant (nouvelle version), soit restaurer la sauvegarde faite avant le déploiement (`./restore.sh --production <identifiant>`), en perdant ce qui a été saisi depuis.
+
+## Fichiers du serveur
+
+Dans `/opt/hiver-solidaire`, tous copiés depuis `deploy/` à la version en service (sauf les secrets) :
+
+| Fichier | Rôle |
+|---|---|
+| `compose.prod.yaml` | services `app`, `db` et `restic` (profil `backup`) |
+| `lib.sh` | fonctions communes aux scripts |
+| `update.sh` | mise à jour en pull, signalement des écarts (cron toutes les 10 minutes) |
+| `backup.sh`, `restore.sh`, `restore-check.sql` | sauvegarde (cron à 5 h 15), restauration |
+| `logrotate.conf` | copié aussi dans `/etc/logrotate.d/hiver-solidaire` |
+| `backup.env.example` | modèle de `backup.env` |
+| `.env` | secrets de l'appli et adresses de ping (chmod 600, jamais versionné) |
+| `backup.env` | secrets de restic et de R2 (chmod 600, jamais versionné) |
+
+`update.sh` compare les fichiers de la liste blanche de `.dockerignore` (ceux de l'image), pas `.env` ni `backup.env`.
 
 ## Connexion des bénévoles (depuis S3)
 

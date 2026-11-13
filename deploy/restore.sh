@@ -140,6 +140,10 @@ else
     [[ $answer == "RESTAURER SANS SAUVEGARDE" ]] || die "abandon, rien n'a été modifié"
 fi
 
+# Verrou de update.sh : le cron de mise à jour ne relancera pas l'appli pendant la restauration.
+exec 8<"$script_dir/update.sh"
+flock -w 600 8 || die "une mise à jour est en cours depuis 10 minutes : réessayer plus tard"
+
 log "Arrêt de l'appli"
 app_stopped=true
 docker compose stop app

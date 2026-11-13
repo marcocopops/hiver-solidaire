@@ -6,7 +6,6 @@ import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -15,9 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.flywaydb.core.Flyway;
@@ -51,7 +48,7 @@ import org.testcontainers.utility.DockerImageName;
 @TestMethodOrder(OrderAnnotation.class)
 class BackupRestoreScriptTest {
 
-    private static final Path DEPLOY = Path.of("deploy").toAbsolutePath();
+    private static final Path DEPLOY = ScriptRunner.DEPLOY;
     private static final Pattern DB_IMAGE = Pattern.compile("image: (postgres:\\S+)");
     private static final Pattern REPORT_LINE = Pattern.compile("^(\\w+) +(\\S+) +(\\S+)$", Pattern.MULTILINE);
     private static final String MARKER = "restore_marker";
@@ -64,7 +61,7 @@ class BackupRestoreScriptTest {
     private JdbcTemplate jdbc;
     private HttpServer pingServer;
     private final List<String> pings = new CopyOnWriteArrayList<>();
-    private final Map<String, String> environment = new HashMap<>();
+    private final ScriptRunner scripts = new ScriptRunner();
     private String databaseImage;
 
     @BeforeAll
@@ -112,21 +109,21 @@ class BackupRestoreScriptTest {
                     external: false
                 """.formatted(backupEnv, repository, databaseImage));
 
-        environment.put("COMPOSE_FILE", DEPLOY.resolve("compose.prod.yaml") + ":" + override);
-        environment.put("COMPOSE_PROJECT_NAME", "hs-backup-test-" + UUID.randomUUID().toString().substring(0, 8));
-        environment.put("POSTGRES_DB", "unused");
-        environment.put("POSTGRES_USER", "unused");
-        environment.put("POSTGRES_PASSWORD", "unused");
-        environment.put("HS_DB_CONTAINER", postgres.getContainerId());
-        environment.put("HS_BACKUP_CHECK", "always");
-        environment.put("BACKUP_PING_URL",
+        scripts.put("COMPOSE_FILE", DEPLOY.resolve("compose.prod.yaml") + ":" + override);
+        scripts.put("COMPOSE_PROJECT_NAME", "hs-backup-test-" + UUID.randomUUID().toString().substring(0, 8));
+        scripts.put("POSTGRES_DB", "unused");
+        scripts.put("POSTGRES_USER", "unused");
+        scripts.put("POSTGRES_PASSWORD", "unused");
+        scripts.put("HS_DB_CONTAINER", postgres.getContainerId());
+        scripts.put("HS_BACKUP_CHECK", "always");
+        scripts.put("BACKUP_PING_URL",
                 "http://127.0.0.1:" + pingServer.getAddress().getPort() + "/ping/backup-uuid");
     }
 
     @AfterAll
     void stop() {
         try {
-            run(List.of("docker", "compose", "--profile", "backup", "down", "--volumes", "--remove-orphans"), "");
+            scripts.run(List.of("docker", "compose", "--profile", "backup", "down", "--volumes", "--remove-orphans"));
         } finally {
             if (pingServer != null) {
                 pingServer.stop(0);
@@ -145,7 +142,7 @@ class BackupRestoreScriptTest {
     @Test
     @Order(1)
     void initialises_the_repository() {
-        var result = script("backup.sh", List.of("--init"), "");
+        var result = scripts.script("backup.sh", List.of("--init"), "");
 
         assertThat(result.exitCode()).as(result.output()).isZero();
     }
@@ -153,7 +150,7 @@ class BackupRestoreScriptTest {
     @Test
     @Order(2)
     void backs_up_and_reports_success_to_the_monitor() {
-        var result = script("backup.sh", List.of(), "");
+        var result = scripts.script("backup.sh", List.of(), "");
 
         assertThat(result.exitCode()).as(result.output()).isZero();
         assertThat(pings).containsExactly("/ping/backup-uuid/start", "/ping/backup-uuid/0");
@@ -166,7 +163,7 @@ class BackupRestoreScriptTest {
     @Order(3)
     void retention_groups_backups_under_one_host() {
         for (int i = 0; i < 2; i++) {
-            var result = script("backup.sh", List.of(), "");
+            var result = scripts.script("backup.sh", List.of(), "");
             assertThat(result.exitCode()).as(result.output()).isZero();
         }
 
@@ -181,12 +178,12 @@ class BackupRestoreScriptTest {
     @Test
     @Order(4)
     void a_backup_without_forget_keeps_every_snapshot() {
-        var result = script("backup.sh", List.of("--no-forget"), "");
+        var result = scripts.script("backup.sh", List.of("--no-forget"), "");
 
         assertThat(result.exitCode()).as(result.output()).isZero();
         assertThat(result.output()).doesNotContain("Rétention");
         assertThat(snapshots()).hasSize(3);
-        assertThat(script("backup.sh", List.of(), "").exitCode()).isZero();
+        assertThat(scripts.script("backup.sh", List.of(), "").exitCode()).isZero();
         assertThat(snapshots()).hasSize(2);
     }
 
@@ -195,7 +192,7 @@ class BackupRestoreScriptTest {
     void restores_the_latest_backup_into_a_throwaway_database_with_the_same_counts() {
         var expected = expectedCounts();
 
-        var result = script("restore.sh", List.of(), "");
+        var result = scripts.script("restore.sh", List.of(), "");
 
         assertThat(result.exitCode()).as(result.output()).isZero();
         assertThat(result.output()).contains("Contrôle réussi");
@@ -215,7 +212,7 @@ class BackupRestoreScriptTest {
     void a_failed_backup_is_reported_to_the_monitor_and_leaves_no_dump() {
         var before = snapshots().size();
 
-        var result = script("backup.sh", List.of(), "", Map.of("HS_DB_CONTAINER", "hs-no-such-container"));
+        var result = scripts.script("backup.sh", List.of(), "", Map.of("HS_DB_CONTAINER", "hs-no-such-container"));
 
         assertThat(result.exitCode()).as(result.output()).isNotZero();
         assertThat(pings).hasSize(2).first().isEqualTo("/ping/backup-uuid/start");
@@ -228,7 +225,7 @@ class BackupRestoreScriptTest {
     @Test
     @Order(7)
     void an_unknown_backup_is_refused() {
-        var result = script("restore.sh", List.of("0123abcd"), "");
+        var result = scripts.script("restore.sh", List.of("0123abcd"), "");
 
         assertThat(result.exitCode()).as(result.output()).isNotZero();
         assertThat(throwawayContainers()).isEmpty();
@@ -239,7 +236,7 @@ class BackupRestoreScriptTest {
     void production_restore_without_the_right_confirmation_changes_nothing() {
         jdbc.execute("CREATE TABLE " + MARKER + " (id int)");
         try {
-            var result = script("restore.sh", List.of("--production"), "pas-la-bonne-base\n");
+            var result = scripts.script("restore.sh", List.of("--production"), "pas-la-bonne-base\n");
 
             assertThat(result.exitCode()).as(result.output()).isNotZero();
             assertThat(result.output()).contains("confirmation incorrecte");
@@ -256,7 +253,7 @@ class BackupRestoreScriptTest {
         jdbc.execute("CREATE TABLE " + MARKER + " (id int)");
         jdbc.update("UPDATE registration SET cancelled_at = now() WHERE cancelled_at IS NULL");
 
-        var result = script("restore.sh", List.of("--production"), postgres.getDatabaseName() + "\n");
+        var result = scripts.script("restore.sh", List.of("--production"), postgres.getDatabaseName() + "\n");
 
         assertThat(result.exitCode()).as(result.output()).isZero();
         assertThat(result.output()).containsPattern("Sauvegarde préalable : [0-9a-f]{8}")
@@ -265,14 +262,11 @@ class BackupRestoreScriptTest {
         assertThat(markerExists()).isFalse();
         assertThat(expectedCounts()).isEqualTo(expected);
         // Le faux conteneur app a été arrêté puis relancé, « healthy ».
-        var app = run(List.of("docker", "compose", "ps", "--status", "running", "-q", "app"), "");
+        var app = scripts.run(List.of("docker", "compose", "ps", "--status", "running", "-q", "app"));
         assertThat(app.output().strip()).isNotEmpty();
     }
 
     // --- Outils ---------------------------------------------------------------------------------------------------
-
-    private record Result(int exitCode, String output) {
-    }
 
     private static String productionDatabaseImage() throws IOException {
         var matcher = DB_IMAGE.matcher(Files.readString(DEPLOY.resolve("compose.prod.yaml")));
@@ -316,8 +310,8 @@ class BackupRestoreScriptTest {
     }
 
     private List<String> snapshots() {
-        var result = run(List.of("docker", "compose", "--profile", "backup", "run", "--rm", "--no-deps", "-T",
-                "--user", uid(), "restic", "snapshots", "--json"), "");
+        var result = scripts.run(List.of("docker", "compose", "--profile", "backup", "run", "--rm", "--no-deps", "-T",
+                "--user", scripts.user(), "restic", "snapshots", "--json"));
         assertThat(result.exitCode()).as(result.output()).isZero();
         var json = result.output().lines().filter(line -> line.startsWith("[")).findFirst().orElseThrow();
         var snapshots = new ArrayList<String>();
@@ -328,14 +322,8 @@ class BackupRestoreScriptTest {
         return snapshots;
     }
 
-    private String uid() {
-        var id = run(List.of("id", "-u"), "").output().strip();
-        var gid = run(List.of("id", "-g"), "").output().strip();
-        return id + ":" + gid;
-    }
-
     private List<String> throwawayContainers() {
-        var result = run(List.of("docker", "ps", "-aq", "--filter", "name=hiver-solidaire-restore-check"), "");
+        var result = scripts.run(List.of("docker", "ps", "-aq", "--filter", "name=hiver-solidaire-restore-check"));
         return result.output().lines().filter(line -> !line.isBlank()).toList();
     }
 
@@ -345,50 +333,6 @@ class BackupRestoreScriptTest {
                     .noneMatch(name -> name.startsWith("hiver-solidaire-backup."));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
-        }
-    }
-
-    private Result script(String name, List<String> arguments, String input) {
-        return script(name, arguments, input, Map.of());
-    }
-
-    private Result script(String name, List<String> arguments, String input, Map<String, String> overrides) {
-        var command = new ArrayList<String>();
-        command.add(DEPLOY.resolve(name).toString());
-        command.addAll(arguments);
-        return run(command, input, overrides);
-    }
-
-    private Result run(List<String> command, String input) {
-        return run(command, input, Map.of());
-    }
-
-    private Result run(List<String> command, String input, Map<String, String> overrides) {
-        var builder = new ProcessBuilder(command).redirectErrorStream(true).directory(DEPLOY.toFile());
-        builder.environment().putAll(environment);
-        builder.environment().putAll(overrides);
-        try {
-            var process = builder.start();
-            var output = CompletableFuture.supplyAsync(() -> {
-                try {
-                    return new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            });
-            try (var stdin = process.getOutputStream()) {
-                stdin.write(input.getBytes(StandardCharsets.UTF_8));
-            }
-            if (!process.waitFor(5, TimeUnit.MINUTES)) {
-                process.destroyForcibly();
-                throw new AssertionError("délai dépassé : " + command);
-            }
-            return new Result(process.exitValue(), output.join());
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new AssertionError(e);
         }
     }
 }

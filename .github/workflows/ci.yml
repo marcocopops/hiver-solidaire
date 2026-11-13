@@ -67,6 +67,10 @@ jobs:
           context: .
           push: false
           tags: hiver-solidaire:ci
+          # Commit de l'image, lisible sur le serveur (runbook, « Épingler la version ») : docker inspect.
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
           outputs: type=docker,dest=${{ runner.temp }}/image.tar
       - name: Load image for scanning
         run: docker load --input "${{ runner.temp }}/image.tar"

@@ -21,6 +21,9 @@ RUN apk upgrade --no-cache
 RUN addgroup -S -g 10001 app && adduser -S -u 10001 -G app -H -s /sbin/nologin app
 WORKDIR /app
 COPY --from=build --chown=root:root /workspace/extracted/ /app/
+# Référence des fichiers de déploiement de cette version (liste blanche de .dockerignore), en lecture seule : update.sh
+# les compare à ceux du serveur et signale l'écart, sans rien remplacer (ADR-0015). L'appli ne les lit pas.
+COPY --chown=root:root deploy/ /app/deploy/
 
 USER 10001:10001
 EXPOSE 8080
