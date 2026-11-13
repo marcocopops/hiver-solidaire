@@ -5,7 +5,7 @@ updates:
     schedule:
       interval: weekly
     # Délai avant de proposer une nouvelle version : 3 jours pour les correctifs, 7 pour le reste.
-    # Les mises à jour de sécurité ne sont pas retardées par le cooldown.
+    # Les mises à jour de sécurité (avis GitHub sur une dépendance Maven) ne sont pas retardées par le cooldown.
     cooldown:
       default-days: 7
       semver-patch-days: 3
@@ -16,6 +16,11 @@ updates:
     cooldown:
       default-days: 7
       semver-patch-days: 3
+  # Images Docker (Dockerfile). Les images sont épinglées par un tag versionné et une empreinte
+  # (21.0.12.1_1-jre-alpine@sha256:…) : avec un tag sans version (21-jre-alpine), le registre ne donne que l'empreinte
+  # du jour ; republiée plus d'une fois par semaine, elle n'aurait jamais 7 jours et le cooldown bloquerait tout.
+  # Aucun avis de sécurité ne couvre les images : le cooldown s'applique toujours. Les correctifs du système de
+  # l'image passent par « apk upgrade » au build et le scan de la CI.
   - package-ecosystem: docker
     directory: "/"
     schedule:
@@ -26,4 +31,16 @@ updates:
     ignore:
       # Le runtime reste en Java 21 (LTS) : un changement de version majeure se décide à la main.
       - dependency-name: "eclipse-temurin"
+        update-types: ["version-update:semver-major"]
+  # Images des fichiers Compose : PostgreSQL et Mailpit (développement), PostgreSQL et restic (production).
+  - package-ecosystem: docker-compose
+    directories: ["/", "/deploy"]
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+      semver-patch-days: 3
+    ignore:
+      # Une version majeure de PostgreSQL demande une migration des données (pg_upgrade ou dump et restauration).
+      - dependency-name: "postgres"
         update-types: ["version-update:semver-major"]

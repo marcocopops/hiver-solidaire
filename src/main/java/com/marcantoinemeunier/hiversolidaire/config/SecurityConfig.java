@@ -78,6 +78,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/planning", "/inscription", "/donnees-personnelles").permitAll()
                 // Fin de la suppression du compte : la session vient d'être invalidée.
                 .requestMatchers(HttpMethod.GET, "/compte-supprime").permitAll()
+                // Page de santé pour la sonde externe : code de statut seulement (monitoring.PublicHealthController).
+                .requestMatchers(HttpMethod.GET, "/sante").permitAll()
+                .requestMatchers(HttpMethod.HEAD, "/sante").permitAll()
                 // Demande du lien, page « Me connecter » et consommation du jeton (POST protégé par CSRF).
                 .requestMatchers(HttpMethod.GET, "/connexion", "/connexion/envoye", "/login/ott").permitAll()
                 .requestMatchers(HttpMethod.POST, "/connexion", "/login/ott").permitAll()

@@ -5,6 +5,10 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5433/hiver}
     username: ${DB_USER:hiver}
     password: ${DB_PASSWORD:}
+    hikari:
+      # 5 s au lieu de 30 : base tombée, une requête (et la page de santé /sante) échoue vite, et la sonde externe
+      # reçoit un 503 plutôt qu'un délai dépassé.
+      connection-timeout: 5000
   jpa:
     open-in-view: false
     hibernate:
@@ -73,6 +77,9 @@ server:
 management:
   server:
     port: 8081
+    # Boucle locale seulement : le healthcheck Docker tourne dans le conteneur. Les autres conteneurs du réseau edge,
+    # partagé avec d'autres applis, ne joignent pas ce port.
+    address: 127.0.0.1
   endpoints:
     web:
       exposure:

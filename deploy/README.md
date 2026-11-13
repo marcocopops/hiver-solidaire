@@ -27,7 +27,8 @@ Le réseau `edge` est partagé avec d'autres applications. L'appli y est donc jo
 
 ```bash
 sudo mkdir -p /opt/hiver-solidaire && cd /opt/hiver-solidaire
-# Copier deploy/compose.prod.yaml, deploy/update.sh et .env.example à cet endroit
+# Copier à cet endroit : .env.example et, depuis deploy/, compose.prod.yaml, lib.sh, update.sh, backup.sh,
+# restore.sh, restore-check.sql, backup.env.example (liste à jour : « Fichiers du serveur » plus bas)
 cp .env.example .env && chmod 600 .env
 ```
 
@@ -74,25 +75,95 @@ docker run --rm --network edge --entrypoint wget ghcr.io/marcocopops/hiver-solid
 
 ## 6. Mise à jour automatique (pull)
 
-`deploy/update.sh` tire la nouvelle image puis relance les conteneurs modifiés. Le lancer par cron, par exemple toutes les 10 minutes :
+`update.sh` tire l'image d'`APP_TAG`, relance les conteneurs modifiés, puis compare les fichiers du serveur à ceux de la version en service ([ADR-0015](../docs/adr/0015-signaler-la-divergence-des-fichiers-de-deploiement.md)). Il ne remplace jamais un fichier : il signale l'écart. Il n'écrit dans son log que lorsque quelque chose change (version déployée, écart apparu ou disparu, erreur).
 
 ```bash
-chmod +x /opt/hiver-solidaire/update.sh
-crontab -e
-# */10 * * * * /opt/hiver-solidaire/update.sh >> /var/log/hiver-solidaire-update.log 2>&1
+cd /opt/hiver-solidaire
+chmod 700 update.sh
+mkdir -p /var/log/hiver-solidaire
+cp logrotate.conf /etc/logrotate.d/hiver-solidaire     # rotation des logs des scripts (5 Mo, 8 semaines)
+crontab -e     # crontab de root
+# */10 * * * * /opt/hiver-solidaire/update.sh >> /var/log/hiver-solidaire/update.log 2>&1
 ```
 
-Pendant la saison, une mise à jour automatique sur `main` est un choix à reconsidérer (voir plus bas : épingler un tag `sha-…`).
+Alerte : sur healthchecks.io (voir « Sauvegardes »), un second check « Mise à jour », *Period* **10 minutes**, *Grace time* **30 minutes**, et son adresse dans `.env` : `UPDATE_PING_URL=https://hc-ping.com/<uuid>`. Le check passe en échec si la mise à jour échoue, si des fichiers divergent (code 3), ou si le cron ne tourne plus.
 
-## 7. Retour arrière
-
-Chaque commit de `main` publie un tag immuable `sha-<commit>`. Pour revenir à une version précédente, ajouter dans `.env` :
+Écart signalé (`ÉCART : fichiers du serveur différents de la version en service`) :
 
 ```bash
-APP_TAG=sha-<commit-précédent>
+./update.sh --diff      # diff -u entre les fichiers du serveur et ceux de la version en service
 ```
 
-puis `docker compose -f compose.prod.yaml up -d`. Tant que `APP_TAG` n'est pas `main`, `update.sh` ne change pas de version : retirer la ligne pour reprendre les mises à jour automatiques. Les migrations Flyway ne se défont pas : un retour arrière de l'image ne revient pas sur le schéma (on corrige en avant, par une nouvelle migration).
+Relire le diff (une nouvelle variable à ajouter dans `.env` ? un script modifié ?), puis copier les fichiers depuis le dépôt, à la même version que l'image (`git checkout <commit>` sur le poste, ou le diff lui-même). `update.sh` écrit `Plus d'écart` au passage suivant. Ne jamais copier un fichier sans l'avoir relu : c'est ce qui sépare le code de l'image (conteneur durci) du code qui tourne en root sur l'hôte.
+
+Les logs Docker de chaque service sont limités à 3 fichiers de 10 Mo (`logging` dans `compose.prod.yaml`).
+
+## 7. Épingler la version, déployer une correction, revenir en arrière
+
+Chaque commit de `main` publie un tag `sha-<commit>` ; l'image porte son commit (`org.opencontainers.image.revision`). **À l'ouverture des inscriptions (14 décembre), la production cesse de suivre `main`** : un déploiement devient un geste volontaire.
+
+### Épingler la version en service
+
+```bash
+cd /opt/hiver-solidaire
+image=$(docker inspect --format '{{.Image}}' "$(docker compose -f compose.prod.yaml ps -q app)")
+docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$image"   # commit
+docker image inspect --format '{{index .RepoDigests 0}}' "$image"                                       # empreinte
+```
+
+Dans `.env` :
+
+```bash
+APP_TAG=sha-<commit>@sha256:<empreinte>
+```
+
+L'empreinte protège aussi contre une image remplacée sur GHCR après validation (modèle de menaces, M17) : Docker refuse une image dont l'empreinte diffère. Puis `docker compose -f compose.prod.yaml up -d` (rien ne redémarre si c'est déjà la version en service). `update.sh` continue de tourner : il ne change plus de version, et surveille toujours les fichiers.
+
+### Déployer une correction
+
+1. PR fusionnée dans `main`, CI verte : le tag `sha-<nouveau commit>` existe sur GHCR.
+2. Image et empreinte :
+
+   ```bash
+   new=ghcr.io/marcocopops/hiver-solidaire:sha-<nouveau commit>
+   docker pull "$new" && docker image inspect --format '{{index .RepoDigests 0}}' "$new"
+   ```
+
+3. Fichiers de déploiement de la nouvelle version, avant de basculer (copiés sans lancer l'image) :
+
+   ```bash
+   id=$(docker create "$new") && docker cp "$id:/app/deploy" /tmp/deploy-nouvelle-version && docker rm "$id"
+   for f in /tmp/deploy-nouvelle-version/*; do diff -u "$(basename "$f")" "$f"; done
+   ```
+
+   Relire, copier ce qui change, compléter `.env` si besoin, puis `rm -r /tmp/deploy-nouvelle-version`.
+4. Si la version contient une migration Flyway : `./backup.sh` juste avant.
+5. Noter l'`APP_TAG` actuel (retour arrière), puis le remplacer dans `.env` par `sha-<nouveau commit>@sha256:<empreinte>`, et `docker compose -f compose.prod.yaml up -d`.
+6. Vérifier : `docker compose -f compose.prod.yaml ps` (« healthy »), `/sante` à 200, le planning, une connexion. Consigner la version dans le runbook (« Versions déployées »).
+
+### Revenir en arrière
+
+Remettre l'`APP_TAG` précédent dans `.env`, puis `docker compose -f compose.prod.yaml up -d`. Les migrations Flyway ne se défont pas :
+
+- une ancienne version démarre sur un schéma plus récent tant que la migration n'a fait qu'ajouter (Flyway ignore les migrations « futures ») ;
+- si la migration a supprimé ou renommé une colonne, l'ancienne version refuse de démarrer (`ddl-auto: validate`) : soit corriger en avant (nouvelle version), soit restaurer la sauvegarde faite avant le déploiement (`./restore.sh --production <identifiant>`), en perdant ce qui a été saisi depuis.
+
+## Fichiers du serveur
+
+Dans `/opt/hiver-solidaire`, tous copiés depuis `deploy/` à la version en service (sauf les secrets) :
+
+| Fichier | Rôle |
+|---|---|
+| `compose.prod.yaml` | services `app`, `db` et `restic` (profil `backup`) |
+| `lib.sh` | fonctions communes aux scripts |
+| `update.sh` | mise à jour en pull, signalement des écarts (cron toutes les 10 minutes) |
+| `backup.sh`, `restore.sh`, `restore-check.sql` | sauvegarde (cron à 5 h 15), restauration |
+| `logrotate.conf` | copié aussi dans `/etc/logrotate.d/hiver-solidaire` |
+| `backup.env.example` | modèle de `backup.env` |
+| `.env` | secrets de l'appli et adresses de ping (chmod 600, jamais versionné) |
+| `backup.env` | secrets de restic et de R2 (chmod 600, jamais versionné) |
+
+`update.sh` compare les fichiers de la liste blanche de `.dockerignore` (ceux de l'image), pas `.env` ni `backup.env`.
 
 ## Connexion des bénévoles (depuis S3)
 
@@ -162,6 +233,69 @@ Chaque jour à 4 h 30 (heure de Paris), et au démarrage, l'appli applique les d
 
 Contrôle : `docker compose -f compose.prod.yaml logs app | grep "Data retention run"` donne, pour chaque exécution, des comptes seulement. Une seule instance de l'appli : la purge n'a pas de verrou distribué.
 
+## Sauvegardes (depuis S6)
+
+Chaque nuit, `backup.sh` sauvegarde la base, chiffrée par restic, dans un bucket Cloudflare R2 ([ADR-0016](../docs/adr/0016-sauvegardes-restic-vers-r2-dans-un-conteneur.md)) : 7 sauvegardes quotidiennes et 4 hebdomadaires, soit 30 jours au plus (durée annoncée par la notice), et une vérification du dépôt le dimanche. Le dump en clair n'existe qu'en mémoire (`/dev/shm`), le temps de l'envoi. restic tourne dans un conteneur (service `restic`, profil `backup`, de `compose.prod.yaml`) qui ne voit ni la base ni l'appli. Un échec, ou une nuit sans sauvegarde, déclenche une alerte de healthchecks.io.
+
+### 1. Bucket et clé R2 (chez Cloudflare)
+
+1. R2 → *Create bucket* : nom `hiver-solidaire-sauvegardes`, *Location* → **Specify jurisdiction** → **European Union (EU)**. Aucun accès public, aucun domaine personnalisé.
+2. R2 → *Manage R2 API Tokens* → *Create API token* : permission **Object Read & Write**, *Specify bucket(s)* → le seul `hiver-solidaire-sauvegardes`, sans date d'expiration (ou une date notée dans le runbook). Noter l'*Access Key ID* et la *Secret Access Key* (affichée une seule fois). Repérer l'*Account ID* du compte.
+
+### 2. Secrets sur le serveur
+
+```bash
+cd /opt/hiver-solidaire
+cp backup.env.example backup.env && chmod 600 backup.env
+openssl rand -base64 32      # mot de passe restic
+```
+
+Renseigner dans `backup.env` : `RESTIC_REPOSITORY` (avec l'Account ID et l'adresse `.eu.`), `RESTIC_PASSWORD`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`. Ce fichier n'est lu que par le conteneur restic et ne quitte jamais le serveur.
+
+**Le mot de passe restic doit aussi être gardé hors du serveur, dans un gestionnaire de mots de passe (avec l'Account ID, le nom du bucket et la clé R2). Sans lui, les sauvegardes sont illisibles : si le serveur est perdu, elles le sont aussi.**
+
+### 3. Alerte (healthchecks.io)
+
+1. Créer un compte sur [healthchecks.io](https://healthchecks.io) (offre gratuite), avec l'adresse du porteur du projet, et un projet « Hiver Solidaire ».
+2. *Add Check* : nom « Sauvegarde », *Schedule* **Cron** `15 5 * * *`, fuseau `Europe/Paris`, *Grace time* **1 heure**. Copier son adresse de ping.
+3. Dans `.env` : `BACKUP_PING_URL=https://hc-ping.com/<uuid>`. Cette adresse ne doit pas être publiée (n'importe qui pourrait signaler un faux succès).
+4. *Integrations* : l'e-mail est actif par défaut ; ajouter si possible une notification sur téléphone (application mobile ou autre intégration gratuite).
+
+Le script n'envoie que `start`, puis son code de sortie (0 : succès) : aucun log, aucune donnée.
+
+### 4. Initialisation et première sauvegarde
+
+```bash
+cd /opt/hiver-solidaire
+chmod 700 backup.sh restore.sh
+./backup.sh --init        # crée le dépôt chiffré dans le bucket (une seule fois)
+./backup.sh               # première sauvegarde ; healthchecks.io passe au vert
+./restore.sh              # test de restauration (ci-dessous)
+```
+
+### 5. Cron
+
+```bash
+mkdir -p /var/log/hiver-solidaire
+crontab -e     # crontab de root (les scripts utilisent Docker)
+# 15 5 * * * /opt/hiver-solidaire/backup.sh >> /var/log/hiver-solidaire/backup.log 2>&1
+```
+
+5 h 15, heure du serveur (supposé à l'heure de Paris : `timedatectl`), après la purge de 4 h 30 : les sauvegardes ne contiennent déjà plus les données purgées. Rotation du log : `logrotate` (« Mise à jour automatique »).
+
+### 6. Restaurer
+
+```bash
+./restore.sh                     # contrôle : dernière sauvegarde dans une base jetable, vérifiée puis effacée
+./restore.sh <identifiant>       # une sauvegarde précise
+docker compose -f compose.prod.yaml --profile backup run --rm --no-deps restic snapshots --host hiver-solidaire   # liste
+./restore.sh --production <identifiant>   # remplace la base de production (runbook, « Restaurer la base »)
+```
+
+Le contrôle affiche, pour la sauvegarde et la production, la dernière migration Flyway, les migrations en échec, et les nombres de saisons, soirées, bénévoles, inscriptions, lignes du journal d'audit et envois d'e-mails. Il échoue si l'historique Flyway manque, si une migration est en échec, s'il n'y a aucune soirée, ou si la dernière sauvegarde a plus de 26 h. Les écarts avec la production correspondent à l'activité depuis la nuit.
+
+**Avant la bêta du 30 novembre**, faire un vrai test de restauration sur le serveur, puis noter sa date dans le [runbook](../docs/exploitation/runbook.md) (« Tests de restauration »).
+
 ## Contrôles utiles
 
 ```bash
@@ -170,4 +304,32 @@ docker compose -f compose.prod.yaml logs --tail=100 app
 docker inspect --format '{{.State.Health.Status}}' hiver-solidaire-app-1
 ```
 
-La sonde externe interroge `https://hiver-solidaire.marcantoine-meunier.com/`. Le healthcheck Docker utilise le port de management 8081, interne au conteneur.
+Le healthcheck Docker utilise le port de management 8081, interne au conteneur. La sonde externe interroge `/sante` (ci-dessous).
+
+## Sonde externe (depuis S6)
+
+La page publique `https://hiver-solidaire.marcantoine-meunier.com/sante` répond **200** si l'appli et la base répondent, **503** sinon, sans aucun détail (corps vide, ni version ni erreur). Le résultat est gardé 10 secondes. Le port de management (8081) n'est jamais routé.
+
+### Règle Cloudflare Access « Bypass » sur `/sante`
+
+Tant que le site entier est derrière Access (owner-only, jusqu'à l'ouverture), une sonde sur `/` recevrait la page de connexion d'Access, avec un code 200 ou 302, et croirait le site en ligne. Seul `/sante` y échappe :
+
+1. Zero Trust → Access → Applications → *Add an application* → *Self-hosted*. Nom : « Hiver Solidaire — santé ».
+2. Domaine : `hiver-solidaire.marcantoine-meunier.com`, chemin **`sante`** (exactement, sans joker). L'application la plus précise l'emporte sur celle du site entier.
+3. Politique : action **Bypass**, *Include* → *Everyone*. Aucune autre application ne doit avoir de règle Bypass, et surtout pas celle de `/admin`.
+4. Vérifier dans une fenêtre privée : `/sante` répond sans page d'Access, `/` et `/admin` affichent toujours la page d'Access.
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' https://hiver-solidaire.marcantoine-meunier.com/sante   # 200
+curl -s -o /dev/null -w '%{http_code}\n' https://hiver-solidaire.marcantoine-meunier.com/        # 302 vers Access avant l'ouverture
+```
+
+Après l'ouverture (runbook, « Ouvrir le site le jour J »), la règle peut rester : la page ne révèle rien.
+
+### Moniteur UptimeRobot
+
+1. Créer un compte UptimeRobot (offre gratuite) avec une adresse du porteur du projet.
+2. *Add New Monitor* : type **HTTP(s)**, nom « Hiver Solidaire », URL `https://hiver-solidaire.marcantoine-meunier.com/sante`, intervalle **5 minutes**. Une réponse autre que 2xx (503, 502 de Cloudflare quand le tunnel est coupé, délai dépassé) est une panne.
+3. Contacts d'alerte : l'e-mail du porteur du projet ; installer l'application mobile UptimeRobot et activer ses notifications (vérifier à la création que l'offre gratuite les inclut ; sinon, garder l'e-mail et une notification de la messagerie du téléphone sur l'expéditeur d'UptimeRobot).
+4. Ne pas créer de page de statut publique.
+5. Tester : `docker compose -f compose.prod.yaml stop app`, attendre l'alerte (5 à 10 minutes), puis `docker compose -f compose.prod.yaml start app` et attendre l'alerte de retour.
