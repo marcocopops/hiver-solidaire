@@ -57,5 +57,6 @@
     </form>
     <p th:if="${date != null}"><a th:href="@{/admin/journee(jour=${date})}" th:text="#{admin.back.day}">Retour</a></p>
 </main>
+<footer th:replace="~{fragments :: pied}"></footer>
 </body>
 </html>

@@ -9,6 +9,10 @@
         <th:block th:text="#{admin.dashboard.contactMissing}">Le contact des coordinateurs n’est pas renseigné.</th:block>
         <a th:href="@{/admin/saison}" th:text="#{admin.dashboard.contactMissing.link}">Renseigner le contact</a>
     </p>
+    <p class="alerte" role="alert" th:if="${organizerMissing}">
+        <th:block th:text="#{admin.dashboard.organizerMissing}">L’organisateur n’est pas renseigné.</th:block>
+        <a th:href="@{/admin/saison}" th:text="#{admin.dashboard.organizerMissing.link}">Renseigner l’organisateur</a>
+    </p>
 
     <section aria-labelledby="incomplete-title">
         <h2 id="incomplete-title" th:text="#{admin.dashboard.incomplete(${daysAhead})}">Journées à compléter</h2>
@@ -72,5 +76,6 @@
         </ul>
     </section>
 </main>
+<footer th:replace="~{fragments :: pied}"></footer>
 </body>
 </html>

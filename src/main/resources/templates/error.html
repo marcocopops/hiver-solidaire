@@ -11,5 +11,6 @@
     <p class="lead" th:text="#{${key + '.text'}}">Cette page n’existe pas.</p>
     <p><a class="bouton" th:href="@{/planning}" th:text="#{common.back.planning}">Retour au planning</a></p>
 </main>
+<footer th:replace="~{fragments :: pied}"></footer>
 </body>
 </html>

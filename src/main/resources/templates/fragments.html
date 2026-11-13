@@ -71,6 +71,11 @@
     </div>
 </header>
 
+<!-- Pied de page de toutes les pages (sauf la page imprimable et les e-mails) : lien vers la notice d'information. -->
+<footer class="pied" th:fragment="pied">
+    <a th:href="@{/donnees-personnelles}" th:text="#{footer.privacy}">Vos données personnelles</a>
+</footer>
+
 <!-- R6 : après la limite, le contact des coordinateurs saisi dans les réglages de la saison, en lien tel: ou mailto: ;
      sans contact, « Contactez un coordinateur. » sans lien. « cancelling » : la phrase commence par « Pour vous
      désinscrire ». -->

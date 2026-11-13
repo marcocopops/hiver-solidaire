@@ -43,7 +43,7 @@ class FormAccessibilityTest {
         var browser = new Browser(mockMvc);
         var email = Browser.uniqueEmail();
         browser.get("/connexion");
-        browser.post("/connexion", "email", email);
+        browser.requestLink(email);
         var token = sender.lastSentTo(email).orElseThrow().token();
         browser.get("/login/ott?token=" + token);
         browser.post("/login/ott", "token", token);
@@ -121,7 +121,7 @@ class FormAccessibilityTest {
         var browser = new Browser(mockMvc);
         assertAccessibleForm(browser.get("/connexion").getContentAsString(), 0);
 
-        var html = browser.post("/connexion", "email", "pas-une-adresse").getContentAsString();
+        var html = browser.requestLink("pas-une-adresse").getContentAsString();
 
         assertAccessibleForm(html, 1);
         assertCommonHeader(html);
@@ -170,7 +170,7 @@ class FormAccessibilityTest {
         var browser = new Browser(mockMvc);
         var email = Browser.uniqueEmail();
         browser.get("/connexion");
-        var sent = browser.post("/connexion", "email", email);
+        var sent = browser.requestLink(email);
         var token = sender.lastSentTo(email).orElseThrow().token();
 
         for (var html : new String[] {

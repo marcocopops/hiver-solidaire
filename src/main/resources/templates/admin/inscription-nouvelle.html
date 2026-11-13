@@ -19,5 +19,6 @@
     <p><a th:href="@{/admin/benevoles/nouveau(jour=${date})}" th:text="#{admin.day.newVolunteer}">Nouveau bénévole</a></p>
     <p><a th:href="@{/admin/journee(jour=${date})}" th:text="#{admin.back.day}">Retour à la journée</a></p>
 </main>
+<footer th:replace="~{fragments :: pied}"></footer>
 </body>
 </html>

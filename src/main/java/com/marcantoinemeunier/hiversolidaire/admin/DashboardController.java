@@ -81,6 +81,9 @@ class DashboardController {
         model.addAttribute("daysAhead", DAYS_AHEAD);
         model.addAttribute("contactMissing", seasons.current().map(SeasonSettings::coordinatorsContact)
                 .flatMap(CoordinatorsContact::readable).isEmpty());
+        // La notice d'information nomme l'organisateur de la saison comme responsable du traitement (§7).
+        model.addAttribute("organizerMissing", seasons.current().map(SeasonSettings::organizer)
+                .filter(organizer -> !organizer.isBlank()).isEmpty());
         return "admin/tableau-de-bord";
     }
 

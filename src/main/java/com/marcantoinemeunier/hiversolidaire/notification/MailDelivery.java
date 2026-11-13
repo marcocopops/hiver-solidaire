@@ -37,7 +37,9 @@ record MailDelivery(UUID id, Kind kind, UUID volunteerId, UUID alertId, LocalDat
         /** Trop tard : le créneau ou la soirée est passé. */
         EXPIRED,
         /** Trop d'échecs d'envoi. */
-        FAILED
+        FAILED,
+        /** Tous les destinataires sont dans un domaine réservé aux tests ({@link RecipientGuard}). */
+        RESERVED_DOMAIN
     }
 
     /** Valeurs de la contrainte {@code mail_delivery_change_kind}. */

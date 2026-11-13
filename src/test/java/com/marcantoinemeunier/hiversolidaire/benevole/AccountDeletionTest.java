@@ -81,7 +81,7 @@ class AccountDeletionTest {
     private Browser login(String email) throws Exception {
         var browser = new Browser(mockMvc);
         browser.get("/connexion");
-        browser.post("/connexion", "email", email);
+        browser.requestLink(email);
         var token = sender.lastSentTo(email).orElseThrow().token();
         browser.get("/login/ott?token=" + token);
         browser.post("/login/ott", "token", token);

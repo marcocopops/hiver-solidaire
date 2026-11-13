@@ -19,5 +19,6 @@
     </th:block>
     <p><a th:href="@{/admin/benevoles/{id}(id=${volunteer.id})}" th:text="#{admin.volunteer.back}">Retour à la fiche</a></p>
 </main>
+<footer th:replace="~{fragments :: pied}"></footer>
 </body>
 </html>

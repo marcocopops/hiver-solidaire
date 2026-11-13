@@ -86,7 +86,7 @@ class CancellationJourneyTest {
         var email = Browser.uniqueEmail();
         var pseudo = Browser.uniquePseudo();
         browser.get("/connexion");
-        browser.post("/connexion", "email", email);
+        browser.requestLink(email);
         var token = sender.lastSentTo(email).orElseThrow().token();
         browser.get("/login/ott?token=" + token);
         browser.post("/login/ott", "token", token);

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head(#{notice.title})}"></head>
+<body>
+<header th:replace="~{fragments :: entete(#{notice.title}, true)}"></header>
+<!-- Notice d'information (cahier des charges §7). Aucune donnée réelle : l'organisateur et le contact viennent des
+     réglages de la saison ; les durées, de la purge (RetentionPolicy). -->
+<main class="page notice">
+    <p th:text="#{notice.intro}">Cette page explique quelles données le site enregistre.</p>
+
+    <h2 th:text="#{notice.controller.title}">Qui est responsable de vos données ?</h2>
+    <p>
+        <th:block th:if="${organizer != null}" th:text="#{notice.controller.text(${organizer})}">
+            Le responsable du traitement est l’organisateur.</th:block>
+        <th:block th:if="${organizer == null}" th:text="#{notice.controller.text(#{notice.controller.unknown})}">
+            Le responsable du traitement est l’organisateur de l’accueil.</th:block>
+    </p>
+    <p th:text="#{notice.controller.contact}">Pour toute question sur vos données :</p>
+    <p th:replace="~{fragments :: coordinators(false)}"></p>
+
+    <h2 th:text="#{notice.purposes.title}">À quoi servent vos données ?</h2>
+    <p th:text="#{notice.purposes.text}">À organiser l’accueil.</p>
+
+    <h2 th:text="#{notice.data.title}">Quelles données ?</h2>
+    <p th:text="#{notice.data.text}">E-mail, nom, prénom, pseudo, téléphone, inscriptions.</p>
+
+    <h2 th:text="#{notice.pseudo.title}">Votre pseudo est public</h2>
+    <p>
+        <th:block th:text="#{notice.pseudo.text}">Votre pseudo est affiché sur le planning, visible par tous.</th:block>
+        <a th:href="@{/mon-compte}" th:text="#{common.myAccount}">Mon compte</a><th:block
+            th:text="#{coordinators.end}">.</th:block>
+    </p>
+
+    <h2 th:text="#{notice.legal.title}">Sur quelle base ?</h2>
+    <p th:text="#{notice.legal.text}">Intérêt légitime ; consentement pour la conservation entre saisons.</p>
+
+    <h2 th:text="#{notice.recipients.title}">Qui y a accès ?</h2>
+    <p th:text="#{notice.recipients.text}">Les coordinateurs.</p>
+    <p th:text="#{notice.recipients.phone}">Inscription par téléphone.</p>
+
+    <h2 th:text="#{notice.processors.title}">Prestataires et hébergement</h2>
+    <ul>
+        <li th:text="#{notice.processors.cloudflare}">Cloudflare.</li>
+        <li th:text="#{notice.processors.brevo}">Brevo.</li>
+    </ul>
+    <p th:text="#{notice.processors.hosting}">Hébergement en France.</p>
+
+    <h2 th:text="#{notice.retention.title}">Combien de temps ?</h2>
+    <ul>
+        <li th:text="#{notice.retention.withoutConsent(${monthsAfterSeason})}">Sans accord : un mois.</li>
+        <li th:text="#{notice.retention.withConsent(${yearsWithoutParticipation})}">Avec accord : 3 ans.</li>
+        <li th:text="#{notice.retention.incomplete(${incompleteAccountDays})}">Compte sans profil : 7 jours.</li>
+        <li th:text="#{notice.retention.technical(${technicalMonths})}">Traces techniques : 6 mois.</li>
+    </ul>
+    <p th:text="#{notice.retention.erasure}">Effacées veut dire anonymisées.</p>
+    <p th:text="#{notice.retention.backups(${backupDays})}">Sauvegardes : 30 jours.</p>
+
+    <h2 th:text="#{notice.cookies.title}">Cookies</h2>
+    <p th:text="#{notice.cookies.text}">Un seul cookie, pour la connexion.</p>
+
+    <h2 th:text="#{notice.rights.title}">Vos droits</h2>
+    <ul>
+        <li th:text="#{notice.rights.access}">Consulter et corriger.</li>
+        <li th:text="#{notice.rights.erase}">Supprimer votre compte.</li>
+        <li th:text="#{notice.rights.consent}">Retirer votre accord.</li>
+        <li th:text="#{notice.rights.other}">Autres demandes : les coordinateurs.</li>
+    </ul>
+    <p>
+        <th:block th:text="#{notice.rights.cnil}">Réclamation auprès de la CNIL :</th:block>
+        <a href="https://www.cnil.fr/fr/plaintes" th:text="#{notice.rights.cnil.link}">cnil.fr/fr/plaintes</a><th:block
+            th:text="#{coordinators.end}">.</th:block>
+    </p>
+</main>
+<footer th:replace="~{fragments :: pied}"></footer>
+</body>
+</html>

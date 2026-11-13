@@ -79,11 +79,6 @@ class ProfileController {
         return "redirect:" + next(choice);
     }
 
-    @GetMapping("/notice")
-    String notice() {
-        return "notice";
-    }
-
     /** Suite du parcours : confirmation du choix fait sur le planning, sinon « Mes inscriptions ». */
     private static String next(RegistrationChoice choice) {
         return choice == null ? "/mes-inscriptions" : choice.appendTo("/inscription/confirmer");

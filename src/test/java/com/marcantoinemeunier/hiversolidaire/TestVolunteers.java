@@ -46,7 +46,7 @@ public final class TestVolunteers {
     public SignedIn signIn(String email, boolean completeProfile) throws Exception {
         var browser = new Browser(mockMvc);
         browser.get("/connexion");
-        browser.post("/connexion", "email", email);
+        browser.requestLink(email);
         var token = sender.lastSentTo(email).orElseThrow().token();
         browser.get("/login/ott?token=" + token);
         var login = browser.post("/login/ott", "token", token);

@@ -45,7 +45,7 @@ class PageLayoutTest {
         var browser = new Browser(mockMvc);
         var email = Browser.uniqueEmail();
         browser.get("/connexion");
-        browser.post("/connexion", "email", email);
+        browser.requestLink(email);
         var token = sender.lastSentTo(email).orElseThrow().token();
         browser.get("/login/ott?token=" + token);
         browser.post("/login/ott", "token", token);
@@ -73,7 +73,7 @@ class PageLayoutTest {
     void the_public_pages_have_the_header() throws Exception {
         var browser = new Browser(mockMvc);
 
-        assertCommonHeader(browser.get("/notice").getContentAsString(), "Notice d’information");
+        assertCommonHeader(browser.get("/donnees-personnelles").getContentAsString(), "Vos données personnelles");
         assertCommonHeader(browser.get("/compte-supprime").getContentAsString(), "Compte supprimé");
     }
 

@@ -18,9 +18,11 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.DelegatingAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.header.writers.DelegatingRequestMatcherHeaderWriter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
 import org.springframework.security.web.header.writers.StaticHeadersWriter;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
@@ -29,6 +31,16 @@ public class SecurityConfig {
 
     private static final String CONTENT_SECURITY_POLICY = "default-src 'self'; frame-ancestors 'none'; "
             + "form-action 'self'; base-uri 'self'; object-src 'none'";
+
+    /**
+     * Page de demande de lien seulement : exception à la règle « pas de CDN » pour Cloudflare Turnstile (ADR-0013),
+     * limitée à son script et à son cadre. Aucune autre directive ne s'ouvre, et aucune autre page.
+     */
+    private static final String LOGIN_CONTENT_SECURITY_POLICY = "default-src 'self'; "
+            + "script-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; "
+            + "frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none'";
+
+    private static final RequestMatcher LOGIN_FORM = PathPatternRequestMatcher.withDefaults().matcher("/connexion");
 
     private static final String PERMISSIONS_POLICY = "camera=(), microphone=(), geolocation=(), payment=(), "
             + "usb=(), accelerometer=(), gyroscope=(), magnetometer=(), interest-cohort=()";
@@ -62,8 +74,8 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(HttpSecurity http, MagicLinkLogin magicLinkLogin) throws Exception {
         http.authorizeHttpRequests(requests -> requests
                 .requestMatchers("/", "/error").permitAll()
-                // Planning public et choix d'une soirée : lecture seule, sans donnée personnelle.
-                .requestMatchers(HttpMethod.GET, "/planning", "/inscription", "/notice").permitAll()
+                // Planning public, choix d'une soirée et notice d'information : lecture seule, sans donnée personnelle.
+                .requestMatchers(HttpMethod.GET, "/planning", "/inscription", "/donnees-personnelles").permitAll()
                 // Fin de la suppression du compte : la session vient d'être invalidée.
                 .requestMatchers(HttpMethod.GET, "/compte-supprime").permitAll()
                 // Demande du lien, page « Me connecter » et consommation du jeton (POST protégé par CSRF).
@@ -101,7 +113,10 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .headers(headers -> headers
-                        .contentSecurityPolicy(csp -> csp.policyDirectives(CONTENT_SECURITY_POLICY))
+                        .addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(LOGIN_FORM,
+                                new StaticHeadersWriter("Content-Security-Policy", LOGIN_CONTENT_SECURITY_POLICY)))
+                        .addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(new NegatedRequestMatcher(LOGIN_FORM),
+                                new StaticHeadersWriter("Content-Security-Policy", CONTENT_SECURITY_POLICY)))
                         .contentTypeOptions(Customizer.withDefaults())
                         .referrerPolicy(referrer -> referrer.policy(ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
                         .permissionsPolicyHeader(permissions -> permissions.policy(PERMISSIONS_POLICY))

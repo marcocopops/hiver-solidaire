@@ -45,7 +45,7 @@ class MagicLinkLoginTest {
     /** Demande un lien depuis un navigateur et renvoie le jeton reçu. */
     private String requestLink(Browser browser, String email) throws Exception {
         browser.get("/connexion");
-        var response = browser.post("/connexion", "email", email);
+        var response = browser.requestLink(email);
         assertThat(response.getRedirectedUrl()).isEqualTo("/connexion/envoye");
         return sender.lastSentTo(email).orElseThrow().token();
     }
@@ -203,7 +203,7 @@ class MagicLinkLoginTest {
     private MockHttpServletResponse demand(String email) throws Exception {
         var browser = new Browser(mockMvc);
         browser.get("/connexion");
-        return browser.post("/connexion", "email", email);
+        return browser.requestLink(email);
     }
 
     @Test
@@ -211,7 +211,7 @@ class MagicLinkLoginTest {
         var browser = new Browser(mockMvc);
         browser.get("/connexion");
 
-        var response = browser.post("/connexion", "email", "pas-une-adresse");
+        var response = browser.requestLink("pas-une-adresse");
 
         assertThat(response.getStatus()).isEqualTo(200);
         assertThat(response.getContentAsString()).contains("Saisissez une adresse e-mail valide");
@@ -237,12 +237,12 @@ class MagicLinkLoginTest {
         var browser = new Browser(mockMvc);
         browser.get("/connexion");
         for (int i = 0; i < 10; i++) {
-            assertThat(browser.post("/connexion", "email", Browser.uniqueEmail()).getRedirectedUrl())
+            assertThat(browser.requestLink(Browser.uniqueEmail()).getRedirectedUrl())
                     .isEqualTo("/connexion/envoye");
         }
 
         var refused = Browser.uniqueEmail();
-        var response = browser.post("/connexion", "email", refused);
+        var response = browser.requestLink(refused);
 
         assertThat(response.getStatus()).isEqualTo(429);
         assertThat(response.getContentAsString()).contains("Trop de demandes");
@@ -260,7 +260,7 @@ class MagicLinkLoginTest {
                 .doesNotContain("name=\"email\"");
 
         var email = Browser.uniqueEmail();
-        var response = browser.post("/connexion", "email", email);
+        var response = browser.requestLink(email);
 
         assertThat(response.getStatus()).isEqualTo(503);
         assertThat(response.getContentAsString()).contains("La connexion est momentanément indisponible");

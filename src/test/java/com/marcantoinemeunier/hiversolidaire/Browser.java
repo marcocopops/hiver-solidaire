@@ -17,6 +17,12 @@ public final class Browser {
 
     public static final String SESSION_COOKIE = "__Host-SESSION";
 
+    /** Champ que le widget Turnstile ajoute au formulaire de demande de lien. */
+    public static final String TURNSTILE_FIELD = "cf-turnstile-response";
+
+    /** Jeton Turnstile factice, accepté par {@link StubTurnstile} tant qu'un test ne dit pas le contraire. */
+    public static final String TURNSTILE_TOKEN = "XXXX.DUMMY.TOKEN.XXXX";
+
     private static final Pattern CSRF_FIELD = Pattern.compile("name=\"_csrf\"[^>]*value=\"([^\"]+)\"");
 
     private final MockMvc mockMvc;
@@ -54,6 +60,20 @@ public final class Browser {
             request.param(params[i], params[i + 1]);
         }
         return perform(request);
+    }
+
+    /**
+     * Demande de lien de connexion, comme le formulaire après le widget Turnstile : adresse, jeton factice, et les
+     * paramètres du choix éventuel ({@code jour}, {@code choix}).
+     */
+    public MockHttpServletResponse requestLink(String email, String... params) throws Exception {
+        var all = new String[params.length + 4];
+        all[0] = "email";
+        all[1] = email;
+        all[2] = TURNSTILE_FIELD;
+        all[3] = TURNSTILE_TOKEN;
+        System.arraycopy(params, 0, all, 4, params.length);
+        return post("/connexion", all);
     }
 
     /** POST sans jeton CSRF. */

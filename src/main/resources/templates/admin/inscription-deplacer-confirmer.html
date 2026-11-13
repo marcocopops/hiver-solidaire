@@ -17,5 +17,6 @@
         Choisir une autre journée</a></p>
     <p><a th:href="@{/admin/journee(jour=${day})}" th:text="#{admin.back.day}">Retour à la journée</a></p>
 </main>
+<footer th:replace="~{fragments :: pied}"></footer>
 </body>
 </html>
