@@ -27,7 +27,7 @@ record PublicPlanning(boolean sample, String opensOn, PlanningFilter filter, boo
      * @param date date du jour (ISO), seule clé publique d'une journée : aucun identifiant technique
      * @param statusKey suffixe des clés de message et des classes CSS : complete ou incomplete
      * @param open carte dépliée : la journée est à compléter
-     * @param registrable « Je participe » : au moins une inscription encore possible sur l'une des deux soirées
+     * @param registrable « Je m’inscris » : au moins une inscription encore possible sur l'une des deux soirées
      * @param posts postes de la journée dans l'ordre d'affichage (petit-déjeuner, plat, accompagnements, dîner, nuit)
      * @param mine inscriptions actives du bénévole connecté sur cette journée (ses propres données seulement)
      */

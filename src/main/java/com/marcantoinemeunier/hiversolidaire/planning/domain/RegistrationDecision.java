@@ -26,7 +26,7 @@ public enum RegistrationDecision {
 
     /**
      * Le motif vaut pour toute la soirée (R7), quel que soit le choix ; les autres ne concernent qu'un choix, et
-     * « Je participe » propose simplement les autres.
+     * « Je m’inscris » propose simplement les autres.
      */
     public boolean blocksTheEvening() {
         return this == NOT_OPEN_YET || this == OUT_OF_SEASON || this == PAST;

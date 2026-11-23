@@ -54,10 +54,10 @@ class HomePageTest {
         assertThat(html).contains("lang=\"fr\"")
                 .contains("Le petit-déjeuner").contains("Le dîner").contains("La nuit")
                 .contains("repas pour 8 personnes")
-                .contains("<a class=\"bouton\" href=\"/planning\">Voir le planning</a>")
+                .contains("<a class=\"bouton\" href=\"/planning\">Inscription</a>")
                 .doesNotContain("Inscriptions à partir du");
         // Le bouton vers le planning, avant la présentation et à la fin : pas besoin de faire défiler.
-        var button = "<a class=\"bouton\" href=\"/planning\">Voir le planning</a>";
+        var button = "<a class=\"bouton\" href=\"/planning\">Inscription</a>";
         assertThat(html.split(button, -1)).as("deux boutons vers le planning").hasSize(3);
         assertThat(html.indexOf(button)).isLessThan(html.indexOf("Trois façons de participer"));
         assertThat(html).doesNotContain("<script").doesNotContain("<style").doesNotContain("style=");

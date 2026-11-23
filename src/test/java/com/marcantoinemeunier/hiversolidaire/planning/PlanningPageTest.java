@@ -123,7 +123,7 @@ class PlanningPageTest {
 
         assertThat(count(body, "journee__carte journee--incomplete")).isEqualTo(77);
         assertThat(count(body, "open=\"open\"")).isEqualTo(77);
-        assertThat(count(body, "À compléter</span>")).isEqualTo(77);
+        assertThat(count(body, "Besoins</span>")).isEqualTo(77);
     }
 
     @Test
@@ -150,7 +150,7 @@ class PlanningPageTest {
         var body = page();
 
         assertThat(text(dayBlock(body, "Mar. 5 janv."))).startsWith("Mar. 5 janv. Complète");
-        assertThat(text(dayBlock(body, "Mer. 6 janv."))).startsWith("Mer. 6 janv. À compléter");
+        assertThat(text(dayBlock(body, "Mer. 6 janv."))).startsWith("Mer. 6 janv. Besoins");
     }
 
     @Test
@@ -254,13 +254,13 @@ class PlanningPageTest {
 
     @Test
     void a_visitor_can_join_a_day_once_registrations_are_open() throws Exception {
-        assertThat(page()).doesNotContain("Je participe");
+        assertThat(page()).doesNotContain("Je m’inscris");
 
         now(LocalDateTime.of(2027, 1, 4, 10, 0));
         var body = page();
 
         assertThat(dayBlock(body, "Mar. 5 janv.")).contains("href=\"/inscription?jour=2027-01-05\"")
-                .contains("Je participe");
+                .contains("Je m’inscris");
         assertThat(body).doesNotContain("Me désinscrire").doesNotContain(">Vous<");
     }
 
@@ -269,7 +269,7 @@ class PlanningPageTest {
         var body = page();
 
         assertThat(body).contains("<a href=\"/planning\" aria-current=\"page\">Toutes</a>")
-                .contains("<a href=\"/planning?filtre=a-completer\">À compléter</a>")
+                .contains("<a href=\"/planning?filtre=a-completer\">Besoins</a>")
                 .doesNotContain("filtre=miennes").doesNotContain("Les miennes");
     }
 
@@ -281,7 +281,7 @@ class PlanningPageTest {
 
         assertThat(count(body, DAY_CARD)).isEqualTo(76);
         assertThat(body).doesNotContain(">Lun. 4 janv.<")
-                .contains("<a href=\"/planning?filtre=a-completer\" aria-current=\"page\">À compléter</a>");
+                .contains("<a href=\"/planning?filtre=a-completer\" aria-current=\"page\">Besoins</a>");
     }
 
     @Test
