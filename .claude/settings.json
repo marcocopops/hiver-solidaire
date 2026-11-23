@@ -8,6 +8,7 @@
       "Read(.env)",
       "Read(.env.*)",
       "Read(!.env.example)",
+      "Read(**/backup.env)",
       "Read(secrets/**)",
       "Read(*.pem)",
       "Read(*.key)",

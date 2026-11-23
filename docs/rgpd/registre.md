@@ -57,6 +57,7 @@ Aucun champ libre, aucune donnée sensible (article 9). L'adresse IP est vue par
 |---|---|---|---|
 | Cloudflare | Réseau, tunnel, protection du site, Access (back-office), Turnstile (page de connexion) | Adresse IP, pages consultées, en-têtes | [à compléter : contrat (DPA) de Cloudflare, transferts hors UE et garanties] |
 | Brevo | Envoi des e-mails | Adresses e-mail, contenu des e-mails (dont le récap des coordinateurs : nom, pseudo, téléphone des inscrits) | [à compléter : contrat (DPA) de Brevo, hébergement] |
+| Cloudflare (R2) | Stockage des sauvegardes de la base, chiffrées par restic avant l'envoi (Cloudflare n'a pas la clé) | Toutes les données de la base, illisibles sans le mot de passe restic | Bucket en juridiction Union européenne ; [à compléter : DPA de Cloudflare, déjà cité ci-dessus] |
 
 Hébergement : serveur personnel situé en France, [nom de la personne qui l'administre et cadre de la mise à disposition, à préciser par l'association].
 
@@ -76,7 +77,7 @@ Appliquées chaque jour par une purge automatique (ADR-0014) :
 | Envois d'e-mails, alertes, journal d'audit | 6 mois au plus |
 | Liens de connexion | 15 minutes (purgés toutes les heures) |
 | Sessions | 30 jours au plus (8 heures pour un coordinateur), purgées après expiration |
-| Sauvegardes chiffrées | [durée à reprendre de S6 ; la notice annonce « au plus 30 jours »] |
+| Sauvegardes chiffrées | 30 jours au plus : 7 sauvegardes quotidiennes et 4 hebdomadaires, les plus anciennes effacées à chaque sauvegarde ([ADR-0016](../adr/0016-sauvegardes-restic-vers-r2-dans-un-conteneur.md)). Une donnée effacée ou anonymisée dans le site disparaît des sauvegardes au plus 30 jours après |
 | Exports CSV et pages imprimées des coordinateurs | Le temps de l'usage, puis destruction (consigne aux coordinateurs, [à rédiger]) |
 
 « Anonymisé » : la ligne du bénévole perd e-mail, nom, prénom, pseudo et téléphone ; ses inscriptions passées restent comptées sans être rattachables à une personne.
@@ -89,7 +90,7 @@ Appliquées chaque jour par une purge automatique (ADR-0014) :
 - CSP stricte, protection CSRF, aucune donnée personnelle dans les journaux techniques.
 - Aucun port entrant (tunnel sortant), base de données non exposée, conteneurs sans privilèges.
 - Aucun e-mail vers les domaines réservés aux tests.
-- Sauvegardes chiffrées hors site, restauration testée ([à compléter en S6]).
+- Sauvegardes quotidiennes chiffrées (restic) hors site (Cloudflare R2, UE), dump en clair jamais écrit sur le disque, alerte en cas d'échec (healthchecks.io, qui ne reçoit que des horaires) ; restauration éprouvée par un test automatique et par un test réel noté dans le [runbook](../exploitation/runbook.md) (S6).
 
 Détail : [modèle de menaces](../securite/modele-de-menaces.md).
 

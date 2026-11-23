@@ -5,7 +5,17 @@
 .claude
 target
 docs
-deploy
+# Fichiers de déploiement copiés dans l'image (/app/deploy), pour qu'update.sh signale ceux du serveur qui divergent
+# (ADR-0015). Liste blanche : aucun autre fichier de deploy/, et surtout aucun secret, n'entre dans l'image.
+deploy/*
+!deploy/compose.prod.yaml
+!deploy/lib.sh
+!deploy/update.sh
+!deploy/backup.sh
+!deploy/restore.sh
+!deploy/restore-check.sql
+!deploy/backup.env.example
+!deploy/logrotate.conf
 .env
 .env.*
 !.env.example

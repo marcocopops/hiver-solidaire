@@ -18,3 +18,5 @@ Chaque décision structurante est consignée ici, au format du [modèle](templat
 | [0012](0012-table-d-envois-plutot-qu-envoi-dans-la-requete.md) | Table d'envois et tâche planifiée plutôt qu'envoi dans la requête | Proposé |
 | [0013](0013-turnstile-exception-a-la-regle-sans-cdn.md) | Cloudflare Turnstile sur la demande de lien, exception à la règle « pas de CDN » | Proposé |
 | [0014](0014-purge-par-anonymisation-et-journal-d-audit-borne.md) | Purge quotidienne par anonymisation, journal d'audit borné à six mois | Proposé |
+| [0015](0015-signaler-la-divergence-des-fichiers-de-deploiement.md) | Signaler la divergence des fichiers de déploiement plutôt que les remplacer | Proposé |
+| [0016](0016-sauvegardes-restic-vers-r2-dans-un-conteneur.md) | Sauvegardes restic vers R2, depuis un conteneur épinglé, surveillées par healthchecks.io | Proposé |
