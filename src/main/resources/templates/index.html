@@ -44,7 +44,7 @@
                     <svg class="icone" aria-hidden="true" focusable="false"><use th:href="@{/images/icones.svg#poste-NIGHT}"></use></svg>
                     <span th:text="#{home.night.title}">La nuit</span>
                 </h3>
-                <p th:text="#{home.night.text}">Un ou deux bénévoles.</p>
+                <p th:text="#{home.night.text}">Un bénévole passe la nuit.</p>
             </li>
         </ul>
     </section>
@@ -54,7 +54,6 @@
         <a th:href="${coordinatorsContact.uri}" th:text="${coordinatorsContact.display}">Contact des coordinateurs</a>
     </p>
 
-    <p th:text="#{home.signUp}">Pour vous inscrire, choisissez une journée sur le planning.</p>
     <p><a class="bouton" th:href="@{/planning}" th:text="#{home.planning}">Inscription</a></p>
 </main>
 <footer th:replace="~{fragments :: pied}"></footer>
