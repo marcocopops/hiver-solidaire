@@ -137,7 +137,7 @@ class PlanningPageTest {
         assertThat(count(body, "journee__carte journee--incomplete")).isEqualTo(76);
         assertThat(count(body, "open=\"open\"")).isEqualTo(76);
         assertThat(body).contains("<details class=\"journee__carte journee--complete\">");
-        assertThat(text(dayBlock(body, "Lun. 4 janv."))).startsWith("Lun. 4 janv. Complète");
+        assertThat(text(dayBlock(body, "Lun. 4 janv."))).startsWith("Lun. 4 janv. Complet");
     }
 
     @Test
@@ -149,7 +149,7 @@ class PlanningPageTest {
 
         var body = page();
 
-        assertThat(text(dayBlock(body, "Mar. 5 janv."))).startsWith("Mar. 5 janv. Complète");
+        assertThat(text(dayBlock(body, "Mar. 5 janv."))).startsWith("Mar. 5 janv. Complet");
         assertThat(text(dayBlock(body, "Mer. 6 janv."))).startsWith("Mer. 6 janv. Besoins");
     }
 

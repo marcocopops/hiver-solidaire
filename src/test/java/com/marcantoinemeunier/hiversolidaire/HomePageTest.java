@@ -53,7 +53,8 @@ class HomePageTest {
 
         assertThat(html).contains("lang=\"fr\"")
                 .contains("Le petit-déjeuner").contains("Le dîner").contains("La nuit")
-                .contains("repas pour 8 personnes")
+                .contains("Arrivée à 19 h. On prépare le repas pour 8 personnes : un bénévole fait le plat principal, "
+                        + "l’autre apporte soupe, pain et dessert.")
                 .contains("Un bénévole passe la nuit et partage le dîner et le petit-déjeuner.")
                 .doesNotContain("Un ou deux bénévoles")
                 .doesNotContain("choisissez une journée sur le planning")
