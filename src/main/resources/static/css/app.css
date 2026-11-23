@@ -428,7 +428,7 @@ a:hover {
 }
 
 .pseudo {
-    color: var(--ambre-clair-texte);
+    color: var(--texte);
 }
 
 /* Ambre des boutons : 5,0:1 sur blanc. */
