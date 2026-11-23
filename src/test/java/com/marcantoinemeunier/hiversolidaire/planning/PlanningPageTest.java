@@ -159,14 +159,14 @@ class PlanningPageTest {
 
         assertThat(text(dayBlock(body, "Lun. 4 janv."))).doesNotContain("Petit-déjeuner").contains("Nuit");
         assertThat(text(dayBlock(body, "Dim. 21 mars"))).contains("Petit-déjeuner")
-                .doesNotContain("Plat principal").doesNotContain("Dîner").doesNotContain("Nuit");
+                .doesNotContain("Plat principal").doesNotContain("Partager le dîner").doesNotContain("Nuit");
     }
 
     @Test
     void posts_are_listed_breakfast_main_dish_sides_dinner_then_night() throws Exception {
         var block = text(dayBlock(page(), "Mar. 5 janv."));
 
-        assertThat(block).containsSubsequence("Petit-déjeuner", "Plat principal", "Accompagnements", "Dîner",
+        assertThat(block).containsSubsequence("Petit-déjeuner", "Plat principal", "Accompagnements", "Partager le dîner",
                 "Nuit jusqu’au matin");
     }
 
@@ -217,7 +217,7 @@ class PlanningPageTest {
         assertThat(block).contains("Petit-déjeuner Léa")
                 .contains("Plat principal MarieD")
                 .contains("Accompagnements Paul_B")
-                .contains("Dîner MarieD À pourvoir")
+                .contains("Partager le dîner MarieD À pourvoir")
                 .contains("Nuit jusqu’au matin Alain Jean-L");
     }
 
@@ -225,7 +225,7 @@ class PlanningPageTest {
     void an_empty_post_shows_one_place_to_fill_per_missing_volunteer() throws Exception {
         var block = text(dayBlock(page(), "Mar. 5 janv."));
 
-        assertThat(block).contains("Dîner À pourvoir À pourvoir").contains("Nuit jusqu’au matin À pourvoir");
+        assertThat(block).contains("Partager le dîner À pourvoir À pourvoir").contains("Nuit jusqu’au matin À pourvoir");
         assertThat(count(block, "À pourvoir")).isEqualTo(6);
     }
 

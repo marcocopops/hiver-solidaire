@@ -156,7 +156,7 @@ class PlanningDayCardTest {
         assertThat(text(block))
                 .contains("Petit-déjeuner Vous")
                 .contains("Plat principal Vous")
-                .contains("Dîner Vous")
+                .contains("Partager le dîner Vous")
                 .doesNotContain("places")
                 .containsSubsequence(
                         "Vous fournissez le petit-déjeuner", "Me désinscrire du petit-déjeuner",
@@ -225,9 +225,9 @@ class PlanningDayCardTest {
         var theirs = text(dayBlock(bob.browser().get("/planning").getContentAsString(), DAY_LABEL));
         var visitor = text(dayBlock(new Browser(mockMvc).get("/planning").getContentAsString(), DAY_LABEL));
 
-        assertThat(mine).contains("Dîner Vous (2 places)").doesNotContain("Dîner Vous (2 places) À pourvoir");
-        assertThat(theirs).contains("Dîner " + alice.pseudo() + " (2 places)");
-        assertThat(visitor).contains("Dîner " + alice.pseudo() + " (2 places)")
+        assertThat(mine).contains("Partager le dîner Vous (2 places)").doesNotContain("Partager le dîner Vous (2 places) À pourvoir");
+        assertThat(theirs).contains("Partager le dîner " + alice.pseudo() + " (2 places)");
+        assertThat(visitor).contains("Partager le dîner " + alice.pseudo() + " (2 places)")
                 .doesNotContain(alice.pseudo() + " " + alice.pseudo());
     }
 
