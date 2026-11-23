@@ -130,8 +130,13 @@ class PublicPlanningService {
                 .map(same -> new Taken(same.getFirst().pseudo(), same.size()))
                 .sorted(Comparator.comparing(Taken::pseudo, String.CASE_INSENSITIVE_ORDER))
                 .toList();
-        return new PostLine(post.name(), "planning.post." + post.name(),
+        return new PostLine(post.name(), labelKey(post),
                 post == Post.NIGHT ? "planning.post.NIGHT.hint" : null, you, others, day.missing(post));
+    }
+
+    /** Libellé d'un poste sur le planning public : « Partager le dîner » pour les présences au dîner. */
+    private static String labelKey(Post post) {
+        return post == Post.DINNER_PRESENCE ? "planning.card.post.DINNER_PRESENCE" : "planning.post." + post.name();
     }
 
     /**

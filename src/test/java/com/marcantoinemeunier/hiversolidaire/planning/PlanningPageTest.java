@@ -123,7 +123,7 @@ class PlanningPageTest {
 
         assertThat(count(body, "journee__carte journee--incomplete")).isEqualTo(77);
         assertThat(count(body, "open=\"open\"")).isEqualTo(77);
-        assertThat(count(body, "À compléter</span>")).isEqualTo(77);
+        assertThat(count(body, "Besoins</span>")).isEqualTo(77);
     }
 
     @Test
@@ -137,7 +137,7 @@ class PlanningPageTest {
         assertThat(count(body, "journee__carte journee--incomplete")).isEqualTo(76);
         assertThat(count(body, "open=\"open\"")).isEqualTo(76);
         assertThat(body).contains("<details class=\"journee__carte journee--complete\">");
-        assertThat(text(dayBlock(body, "Lun. 4 janv."))).startsWith("Lun. 4 janv. Complète");
+        assertThat(text(dayBlock(body, "Lun. 4 janv."))).startsWith("Lun. 4 janv. Complet");
     }
 
     @Test
@@ -149,8 +149,8 @@ class PlanningPageTest {
 
         var body = page();
 
-        assertThat(text(dayBlock(body, "Mar. 5 janv."))).startsWith("Mar. 5 janv. Complète");
-        assertThat(text(dayBlock(body, "Mer. 6 janv."))).startsWith("Mer. 6 janv. À compléter");
+        assertThat(text(dayBlock(body, "Mar. 5 janv."))).startsWith("Mar. 5 janv. Complet");
+        assertThat(text(dayBlock(body, "Mer. 6 janv."))).startsWith("Mer. 6 janv. Besoins");
     }
 
     @Test
@@ -159,14 +159,14 @@ class PlanningPageTest {
 
         assertThat(text(dayBlock(body, "Lun. 4 janv."))).doesNotContain("Petit-déjeuner").contains("Nuit");
         assertThat(text(dayBlock(body, "Dim. 21 mars"))).contains("Petit-déjeuner")
-                .doesNotContain("Plat principal").doesNotContain("Dîner").doesNotContain("Nuit");
+                .doesNotContain("Plat principal").doesNotContain("Partager le dîner").doesNotContain("Nuit");
     }
 
     @Test
     void posts_are_listed_breakfast_main_dish_sides_dinner_then_night() throws Exception {
         var block = text(dayBlock(page(), "Mar. 5 janv."));
 
-        assertThat(block).containsSubsequence("Petit-déjeuner", "Plat principal", "Accompagnements", "Dîner",
+        assertThat(block).containsSubsequence("Petit-déjeuner", "Plat principal", "Accompagnements", "Partager le dîner",
                 "Nuit jusqu’au matin");
     }
 
@@ -217,7 +217,7 @@ class PlanningPageTest {
         assertThat(block).contains("Petit-déjeuner Léa")
                 .contains("Plat principal MarieD")
                 .contains("Accompagnements Paul_B")
-                .contains("Dîner MarieD À pourvoir")
+                .contains("Partager le dîner MarieD À pourvoir")
                 .contains("Nuit jusqu’au matin Alain Jean-L");
     }
 
@@ -225,7 +225,7 @@ class PlanningPageTest {
     void an_empty_post_shows_one_place_to_fill_per_missing_volunteer() throws Exception {
         var block = text(dayBlock(page(), "Mar. 5 janv."));
 
-        assertThat(block).contains("Dîner À pourvoir À pourvoir").contains("Nuit jusqu’au matin À pourvoir");
+        assertThat(block).contains("Partager le dîner À pourvoir À pourvoir").contains("Nuit jusqu’au matin À pourvoir");
         assertThat(count(block, "À pourvoir")).isEqualTo(6);
     }
 
@@ -254,13 +254,13 @@ class PlanningPageTest {
 
     @Test
     void a_visitor_can_join_a_day_once_registrations_are_open() throws Exception {
-        assertThat(page()).doesNotContain("Je participe");
+        assertThat(page()).doesNotContain("Je m’inscris");
 
         now(LocalDateTime.of(2027, 1, 4, 10, 0));
         var body = page();
 
         assertThat(dayBlock(body, "Mar. 5 janv.")).contains("href=\"/inscription?jour=2027-01-05\"")
-                .contains("Je participe");
+                .contains("Je m’inscris");
         assertThat(body).doesNotContain("Me désinscrire").doesNotContain(">Vous<");
     }
 
@@ -269,7 +269,7 @@ class PlanningPageTest {
         var body = page();
 
         assertThat(body).contains("<a href=\"/planning\" aria-current=\"page\">Toutes</a>")
-                .contains("<a href=\"/planning?filtre=a-completer\">À compléter</a>")
+                .contains("<a href=\"/planning?filtre=a-completer\">Besoins</a>")
                 .doesNotContain("filtre=miennes").doesNotContain("Les miennes");
     }
 
@@ -281,7 +281,7 @@ class PlanningPageTest {
 
         assertThat(count(body, DAY_CARD)).isEqualTo(76);
         assertThat(body).doesNotContain(">Lun. 4 janv.<")
-                .contains("<a href=\"/planning?filtre=a-completer\" aria-current=\"page\">À compléter</a>");
+                .contains("<a href=\"/planning?filtre=a-completer\" aria-current=\"page\">Besoins</a>");
     }
 
     @Test

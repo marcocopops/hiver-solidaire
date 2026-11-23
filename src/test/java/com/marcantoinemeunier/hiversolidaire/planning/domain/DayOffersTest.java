@@ -10,7 +10,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 /**
- * « Je participe » sur une journée : le petit-déjeuner s'inscrit sur la soirée D-1, le reste sur la soirée D.
+ * « Je m’inscris » sur une journée : le petit-déjeuner s'inscrit sur la soirée D-1, le reste sur la soirée D.
  * R1 à R4 et R7 s'appliquent soirée par soirée ; R2 porte sur le poste (ADR-0011) et « Récupérer » n'est proposé
  * que pour un repas préparé chez soi qui attend sa récupération (R4).
  */

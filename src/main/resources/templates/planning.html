@@ -13,7 +13,7 @@
         <a th:text="#{planning.filter.ALL}"
            th:href="@{/planning}" th:aria-current="${planning.filter.name() == 'ALL'} ? 'page'">Toutes</a>
         <a th:text="#{planning.filter.TO_COMPLETE}"
-           th:href="@{/planning(filtre='a-completer')}" th:aria-current="${planning.filter.name() == 'TO_COMPLETE'} ? 'page'">À compléter</a>
+           th:href="@{/planning(filtre='a-completer')}" th:aria-current="${planning.filter.name() == 'TO_COMPLETE'} ? 'page'">Besoins</a>
         <a th:if="${planning.signedIn}" th:text="#{planning.filter.MINE}"
            th:href="@{/planning(filtre='miennes')}" th:aria-current="${planning.filter.name() == 'MINE'} ? 'page'">Les miennes</a>
     </nav>
@@ -28,7 +28,7 @@
                 <summary>
                     <span class="journee__date" th:text="${day.label}">Lun. 4 janv.</span>
                     <span class="journee__etat">
-                        <span class="statut" th:text="#{${'planning.status.' + day.statusKey}}">À compléter</span>
+                        <span class="statut" th:text="#{${'planning.status.' + day.statusKey}}">Besoins</span>
                         <svg class="icone journee__chevron" aria-hidden="true" focusable="false"><use th:href="@{/images/icones.svg#chevron}"></use></svg>
                     </span>
                 </summary>
@@ -73,7 +73,7 @@
                     </div>
                     <p class="journee__action" th:if="${day.registrable}">
                         <a class="bouton" th:href="@{/inscription(jour=${day.date})}"
-                           th:text="#{planning.register}">Je participe</a>
+                           th:text="#{planning.register}">Je m’inscris</a>
                     </p>
                 </div>
             </details>

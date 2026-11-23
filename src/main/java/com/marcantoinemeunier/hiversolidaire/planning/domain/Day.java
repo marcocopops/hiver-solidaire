@@ -24,7 +24,7 @@ public final class Day {
     public static final List<Post> POSTS = List.of(
             Post.BREAKFAST, Post.MAIN_DISH, Post.SIDES, Post.DINNER_PRESENCE, Post.NIGHT);
 
-    /** Inscriptions proposées par « Je participe », dans l'ordre de la carte. */
+    /** Inscriptions proposées par « Je m’inscris », dans l'ordre de la carte. */
     private static final List<Offered> OPTIONS = List.of(
             new Offered(RegistrationType.BREAKFAST, null),
             new Offered(RegistrationType.PREPARE_AND_SHARE, DishChoice.MAIN_DISH),
@@ -129,7 +129,7 @@ public final class Day {
     }
 
     /**
-     * « Je participe » : inscriptions encore possibles pour ce bénévole, chacune décidée sur sa soirée par
+     * « Je m’inscris » : inscriptions encore possibles pour ce bénévole, chacune décidée sur sa soirée par
      * {@link Evening#decide} (R1 à R4 et R7 par soirée). Un choix refusé pour lui seul (poste déjà pris par lui, non
      * cumulable, plus de place, plus de repas à récupérer) n'est simplement pas proposé ; seul un motif de R7 bloque la
      * soirée. Le petit-déjeuner du jour même n'est plus proposé : sa soirée est passée.

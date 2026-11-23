@@ -53,11 +53,15 @@ class HomePageTest {
 
         assertThat(html).contains("lang=\"fr\"")
                 .contains("Le petit-déjeuner").contains("Le dîner").contains("La nuit")
-                .contains("repas pour 8 personnes")
-                .contains("<a class=\"bouton\" href=\"/planning\">Voir le planning</a>")
+                .contains("Arrivée à 19 h. On prépare le repas pour 8 personnes : un bénévole fait le plat principal, "
+                        + "l’autre apporte soupe, pain et dessert.")
+                .contains("Un bénévole passe la nuit et partage le dîner et le petit-déjeuner.")
+                .doesNotContain("Un ou deux bénévoles")
+                .doesNotContain("choisissez une journée sur le planning")
+                .contains("<a class=\"bouton\" href=\"/planning\">Inscription</a>")
                 .doesNotContain("Inscriptions à partir du");
         // Le bouton vers le planning, avant la présentation et à la fin : pas besoin de faire défiler.
-        var button = "<a class=\"bouton\" href=\"/planning\">Voir le planning</a>";
+        var button = "<a class=\"bouton\" href=\"/planning\">Inscription</a>";
         assertThat(html.split(button, -1)).as("deux boutons vers le planning").hasSize(3);
         assertThat(html.indexOf(button)).isLessThan(html.indexOf("Trois façons de participer"));
         assertThat(html).doesNotContain("<script").doesNotContain("<style").doesNotContain("style=");
@@ -70,7 +74,7 @@ class HomePageTest {
         var format = java.time.format.DateTimeFormatter.ofPattern("EEEE d MMMM yyyy", java.util.Locale.FRENCH);
 
         assertThat(home()).contains("Hiver Solidaire accueillera du " + format.format(first) + " au soir au "
-                + format.format(last.plusDays(1)) + " au matin");
+                + format.format(last.plusDays(1)) + " au matin 5 personnes actuellement sans abri.");
     }
 
     @Test

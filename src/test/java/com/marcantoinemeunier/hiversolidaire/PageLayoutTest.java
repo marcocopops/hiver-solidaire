@@ -66,7 +66,7 @@ class PageLayoutTest {
 
         assertCommonHeader(html, "Planning des bénévoles");
         assertThat(html).contains("<title>Accueil · Hiver Solidaire</title>")
-                .contains("<a class=\"bouton\" href=\"/planning\">Voir le planning</a>");
+                .contains("<a class=\"bouton\" href=\"/planning\">Inscription</a>");
     }
 
     @Test

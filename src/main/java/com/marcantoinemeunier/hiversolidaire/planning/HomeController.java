@@ -28,19 +28,15 @@ class HomeController {
      *
      * @param firstEvening première soirée, « lundi 4 janvier 2027 »
      * @param lastMorning matin qui suit la dernière soirée
-     * @param winter année ou années de l'hiver, « 2027 » ou « 2026-2027 »
+     * @param winter année de la fin de l'hiver, « 2027 » même pour une saison qui commence en décembre 2026
      * @param organizer organisateur saisi pour la saison, ou {@code null}
      */
     record HomeSeason(boolean sample, String firstEvening, String lastMorning, String winter, String organizer) {
 
         static HomeSeason of(SeasonSettings settings) {
             var lastMorning = settings.lastEvening().plusDays(1);
-            var firstYear = settings.firstEvening().getYear();
-            var winter = firstYear == lastMorning.getYear()
-                    ? String.valueOf(firstYear)
-                    : firstYear + "-" + lastMorning.getYear();
             return new HomeSeason(settings.sample(), DATE.format(settings.firstEvening()), DATE.format(lastMorning),
-                    winter, settings.organizer());
+                    String.valueOf(lastMorning.getYear()), settings.organizer());
         }
     }
 

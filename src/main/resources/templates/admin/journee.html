@@ -5,7 +5,7 @@
 <header th:replace="~{fragments :: entete(#{admin.day.title(${label})}, true)}"></header>
 <main class="page page--large">
     <p th:replace="~{admin/fragments :: done}"></p>
-    <p><span th:class="'statut journee--' + ${statusKey}" th:text="#{${'planning.status.' + statusKey}}">À compléter</span></p>
+    <p><span th:class="'statut journee--' + ${statusKey}" th:text="#{${'planning.status.' + statusKey}}">Besoins</span></p>
     <p class="actions">
         <a th:if="${previous != null}" th:href="@{/admin/journee(jour=${previous})}" th:text="#{admin.day.previous}">Précédente</a>
         <a th:if="${next != null}" th:href="@{/admin/journee(jour=${next})}" th:text="#{admin.day.next}">Suivante</a>
